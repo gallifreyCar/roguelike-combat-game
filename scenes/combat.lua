@@ -254,9 +254,11 @@ function Combat.draw_card(card, x, y, is_player)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(card.name, x + 8, y + 8)
 
-    -- Cost
-    love.graphics.setColor(0.7, 0.25, 0.25)
-    love.graphics.print("Cost:" .. card.cost, x + 8, y + 28)
+    -- Cost (只有玩家卡牌有)
+    if card.cost then
+        love.graphics.setColor(0.7, 0.25, 0.25)
+        love.graphics.print("Cost:" .. card.cost, x + 8, y + 28)
+    end
 
     -- 属性
     love.graphics.setColor(1, 0.75, 0.3)
