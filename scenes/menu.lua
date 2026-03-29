@@ -1,47 +1,55 @@
 -- scenes/menu.lua - 主菜单场景
 
 local Menu = {}
-local I18n = require("core.i18n")
 
 function Menu.enter()
-    -- 进入菜单时初始化
 end
 
 function Menu.exit()
-    -- 退出菜单时清理
 end
 
 function Menu.update(dt)
-    -- 菜单更新逻辑
 end
 
 function Menu.draw()
-    -- 渲染菜单
-    love.graphics.clear(0.1, 0.1, 0.15)
+    love.graphics.clear(0.08, 0.06, 0.04)
 
     -- 标题
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print(I18n.t("title"), 400, 200)
+    love.graphics.setColor(0.6, 0.5, 0.3)
+    love.graphics.print("CARD SACRIFICE", 480, 150)
+    love.graphics.setColor(0.4, 0.35, 0.25)
+    love.graphics.print("A Roguelike Auto-Battler", 450, 190)
 
-    -- 语言指示
-    love.graphics.setColor(0.6, 0.6, 0.6)
-    love.graphics.print("[" .. I18n.get_lang_name() .. "]", 520, 240)
+    -- 游戏说明
+    love.graphics.setColor(0.7, 0.65, 0.5)
+    love.graphics.print("HOW TO PLAY:", 450, 280)
 
-    -- 提示
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print(I18n.t("press_start"), 450, 350)
-    love.graphics.print(I18n.t("press_quit"), 450, 400)
-    love.graphics.print(I18n.t("language"), 450, 450)
+    love.graphics.setColor(0.5, 0.5, 0.5)
+    local instructions = {
+        "1. Select card from hand (Q/W/E/R/T)",
+        "2. Place on board (1-4)",
+        "3. Cards with cost need BLOOD (sacrifice your cards)",
+        "4. Press SPACE to start battle",
+        "5. Cards attack automatically!",
+        "",
+        "When your card dies, you gain +1 Blood",
+    }
+    for i, line in ipairs(instructions) do
+        love.graphics.print(line, 400, 310 + (i - 1) * 25)
+    end
+
+    -- 开始提示
+    love.graphics.setColor(0.8, 0.7, 0.4)
+    love.graphics.print("Press SPACE to Start", 480, 520)
+
+    love.graphics.setColor(0.4, 0.4, 0.4)
+    love.graphics.print("Press ESC to Quit", 500, 560)
 end
 
 function Menu.keypressed(key)
     if key == "space" then
-        -- 开始游戏
         local State = require("core.state")
         State.switch("combat")
-    elseif key == "l" then
-        -- 切换语言
-        I18n.toggle_lang()
     end
 end
 

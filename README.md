@@ -1,15 +1,14 @@
-# Roguelike Combat Game
+# Card Sacrifice - Auto-Battler Roguelike
 
-A turn-based deck-building roguelike game built with **LÖVE (Love2D)** and **Lua**.
-
-Inspired by *Slay the Spire* and built with the same technology stack as *Balatro*.
+A deck-building auto-battler game inspired by **Inscryption**, built with **LÖVE (Love2D)** and **Lua**.
 
 ## Features
 
-- 🎴 **Deck Building**: Build your deck with Strike, Defend, and special cards
-- ⚔️ **Turn-based Combat**: Strategic card play with energy system
-- 👾 **Enemy AI**: Enemies with intent system (attack/defend/buff)
-- 🌍 **Multi-language Support**: English, Chinese, Japanese (WIP)
+- 🎴 **Card Placement**: Place cards on a 4-slot board
+- ⚔️ **Auto-Battle**: Cards attack automatically each turn
+- 💀 **Sacrifice Mechanic**: Kill your own cards to gain Blood resource
+- 👻 **Card Death**: Cards have HP and can die in battle
+- 🤖 **Enemy AI**: Enemy places cards and attacks automatically
 
 ## Quick Start
 
@@ -30,15 +29,43 @@ love .
 love.exe .
 ```
 
-### Controls
+## How to Play
+
+### Phase 1: Card Placement
+1. **Select a card** from your hand using `Q/W/E/R/T`
+2. **Place on board** using `1-4` (slot number)
+3. Cards with **cost** require **Blood** resource
+4. **Sacrifice** your placed cards to gain Blood (when they die = +1 Blood)
+
+### Phase 2: Battle
+5. Press `SPACE` to start the battle phase
+6. Cards **attack automatically**:
+   - If enemy card in same lane → attack that card
+   - If lane is empty → attack enemy directly
+
+### Win Condition
+- Reduce enemy HP to 0 to win!
+
+## Controls
 
 | Key | Action |
 |-----|--------|
-| `1-5` | Play card |
-| `E` | End turn |
-| `L` | Switch language |
-| `Space` | Start game / Confirm |
+| `Q/W/E/R/T` | Select card from hand |
+| `1-4` | Place card on slot |
+| `SPACE` | Start battle / Confirm |
+| `R` | Restart (after game over) |
 | `ESC` | Quit |
+
+## Cards
+
+| Card | Cost | Attack | HP | Special |
+|------|------|--------|-----|---------|
+| Squirrel | 0 | 0 | 1 | Free to place |
+| Stoat | 1 | 1 | 2 | Basic card |
+| Wolf | 2 | 2 | 2 | Balanced |
+| Bullfrog | 1 | 1 | 4 | Tanky |
+| Raven | 2 | 2 | 3 | Air Strike |
+| Grizzly | 3 | 4 | 6 | Heavy hitter |
 
 ## Project Structure
 
@@ -48,51 +75,34 @@ roguelike-game/
 ├── conf.lua          # LÖVE configuration
 ├── core/
 │   ├── state.lua     # State machine
-│   ├── input.lua     # Input handling
-│   └── i18n.lua      # Internationalization
+│   └── input.lua     # Input handling
 ├── scenes/
 │   ├── menu.lua      # Main menu
 │   ├── combat.lua    # Battle scene
 │   ├── victory.lua   # Victory screen
 │   └── death.lua     # Death screen
 ├── systems/
-│   ├── deck.lua      # Card/deck management
 │   └── enemy.lua     # Enemy AI
-└── assets/           # Sprites, fonts, sounds
+└── data/
+    └── cards.lua     # Card definitions
 ```
-
-## Gameplay
-
-1. **Start**: Press `Space` on the menu
-2. **Combat**: Play cards using number keys `1-5`
-3. **Energy**: Each card costs energy (shown in top-left corner)
-4. **Block**: Block absorbs damage, resets each turn
-5. **End Turn**: Press `E` to end your turn
-6. **Enemy Intent**: Enemy shows their next action (ATK/DEF/BUF)
-7. **Victory**: Defeat the enemy to win!
-
-## Cards
-
-| Card | Cost | Effect |
-|------|------|--------|
-| Strike | 1 | Deal 6 damage |
-| Defend | 1 | Gain 5 block |
-| Bash | 2 | Deal 8 damage |
 
 ## Roadmap
 
-- [x] Basic combat system
-- [x] Card system
-- [x] Enemy AI with intent display
-- [ ] More cards and enemies
-- [ ] Roguelike loop (floors, rewards)
-- [ ] Relics system
-- [ ] Save system
+- [x] Auto-battle system
+- [x] Card placement on board
+- [x] Sacrifice/Blood mechanic
+- [x] Enemy AI
+- [ ] More cards and sigils
+- [ ] Roguelike progression
+- [ ] Boss battles
 - [ ] Art and animations
+- [ ] Sound effects
 
-## Development
+## Inspiration
 
-Built with ❤️ using LÖVE framework.
+- [Inscryption](https://www.inscryption.com/) - Core mechanics
+- [Slay the Spire](https://www.megacrit.com/) - Roguelike structure
 
 ## License
 
