@@ -1,5 +1,5 @@
 -- scenes/combat.lua - 战斗场景
--- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统
+-- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统
 
 local Combat = {}
 local CardData = require("data.cards")
@@ -8,6 +8,7 @@ local State = require("core.state")
 local Fonts = require("core.fonts")
 local Deck = require("systems.deck")
 local Settings = require("config.settings")
+local Sigils = require("systems.sigils")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -616,19 +617,31 @@ function Combat.start_battle()
 end
 
 function Combat.execute_battle()
-    -- 玩家攻击
+    -- 玩家攻击（处理印记）
     for i = 1, BOARD_SLOTS do
         local card = battle.player.board[i]
         if card and card.hp > 0 then
             local enemy_card = battle.enemy.board[i]
-            if enemy_card and enemy_card.hp > 0 then
-                local dmg = card.attack
-                enemy_card.hp = enemy_card.hp - dmg
-                add_log(card.name .. " → " .. enemy_card.name .. " (-" .. dmg .. " HP)")
-            else
-                local dmg = card.attack
-                battle.enemy.hp = battle.enemy.hp - dmg
-                add_log(card.name .. " → Enemy (-" .. dmg .. " HP)")
+            local attack_count = Sigils.get_attack_count(card)
+
+            for _ = 1, attack_count do
+                if enemy_card and enemy_card.hp > 0 then
+                    local dmg = card.attack
+                    enemy_card.hp = enemy_card.hp - dmg
+                    add_log(card.name .. " → " .. enemy_card.name .. " (-" .. dmg .. " HP)")
+
+                    -- 处理毒印记
+                    if Sigils.has(card, "poison") then
+                        enemy_card.poisoned = (enemy_card.poisoned or 0) + 1
+                    end
+                else
+                    -- 空列，检查是否有飞行印记
+                    if Sigils.has(card, "air_strike") or not enemy_card then
+                        local dmg = card.attack
+                        battle.enemy.hp = battle.enemy.hp - dmg
+                        add_log(card.name .. " → Enemy (-" .. dmg .. " HP)")
+                    end
+                end
             end
         end
     end
@@ -640,6 +653,10 @@ function Combat.execute_battle()
             local player_card = battle.player.board[i]
             if player_card and player_card.hp > 0 then
                 local dmg = card.attack
+                -- 恶臭减攻击
+                if player_card.stinky_debuff then
+                    dmg = math.max(0, dmg - player_card.stinky_debuff)
+                end
                 player_card.hp = player_card.hp - dmg
                 add_log(card.name .. " → " .. player_card.name .. " (-" .. dmg .. " HP)")
             else
@@ -650,15 +667,45 @@ function Combat.execute_battle()
         end
     end
 
-    -- 清理死亡
+    -- 处理毒伤害（回合结束）
+    for i = 1, BOARD_SLOTS do
+        local card = battle.player.board[i]
+        if card and card.poisoned and card.poisoned > 0 then
+            card.hp = card.hp - card.poisoned
+            add_log(card.name .. " takes " .. card.poisoned .. " poison damage!")
+            card.poisoned = card.poisoned - 1
+        end
+        local ecard = battle.enemy.board[i]
+        if ecard and ecard.poisoned and ecard.poisoned > 0 then
+            ecard.hp = ecard.hp - ecard.poisoned
+            add_log(ecard.name .. " takes " .. ecard.poisoned .. " poison damage!")
+            ecard.poisoned = ecard.poisoned - 1
+        end
+    end
+
+    -- 清理死亡（处理不死印记）
     for i = 1, BOARD_SLOTS do
         if battle.player.board[i] and battle.player.board[i].hp <= 0 then
-            add_log("Your " .. battle.player.board[i].name .. " died!")
-            battle.player.board[i] = nil
+            local card = battle.player.board[i]
+            if Sigils.has(card, "undead") and not card.revived then
+                card.revived = true
+                card.hp = 1
+                add_log(card.name .. " revived!")
+            else
+                add_log("Your " .. card.name .. " died!")
+                battle.player.board[i] = nil
+            end
         end
         if battle.enemy.board[i] and battle.enemy.board[i].hp <= 0 then
-            add_log("Enemy " .. battle.enemy.board[i].name .. " died!")
-            battle.enemy.board[i] = nil
+            local card = battle.enemy.board[i]
+            if Sigils.has(card, "undead") and not card.revived then
+                card.revived = true
+                card.hp = 1
+                add_log("Enemy " .. card.name .. " revived!")
+            else
+                add_log("Enemy " .. card.name .. " died!")
+                battle.enemy.board[i] = nil
+            end
         end
     end
 
