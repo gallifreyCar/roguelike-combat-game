@@ -1,0 +1,20 @@
+# Love2D
+*.love
+/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Temporary
+/tmp/
+*.tmp
