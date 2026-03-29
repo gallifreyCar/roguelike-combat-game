@@ -7,7 +7,7 @@ type: project
 # Blood Cards — 项目长期记忆
 
 **创建时间**: 2026-03-29
-**最后更新**: 2026-03-30 (迭代01)
+**最后更新**: 2026-03-30 (迭代02)
 **技术栈**: Love2D (LÖVE 11.5) + Lua (LuaJIT)
 **开发模式**: 单人独立开发
 **GitHub**: https://github.com/gallifreyCar/roguelike-combat-game
@@ -52,8 +52,21 @@ type: project
 - 结果状态按钮优化（胜利/失败/下一关）
 - 修复所有坐标引用
 
-### 迭代02 [待开始]
-项目结构重构：模块化、易扩展
+### 迭代02 ✅ [已完成 2026-03-30]
+**项目结构重构 - 模块化、易扩展**
+
+新增目录：
+- `ui/` - UI组件模块
+- `utils/` - 工具函数
+- `config/` - 配置文件
+
+新增文件：
+- `ui/button.lua` - 可复用按钮组件（支持多种样式）
+- `ui/card.lua` - 卡牌渲染组件（完整/小型/空格子）
+- `config/colors.lua` - 颜色配置（统一管理，便于主题切换）
+- `config/settings.lua` - 游戏配置（尺寸、布局、难度等）
+- `utils/math.lua` - 数学工具（clamp、lerp、距离等）
+- `utils/table.lua` - 表工具（深拷贝、洗牌、过滤等）
 
 ### 迭代03 [待开始]
 牌库系统接入：deck.lua 接入 combat
@@ -82,25 +95,56 @@ type: project
 
 ---
 
-## 五、文件结构
+## 五、文件结构（重构后）
 
 ```
-scenes/combat.lua  # 核心战斗逻辑（已重构UI）
-data/cards.lua     # 卡牌定义（18张 + 13印记）
-data/levels.lua    # 关卡配置（8关）
-core/state.lua     # 状态机
-systems/deck.lua   # 牌组系统（待接入）
-systems/enemy.lua  # 敌人意图系统（待接入）
+roguelike-game/
+├── main.lua           # 入口
+├── conf.lua           # Love2D配置
+├── core/              # 核心模块
+│   ├── state.lua      # 状态机
+│   ├── fonts.lua      # 字体管理
+│   ├── i18n.lua       # 国际化
+│   └── input.lua      # 输入处理
+├── scenes/            # 场景
+│   ├── combat.lua     # 战斗场景
+│   ├── menu.lua       # 主菜单
+│   ├── victory.lua    # 胜利画面
+│   ├── death.lua      # 死亡画面
+│   └── reward.lua     # 奖励场景
+├── systems/           # 系统
+│   ├── deck.lua       # 牌组系统（待接入）
+│   └── enemy.lua      # 敌人意图系统（待接入）
+├── data/              # 数据定义
+│   ├── cards.lua      # 卡牌定义（18张）
+│   └── levels.lua     # 关卡配置（8关）
+├── ui/                # UI组件 ✨新增
+│   ├── button.lua     # 按钮组件
+│   └── card.lua       # 卡牌渲染组件
+├── config/            # 配置 ✨新增
+│   ├── colors.lua     # 颜色配置
+│   └── settings.lua   # 游戏设置
+├── utils/             # 工具函数 ✨新增
+│   ├── math.lua       # 数学工具
+│   └── table.lua      # 表工具
+├── assets/            # 资源
+│   └── fonts/         # 字体文件
+├── libs/              # 第三方库
+├── save/              # 存档目录
+└── ui/                # UI组件
 ```
 
 ---
 
 ## 六、下一步任务
 
-1. 迭代02：项目结构重构
-2. 迭代03：牌库系统接入
-3. 迭代04：卡牌循环机制
+1. 迭代03：牌库系统接入（将 combat.lua 与新模块整合）
+2. 迭代04：卡牌循环机制
+3. 迭代05：印记效果落地
 
 ---
 
-**接手须知**: UI已修复，布局清晰。下一步重构项目结构使其更易扩展。
+**接手须知**:
+- 项目结构已模块化，ui/、config/、utils/ 目录已创建
+- combat.lua 尚未使用新模块，需逐步迁移
+- 新模块：ui/button.lua, ui/card.lua, config/colors.lua, config/settings.lua
