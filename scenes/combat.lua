@@ -161,20 +161,20 @@ function Combat.draw_enemy_area()
 end
 
 function Combat.draw_player_board()
-    -- 玩家生命值
+    -- 玩家生命值（移到上方避免和手牌重叠）
     love.graphics.setColor(0.2, 0.2, 0.5)
-    love.graphics.rectangle("fill", 550, 530, 180, 30)
+    love.graphics.rectangle("fill", 50, 500, 150, 25)
     love.graphics.setColor(0.2, 0.5, 0.8)
-    local hp_w = (battle.player.hp / battle.player.max_hp) * 180
-    love.graphics.rectangle("fill", 550, 530, hp_w, 30)
+    local hp_w = (battle.player.hp / battle.player.max_hp) * 150
+    love.graphics.rectangle("fill", 50, 500, hp_w, 25)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Your HP: " .. battle.player.hp .. "/" .. battle.player.max_hp, 560, 535)
+    love.graphics.print("Your HP: " .. battle.player.hp .. "/" .. battle.player.max_hp, 55, 503)
 
     -- 献祭资源
     love.graphics.setColor(0.8, 0.2, 0.2)
-    love.graphics.print("Blood: " .. battle.player.blood, 560, 565)
+    love.graphics.print("Blood: " .. battle.player.blood, 210, 505)
 
-    -- 玩家格子（在下方）
+    -- 玩家格子（在中间）
     for i = 1, BOARD_SLOTS do
         local x = 200 + (i - 1) * 130
         local y = 350
@@ -230,12 +230,16 @@ function Combat.draw_card_on_board(card, x, y, is_player)
 end
 
 function Combat.draw_hand()
+    -- 手牌区域背景
+    love.graphics.setColor(0.1, 0.08, 0.06)
+    love.graphics.rectangle("fill", 0, 560, 1280, 160)
+
     love.graphics.setColor(0.9, 0.85, 0.7)
-    love.graphics.print("Your Hand (1-" .. #battle.hand .. " to select):", 50, 700)
+    love.graphics.print("Your Hand - Click to select:", 50, 565)
 
     for i, card in ipairs(battle.hand) do
         local x = 50 + (i - 1) * 120
-        local y = 730
+        local y = 590
 
         -- 选中高亮
         if battle.selected_card == i then
@@ -243,11 +247,11 @@ function Combat.draw_hand()
         else
             love.graphics.setColor(0.3, 0.25, 0.2)
         end
-        love.graphics.rectangle("fill", x, y, 110, 130, 5, 5)
+        love.graphics.rectangle("fill", x, y, 110, 120, 5, 5)
 
         -- 卡牌边框
         love.graphics.setColor(0.6, 0.5, 0.3)
-        love.graphics.rectangle("line", x, y, 110, 130, 5, 5)
+        love.graphics.rectangle("line", x, y, 110, 120, 5, 5)
 
         -- 卡牌信息
         love.graphics.setColor(1, 1, 1)
@@ -255,17 +259,17 @@ function Combat.draw_hand()
 
         -- 献祭消耗
         love.graphics.setColor(0.8, 0.3, 0.3)
-        love.graphics.print("Cost: " .. card.cost, x + 10, y + 35)
+        love.graphics.print("Cost: " .. card.cost, x + 10, y + 30)
 
         -- 属性
         love.graphics.setColor(1, 0.8, 0.3)
-        love.graphics.print("⚔" .. card.attack, x + 10, y + 60)
+        love.graphics.print("ATK:" .. card.attack, x + 10, y + 50)
         love.graphics.setColor(0.5, 0.9, 0.5)
-        love.graphics.print("♥" .. card.hp, x + 50, y + 60)
+        love.graphics.print("HP:" .. card.hp, x + 60, y + 50)
 
         -- 快捷键
         love.graphics.setColor(0.5, 0.5, 0.5)
-        love.graphics.print("[" .. i .. "]", x + 40, y + 100)
+        love.graphics.print("[" .. i .. "]", x + 40, y + 95)
     end
 end
 
@@ -288,12 +292,11 @@ function Combat.draw_status()
         love.graphics.rectangle("fill", 550, 280, 180, 40, 5, 5)
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(">> BATTLE <<", 580, 290)
-    end
 
-    -- 操作提示
-    love.graphics.setColor(0.5, 0.5, 0.5)
-    love.graphics.print("Click card to select, click slot to place", 50, 560)
-    love.graphics.print("[1-4] Select slot  [Q-T] Select hand  [SPACE] Start battle  [R] Restart", 50, 580)
+        -- 操作提示
+        love.graphics.setColor(0.5, 0.5, 0.5)
+        love.graphics.print("Click card to select, click slot to place, click BATTLE to fight!", 300, 500)
+    end
 end
 
 function Combat.keypressed(key)
@@ -339,8 +342,8 @@ function Combat.mousepressed(x, y, button)
         -- 检测点击手牌
         for i = 1, #battle.hand do
             local card_x = 50 + (i - 1) * 120
-            local card_y = 730
-            if x >= card_x and x <= card_x + 110 and y >= card_y and y <= card_y + 130 then
+            local card_y = 590
+            if x >= card_x and x <= card_x + 110 and y >= card_y and y <= card_y + 120 then
                 battle.selected_card = i
                 battle.message = "Selected: " .. battle.hand[i].name .. " - Click a slot to place"
                 return
