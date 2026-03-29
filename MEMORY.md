@@ -30,6 +30,7 @@ type: project
 - 设置无法保存/加载
 - 存档无法正常工作
 - UI图标/emoji加载不出来
+- 游戏崩溃
 
 **修复内容**：
 1. **文件系统修复**：
@@ -38,7 +39,8 @@ type: project
 
 2. **图标/Emoji修复**：
    - 替换所有emoji为ASCII等效文本
-   - ⚔ → [!], ♥ → HP:, 🗺 → [MAP], 🏆 → **, 等
+   - ⚔ → [!], ♥ → HP:, 🗺 → [MAP], 🏆 → **, ★ → *
+   - 修复文件: combat.lua, map.lua, menu.lua, reward.lua, settings.lua, achievements.lua, ui/card.lua
    - 原因：NotoSansSC字体不支持emoji字符
 
 **原因**：Love2D 沙盒环境限制 `io` 操作，必须使用 `love.filesystem` API
