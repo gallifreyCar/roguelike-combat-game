@@ -20,7 +20,7 @@ local Settings = {
     hand_x = 1100,
     hand_y = 100,
     hand_card_gap = 90,
-    max_hand_size = 10,
+    max_hand_size = 8,  -- 手牌上限
 
     -- UI布局
     ui_title_height = 45,

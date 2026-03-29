@@ -7,7 +7,7 @@ type: project
 # Blood Cards — 项目长期记忆
 
 **创建时间**: 2026-03-29
-**最后更新**: 2026-03-30 (迭代03)
+**最后更新**: 2026-03-30 (迭代04)
 **技术栈**: Love2D (LÖVE 11.5) + Lua (LuaJIT)
 **开发模式**: 单人独立开发
 **GitHub**: https://github.com/gallifreyCar/roguelike-combat-game
@@ -29,6 +29,11 @@ type: project
 - 每回合 Blood +1（上限 6）
 - 右键献祭场上卡牌 = +1 Blood
 
+**卡牌循环**：
+- 牌组 → 抽牌堆 → 手牌 → 棋盘 → (死亡/存活)
+- 手牌上限：8张
+- 抽牌堆空时自动洗弃牌堆
+
 **操作**：
 - 左键拖拽：放牌到格子
 - 右键点击：献祭卡牌获得 Blood
@@ -38,37 +43,23 @@ type: project
 
 ## 三、迭代进度（20次迭代计划）
 
-### 迭代01 ✅ [已完成 2026-03-30]
-**UI修复 - 按钮重叠、布局优化**
+### 迭代01 ✅ UI修复
+布局优化、按钮位置、分隔线
+
+### 迭代02 ✅ 项目结构重构
+新增 ui/、utils/、config/ 目录
+
+### 迭代03 ✅ 牌库系统接入
+Deck模块整合到combat.lua
+
+### 迭代04 ✅ [已完成 2026-03-30]
+**卡牌循环机制**
 
 改动：
-- 新增 UI 布局常量（UI_TITLE_HEIGHT, UI_PLAYER_BOARD_Y 等）
-- 重构 draw() 函数，添加分隔线
-- 敌方HP移到标题栏右侧
-- 战斗按钮移到中央位置 (600, 435)
-- HP/Blood 状态栏移到底部 (y=510)
-- 操作提示移到最底部 (y=550)
-- 按钮悬停高亮效果
-
-### 迭代02 ✅ [已完成 2026-03-30]
-**项目结构重构 - 模块化、易扩展**
-
-新增目录：`ui/`、`utils/`、`config/`
-新增模块：button.lua、card.lua、colors.lua、settings.lua、math.lua、table.lua
-
-### 迭代03 ✅ [已完成 2026-03-30]
-**牌库系统接入 - Deck模块整合**
-
-改动：
-- 重构 systems/deck.lua 适配 Blood Cards 机制
-- Deck 模块方法：init(), draw_cards(), place_card(), sacrifice_card()
-- combat.lua 接入 Deck 模块
-- 使用 Settings 配置（布局、尺寸等）
-- 移除 battle.hand，改用 Deck.get_hand()
-- 开局抽3张牌（从牌组）
-
-### 迭代04 [待开始]
-卡牌循环机制：抽牌/弃牌/洗牌完善
+- 状态栏显示牌组信息（抽牌堆/弃牌堆数量）
+- 手牌上限：8张
+- Deck.draw_cards() 检查手牌上限
+- 添加 Deck.recycle_card() 方法（回收卡牌到弃牌堆）
 
 ### 迭代05 [待开始]
 印记效果落地：poison/undead/hydra 等
@@ -96,31 +87,15 @@ type: project
 ```
 roguelike-game/
 ├── main.lua           # 入口
-├── conf.lua           # Love2D配置
-├── core/              # 核心模块
-│   ├── state.lua      # 状态机
-│   ├── fonts.lua      # 字体管理
-│   └── input.lua      # 输入处理
-├── scenes/            # 场景
-│   ├── combat.lua     # 战斗场景（已接入Deck）
-│   ├── menu.lua       # 主菜单
-│   ├── victory.lua    # 胜利画面
-│   └── death.lua      # 死亡画面
+├── core/              # 核心模块（state/fonts/input）
+├── scenes/            # 场景（combat/menu/victory/death）
 ├── systems/           # 系统
-│   ├── deck.lua       # 牌组系统 ✅已接入
+│   ├── deck.lua       # 牌组系统 ✅
 │   └── enemy.lua      # 敌人意图系统
-├── data/              # 数据定义
-│   ├── cards.lua      # 卡牌定义（18张）
-│   └── levels.lua     # 关卡配置（8关）
-├── ui/                # UI组件
-│   ├── button.lua     # 按钮组件
-│   └── card.lua       # 卡牌渲染组件
-├── config/            # 配置
-│   ├── colors.lua     # 颜色配置
-│   └── settings.lua   # 游戏设置
-├── utils/             # 工具函数
-│   ├── math.lua       # 数学工具
-│   └── table.lua      # 表工具
+├── data/              # 数据定义（cards/levels）
+├── ui/                # UI组件（button/card）
+├── config/            # 配置（colors/settings）
+├── utils/             # 工具函数（math/table）
 └── assets/fonts/      # 字体文件
 ```
 
@@ -128,13 +103,13 @@ roguelike-game/
 
 ## 六、下一步任务
 
-1. 迭代04：卡牌循环机制（抽牌堆/弃牌堆显示）
-2. 迭代05：印记效果落地
-3. 迭代06：攻击特效
+1. 迭代05：印记效果落地
+2. 迭代06：攻击特效
+3. 迭代07：奖励系统
 
 ---
 
 **接手须知**:
-- 牌库系统已接入，使用 Deck 模块管理手牌
-- combat.lua 使用 Settings 配置
-- 下一步完善卡牌循环和印记效果
+- 牌库循环完整：抽牌堆 → 手牌 → 弃牌堆
+- 手牌上限8张，可在config/settings.lua调整
+- 下一步实现印记效果和攻击特效

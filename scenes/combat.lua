@@ -390,6 +390,13 @@ function Combat.draw_status_bar()
     love.graphics.setColor(0.7, 0.6, 0.4)
     Fonts.print("Turn: " .. battle.turn, 380, UI_STATUS_BAR_Y + 8)
 
+    -- 牌组信息
+    local deck_info = Deck.get_info()
+    love.graphics.setColor(0.5, 0.5, 0.7)
+    Fonts.print("Deck: " .. deck_info.draw_pile_size, 460, UI_STATUS_BAR_Y + 8)
+    love.graphics.setColor(0.6, 0.5, 0.4)
+    Fonts.print("Discard: " .. deck_info.discard_pile_size, 550, UI_STATUS_BAR_Y + 8)
+
     -- 操作提示（底部）
     love.graphics.setColor(0.5, 0.45, 0.4)
     Fonts.print("Left-click: drag  |  Right-click: sacrifice  |  Space: battle", 50, UI_HINT_Y + 20, 13)

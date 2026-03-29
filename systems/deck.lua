@@ -52,7 +52,15 @@ end
 
 -- 抽牌到手牌
 function Deck.draw_cards(n)
+    local Settings = require("config.settings")
+    local max_hand = Settings.max_hand_size or 8
+
     for i = 1, n do
+        -- 手牌上限检查
+        if #deck_state.hand >= max_hand then
+            break
+        end
+
         -- 抽牌堆空了，洗弃牌堆
         if #deck_state.draw_pile == 0 then
             if #deck_state.discard_pile == 0 then
@@ -126,6 +134,21 @@ function Deck.discard_hand()
         deck_state.discard_pile[#deck_state.discard_pile + 1] = card
     end
     deck_state.hand = {}
+end
+
+-- 回收卡牌到弃牌堆（棋盘上的牌回合结束时回收）
+function Deck.recycle_card(card)
+    if card then
+        deck_state.discard_pile[#deck_state.discard_pile + 1] = {
+            id = card.id,
+            name = card.name,
+            cost = card.cost,
+            attack = card.attack,
+            hp = card.hp,  -- 重置为模板HP
+            max_hp = card.max_hp,
+            sigils = card.sigils or {},
+        }
+    end
 end
 
 -- 获取手牌列表
