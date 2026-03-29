@@ -1,12 +1,12 @@
-# Card Sacrifice - Auto-Battler Roguelike
+# Blood Cards - Auto-Battler Roguelike
 
-A deck-building auto-battler game inspired by **Inscryption**, built with **LÖVE (Love2D)** and **Lua**.
+A deck-building auto-battler game built with **LÖVE (Love2D)** and **Lua**.
 
 ## Features
 
-- 🎴 **Card Placement**: Place cards on a 4-slot board
+- 🎴 **Card Placement**: Drag cards to a 4-slot board
 - ⚔️ **Auto-Battle**: Cards attack automatically each turn
-- 💀 **Sacrifice Mechanic**: Kill your own cards to gain Blood resource
+- 💀 **Sacrifice Mechanic**: Right-click your cards to gain Blood resource
 - 👻 **Card Death**: Cards have HP and can die in battle
 - 🤖 **Enemy AI**: Enemy places cards and attacks automatically
 
@@ -31,41 +31,43 @@ love.exe .
 
 ## How to Play
 
-### Phase 1: Card Placement
-1. **Select a card** from your hand using `Q/W/E/R/T`
-2. **Place on board** using `1-4` (slot number)
-3. Cards with **cost** require **Blood** resource
-4. **Sacrifice** your placed cards to gain Blood (when they die = +1 Blood)
+### Blood Economy
+- You start with 1 Blood each turn
+- Blood resets to 1 at the start of each turn (max: 6)
+- Right-click your cards on board to **sacrifice** for +1 Blood
 
-### Phase 2: Battle
-5. Press `SPACE` to start the battle phase
-6. Cards **attack automatically**:
-   - If enemy card in same lane → attack that card
-   - If lane is empty → attack enemy directly
+### Card Placement
+1. **Drag** cards from right panel to empty slots
+2. Cards with **cost** require Blood
+3. Click **BATTLE** button to start combat
+
+### Battle
+- Cards attack automatically in lanes
+- If enemy card in same lane → attack that card
+- If lane empty → attack enemy directly
 
 ### Win Condition
 - Reduce enemy HP to 0 to win!
 
-## Controls
-
-| Key | Action |
-|-----|--------|
-| `Q/W/E/R/T` | Select card from hand |
-| `1-4` | Place card on slot |
-| `SPACE` | Start battle / Confirm |
-| `R` | Restart (after game over) |
-| `ESC` | Quit |
-
 ## Cards
 
-| Card | Cost | Attack | HP | Special |
-|------|------|--------|-----|---------|
-| Squirrel | 0 | 0 | 1 | Free to place |
-| Stoat | 1 | 1 | 2 | Basic card |
-| Wolf | 2 | 2 | 2 | Balanced |
+| Card | Cost | Attack | HP | Notes |
+|------|------|--------|-----|-------|
+| Squirrel | 0 | 0 | 1 | Free, good for sacrifice |
+| Stoat | 1 | 1 | 2 | Basic attacker |
+| Wolf | 2 | 2 | 2 | Balanced fighter |
 | Bullfrog | 1 | 1 | 4 | Tanky |
-| Raven | 2 | 2 | 3 | Air Strike |
+| Raven | 2 | 2 | 3 | Air support |
 | Grizzly | 3 | 4 | 6 | Heavy hitter |
+
+## Controls
+
+| Input | Action |
+|-------|--------|
+| Left-click + drag | Place card |
+| Right-click card | Sacrifice for Blood |
+| Click BATTLE | Start combat |
+| SPACE | Start battle |
 
 ## Project Structure
 
@@ -92,18 +94,17 @@ roguelike-game/
 - [x] Auto-battle system
 - [x] Card placement on board
 - [x] Sacrifice/Blood mechanic
-- [x] Enemy AI
-- [ ] More cards and sigils
-- [ ] Roguelike progression
+- [x] Drag and drop UI
+- [ ] More cards and abilities
+- [ ] Roguelike map progression
 - [ ] Boss battles
 - [ ] Art and animations
 - [ ] Sound effects
 
-## Inspiration
-
-- [Inscryption](https://www.inscryption.com/) - Core mechanics
-- [Slay the Spire](https://www.megacrit.com/) - Roguelike structure
-
 ## License
 
 MIT
+
+---
+
+*This is a hobby project for learning game development with LÖVE framework.*
