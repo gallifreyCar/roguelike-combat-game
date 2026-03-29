@@ -15,6 +15,8 @@ function State.init()
     State.register("combat", require("scenes.combat"))
     State.register("victory", require("scenes.victory"))
     State.register("death", require("scenes.death"))
+    State.register("reward", require("scenes.reward"))
+    State.register("fusion", require("scenes.fusion"))
 end
 
 function State.switch(name)
