@@ -1,31 +1,32 @@
 -- scenes/combat.lua - 战斗场景
--- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统
+-- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统
 
 local Combat = {}
 local CardData = require("data.cards")
 local LevelData = require("data.levels")
 local State = require("core.state")
 local Fonts = require("core.fonts")
+local Deck = require("systems.deck")
+local Settings = require("config.settings")
 
--- 战斗配置
-local BOARD_SLOTS = 4
-local PLAYER_MAX_HP = 20  -- 增加 HP
-local MAX_BLOOD = 6
+-- 从 Settings 获取配置
+local BOARD_SLOTS = Settings.board_slots
+local PLAYER_MAX_HP = Settings.player_max_hp
+local MAX_BLOOD = Settings.max_blood
 
--- 手牌区域（右侧）
-local HAND_X = 1100
-local HAND_Y = 100
-local CARD_WIDTH = 100
-local CARD_HEIGHT = 130
+-- UI布局从 Settings
+local HAND_X = Settings.hand_x
+local HAND_Y = Settings.hand_y
+local CARD_WIDTH = Settings.card_width
+local CARD_HEIGHT = Settings.card_height
 
--- UI布局常量（重构后）
-local UI_TITLE_HEIGHT = 45
-local UI_ENEMY_AREA_Y = 50
-local UI_SEPARATOR_Y = 235
-local UI_PLAYER_BOARD_Y = 270
-local UI_BUTTON_AREA_Y = 435
-local UI_STATUS_BAR_Y = 510
-local UI_HINT_Y = 550
+local UI_TITLE_HEIGHT = Settings.ui_title_height
+local UI_ENEMY_AREA_Y = Settings.ui_enemy_area_y
+local UI_SEPARATOR_Y = Settings.ui_separator_y
+local UI_PLAYER_BOARD_Y = Settings.ui_player_board_y
+local UI_BUTTON_AREA_Y = Settings.ui_button_area_y
+local UI_STATUS_BAR_Y = Settings.ui_status_bar_y
+local UI_HINT_Y = Settings.ui_hint_y
 
 -- 战斗状态
 local battle = {
@@ -47,7 +48,6 @@ local battle = {
         board = {},
     },
 
-    hand = {},
     message = "",
 
     -- 战斗日志
@@ -91,24 +91,13 @@ function Combat.enter()
     init_board(battle.player.board)
     init_board(battle.enemy.board)
 
-    battle.hand = {}
-
-    -- 第一回合给2张Squirrel
-    for i = 1, 2 do
-        local squirrel = CardData.cards["squirrel"]
-        if squirrel then
-            battle.hand[#battle.hand + 1] = {
-                id = squirrel.id,
-                name = squirrel.name,
-                cost = squirrel.cost,
-                attack = squirrel.attack,
-                hp = squirrel.hp,
-                max_hp = squirrel.hp,
-                sigils = squirrel.sigils or {},
-            }
-        end
+    -- 使用 Deck 模块初始化牌组
+    if battle.level == 1 then
+        Deck.reset()  -- 新游戏重置牌组
     end
-    Combat.draw_cards(1)
+
+    -- 第一回合抽3张牌
+    Deck.draw_cards(3)
 
     -- 根据关卡生成敌人
     Combat.spawn_level_enemies()
@@ -124,42 +113,9 @@ end
 function Combat.exit()
 end
 
+-- 抽牌（使用 Deck 模块）
 function Combat.draw_cards(n)
-    for i = 1, n do
-        local id
-        local roll = love.math.random()
-
-        -- 稀有度权重：60%普通，30%稀有，8%稀有，2%传说
-        if roll < 0.40 then
-            -- 40% Squirrel（免费献祭材料）
-            id = "squirrel"
-        elseif roll < 0.75 then
-            -- 35% 普通
-            local commons = {"stoat", "bullfrog", "rat", "wolf", "turtle"}
-            id = commons[love.math.random(#commons)]
-        elseif roll < 0.95 then
-            -- 20% 稀有
-            local uncommons = {"raven", "adder", "skunk", "cat"}
-            id = uncommons[love.math.random(#uncommons)]
-        else
-            -- 5% 稀有/传说
-            local rares = {"grizzly", "moose", "mant", "ox", "eagle", "deathcard"}
-            id = rares[love.math.random(#rares)]
-        end
-
-        local template = CardData.cards[id]
-        if template then
-            battle.hand[#battle.hand + 1] = {
-                id = template.id,
-                name = template.name,
-                cost = template.cost,
-                attack = template.attack,
-                hp = template.hp,
-                max_hp = template.hp,
-                sigils = template.sigils or {},
-            }
-        end
-    end
+    Deck.draw_cards(n)
 end
 
 function Combat.spawn_level_enemies()
@@ -240,8 +196,9 @@ function Combat.draw()
     Combat.draw_battle_button()
 
     -- 绘制正在拖拽的卡牌
-    if battle.dragging and battle.hand[battle.dragging_index] then
-        Combat.draw_card(battle.hand[battle.dragging_index],
+    local hand = Deck.get_hand()
+    if battle.dragging and hand[battle.dragging_index] then
+        Combat.draw_card(hand[battle.dragging_index],
                          battle.drag_x - battle.drag_offset_x,
                          battle.drag_y - battle.drag_offset_y,
                          true)
@@ -327,9 +284,10 @@ function Combat.draw_hand_panel()
 
     love.graphics.setColor(0.7, 0.6, 0.4)
     Fonts.print("YOUR HAND", 1095, 60)
-    Fonts.print("(" .. #battle.hand .. " cards)", 1100, 80)
+    Fonts.print("(" .. Deck.hand_size() .. " cards)", 1100, 80)
 
-    for i, card in ipairs(battle.hand) do
+    local hand = Deck.get_hand()
+    for i, card in ipairs(hand) do
         local x = HAND_X
         local y = HAND_Y + (i - 1) * 90
 
@@ -548,7 +506,8 @@ function Combat.mousepressed(x, y, button)
 
     if battle.phase == "play" then
         -- 检测点击手牌
-        for i = 1, #battle.hand do
+        local hand = Deck.get_hand()
+        for i = 1, #hand do
             local card_x = HAND_X
             local card_y = HAND_Y + (i - 1) * 90
 
@@ -559,7 +518,7 @@ function Combat.mousepressed(x, y, button)
                 battle.drag_y = y
                 battle.drag_offset_x = x - card_x
                 battle.drag_offset_y = y - card_y
-                battle.message = "Dragging " .. battle.hand[i].name
+                battle.message = "Dragging " .. hand[i].name
                 return
             end
         end
@@ -618,11 +577,13 @@ function Combat.mousereleased(x, y, button)
 end
 
 function Combat.place_card(hand_index, slot)
-    local card = battle.hand[hand_index]
+    local card = Deck.place_card(hand_index)
     if not card then return end
 
     if card.cost > battle.player.blood then
         battle.message = "Need " .. card.cost .. " Blood! Right-click a card to sacrifice."
+        -- 放回手牌
+        Deck.draw_cards(0)  -- 什么都不做，只是占位
         return
     end
 
@@ -637,7 +598,6 @@ function Combat.place_card(hand_index, slot)
         sigils = card.sigils,
     }
 
-    table.remove(battle.hand, hand_index)
     battle.message = card.name .. " placed!"
 end
 
@@ -715,7 +675,7 @@ function Combat.execute_battle()
         -- 每回合+1 blood，最多MAX_BLOOD
         battle.player.blood = math.min(battle.player.blood + 1, MAX_BLOOD)
 
-        if #battle.hand < 3 then
+        if Deck.hand_size() < 3 then
             Combat.draw_cards(1)
         end
 

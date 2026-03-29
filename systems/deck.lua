@@ -1,168 +1,156 @@
--- systems/deck.lua - 牌组系统
--- 管理：抽牌堆、手牌、弃牌堆
+-- systems/deck.lua - 牌组系统（Blood Cards风格）
+-- 管理：牌组、抽牌堆、手牌、弃牌堆
 
-local Deck = {
-    draw_pile = {},
-    hand = {},
-    discard_pile = {},
+local CardData = require("data.cards")
+local TableUtils = require("utils.table")
+
+local Deck = {}
+
+-- 牌组状态
+local deck_state = {
+    deck = {},           -- 玩家牌组（永久）
+    draw_pile = {},      -- 抽牌堆
+    hand = {},           -- 当前手牌
+    discard_pile = {},   -- 弃牌堆
 }
 
--- 初始牌组（Starter Deck）
-local starter_deck = {
-    {id = "strike", cost = 1, type = "attack", damage = 6},
-    {id = "strike", cost = 1, type = "attack", damage = 6},
-    {id = "strike", cost = 1, type = "attack", damage = 6},
-    {id = "strike", cost = 1, type = "attack", damage = 6},
-    {id = "defend", cost = 1, type = "skill", block = 5},
-    {id = "defend", cost = 1, type = "skill", block = 5},
-    {id = "defend", cost = 1, type = "skill", block = 5},
-    {id = "defend", cost = 1, type = "skill", block = 5},
-    {id = "bash", cost = 2, type = "attack", damage = 8},
-}
-
--- 卡牌名称
-local card_names = {
-    strike = "Strike",
-    defend = "Defend",
-    bash = "Bash",
-}
-
+-- 初始化牌组（开局默认牌组）
 function Deck.init()
-    -- 复制初始牌组到抽牌堆
-    Deck.draw_pile = {}
-    for _, card in ipairs(starter_deck) do
-        Deck.draw_pile[#Deck.draw_pile + 1] = {id = card.id, cost = card.cost, type = card.type, damage = card.damage, block = card.block}
+    deck_state.deck = {}
+    deck_state.draw_pile = {}
+    deck_state.hand = {}
+    deck_state.discard_pile = {}
+
+    -- 默认初始牌组
+    local starter_cards = {
+        "squirrel", "squirrel", "squirrel",  -- 3张免费献祭材料
+        "stoat", "stoat",                     -- 2张基础攻击
+        "wolf",                               -- 1张中坚
+        "bullfrog",                           -- 1张肉盾
+    }
+
+    for _, card_id in ipairs(starter_cards) do
+        Deck.add_to_deck(card_id)
     end
 
-    -- 洗牌
-    Deck.shuffle()
-
-    Deck.hand = {}
-    Deck.discard_pile = {}
+    Deck.shuffle_draw_pile()
 end
 
-function Deck.shuffle()
-    -- Fisher-Yates shuffle
-    for i = #Deck.draw_pile, 2, -1 do
-        local j = love.math.random(1, i)
-        Deck.draw_pile[i], Deck.draw_pile[j] = Deck.draw_pile[j], Deck.draw_pile[i]
+-- 添加卡牌到牌组
+function Deck.add_to_deck(card_id)
+    local template = CardData.cards[card_id]
+    if template then
+        deck_state.deck[#deck_state.deck + 1] = TableUtils.deep_copy(template)
+        deck_state.draw_pile[#deck_state.draw_pile + 1] = TableUtils.deep_copy(template)
     end
 end
 
+-- 洗抽牌堆
+function Deck.shuffle_draw_pile()
+    TableUtils.shuffle(deck_state.draw_pile)
+end
+
+-- 抽牌到手牌
 function Deck.draw_cards(n)
     for i = 1, n do
-        if #Deck.draw_pile == 0 then
-            -- 抽牌堆空了，洗弃牌堆
-            for _, card in ipairs(Deck.discard_pile) do
-                Deck.draw_pile[#Deck.draw_pile + 1] = card
+        -- 抽牌堆空了，洗弃牌堆
+        if #deck_state.draw_pile == 0 then
+            if #deck_state.discard_pile == 0 then
+                -- 没牌可抽了
+                break
             end
-            Deck.discard_pile = {}
-            Deck.shuffle()
+            -- 弃牌堆进入抽牌堆
+            for _, card in ipairs(deck_state.discard_pile) do
+                deck_state.draw_pile[#deck_state.draw_pile + 1] = TableUtils.deep_copy(card)
+            end
+            deck_state.discard_pile = {}
+            Deck.shuffle_draw_pile()
         end
 
-        if #Deck.draw_pile > 0 then
-            local card = Deck.draw_pile[#Deck.draw_pile]
-            Deck.draw_pile[#Deck.draw_pile] = nil
-            Deck.hand[#Deck.hand + 1] = card
+        if #deck_state.draw_pile > 0 then
+            local card = deck_state.draw_pile[#deck_state.draw_pile]
+            deck_state.draw_pile[#deck_state.draw_pile] = nil
+
+            -- 添加到手牌（带当前状态）
+            deck_state.hand[#deck_state.hand + 1] = {
+                id = card.id,
+                name = card.name,
+                cost = card.cost,
+                attack = card.attack,
+                hp = card.hp,
+                max_hp = card.hp,
+                sigils = card.sigils or {},
+            }
         end
     end
 end
 
+-- 从手牌打出一张牌（返回卡牌数据）
 function Deck.play_card(index)
-    if index < 1 or index > #Deck.hand then return nil end
+    if index < 1 or index > #deck_state.hand then return nil end
 
-    local card = Deck.hand[index]
-
-    -- 移除手牌
-    table.remove(Deck.hand, index)
+    local card = deck_state.hand[index]
+    table.remove(deck_state.hand, index)
 
     -- 加入弃牌堆
-    Deck.discard_pile[#Deck.discard_pile + 1] = card
+    deck_state.discard_pile[#deck_state.discard_pile + 1] = card
 
     return card
 end
 
-function Deck.end_turn()
-    -- 弃掉所有手牌
-    for _, card in ipairs(Deck.hand) do
-        Deck.discard_pile[#Deck.discard_pile + 1] = card
-    end
-    Deck.hand = {}
+-- 献祭手牌（不进入弃牌堆，直接销毁）
+function Deck.sacrifice_card(index)
+    if index < 1 or index > #deck_state.hand then return nil end
+
+    local card = deck_state.hand[index]
+    table.remove(deck_state.hand, index)
+
+    -- 不加入弃牌堆（献祭销毁）
+    return card
 end
 
-function Deck.draw_hand(current_energy)
-    -- 计算手牌位置（居中）
-    local card_width = 90
-    local card_gap = 10
-    local total_width = #Deck.hand * card_width + (#Deck.hand - 1) * card_gap
-    local start_x = (1280 - total_width) / 2
-    local y = 450
+-- 放置卡牌（从手牌移到棋盘，不进入弃牌堆）
+function Deck.place_card(index)
+    if index < 1 or index > #deck_state.hand then return nil end
 
-    for i, card in ipairs(Deck.hand) do
-        local x = start_x + (i - 1) * (card_width + card_gap)
+    local card = deck_state.hand[index]
+    table.remove(deck_state.hand, index)
 
-        -- 判断是否可以打出
-        local playable = card.cost <= current_energy
+    -- 返回卡牌供战斗场景使用
+    return card
+end
 
-        -- 卡牌背景
-        if card.type == "attack" then
-            if playable then
-                love.graphics.setColor(0.7, 0.25, 0.2)
-            else
-                love.graphics.setColor(0.4, 0.2, 0.18)
-            end
-        elseif card.type == "skill" then
-            if playable then
-                love.graphics.setColor(0.25, 0.4, 0.65)
-            else
-                love.graphics.setColor(0.18, 0.25, 0.35)
-            end
-        else
-            if playable then
-                love.graphics.setColor(0.3, 0.55, 0.3)
-            else
-                love.graphics.setColor(0.2, 0.3, 0.2)
-            end
-        end
-
-        love.graphics.rectangle("fill", x, y, card_width, 120, 6, 6)
-
-        -- 卡牌边框（可打出时高亮）
-        if playable then
-            love.graphics.setColor(1, 1, 1)
-        else
-            love.graphics.setColor(0.4, 0.4, 0.4)
-        end
-        love.graphics.rectangle("line", x, y, card_width, 120, 6, 6)
-
-        -- 能量消耗（左上角圆圈）
-        love.graphics.setColor(0.15, 0.15, 0.15)
-        love.graphics.circle("fill", x + 15, y + 15, 12)
-        love.graphics.setColor(1, 0.85, 0.2)
-        love.graphics.print(tostring(card.cost), x + 10, y + 8)
-
-        -- 卡牌名称
-        love.graphics.setColor(1, 1, 1)
-        local name = card_names[card.id] or card.id
-        love.graphics.print(name, x + 8, y + 35)
-
-        -- 效果描述
-        love.graphics.setColor(0.8, 0.8, 0.8)
-        if card.damage then
-            love.graphics.print("Deal " .. card.damage .. " damage", x + 8, y + 55)
-        elseif card.block then
-            love.graphics.print("Gain " .. card.block .. " block", x + 8, y + 55)
-        end
-
-        -- 快捷键提示
-        love.graphics.setColor(0.5, 0.5, 0.5)
-        love.graphics.print("[" .. i .. "]", x + card_width - 25, y + 95)
+-- 弃掉所有手牌
+function Deck.discard_hand()
+    for _, card in ipairs(deck_state.hand) do
+        deck_state.discard_pile[#deck_state.discard_pile + 1] = card
     end
+    deck_state.hand = {}
+end
 
-    -- 显示抽牌堆和弃牌堆数量
-    love.graphics.setColor(0.5, 0.5, 0.5)
-    love.graphics.print("Draw: " .. #Deck.draw_pile, 1100, 550)
-    love.graphics.print("Discard: " .. #Deck.discard_pile, 1100, 570)
+-- 获取手牌列表
+function Deck.get_hand()
+    return deck_state.hand
+end
+
+-- 获取手牌数量
+function Deck.hand_size()
+    return #deck_state.hand
+end
+
+-- 获取牌组信息（用于UI显示）
+function Deck.get_info()
+    return {
+        deck_size = #deck_state.deck,
+        draw_pile_size = #deck_state.draw_pile,
+        hand_size = #deck_state.hand,
+        discard_pile_size = #deck_state.discard_pile,
+    }
+end
+
+-- 重置牌组（新游戏）
+function Deck.reset()
+    Deck.init()
 end
 
 return Deck
