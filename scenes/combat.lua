@@ -55,7 +55,7 @@ function Combat.enter()
     battle.turn = 1
     battle.phase = "play"
     battle.player.hp = PLAYER_MAX_HP
-    battle.player.blood = 0
+    battle.player.blood = 1  -- 初始给1点blood
     battle.player.max_hp = PLAYER_MAX_HP
     battle.enemy.hp = 10
     battle.enemy.max_hp = 10
@@ -64,7 +64,21 @@ function Combat.enter()
     init_board(battle.enemy.board)
 
     battle.hand = {}
-    Combat.draw_cards(4)
+    -- 第一张牌必定是免费的Squirrel
+    local squirrel = CardData.cards["squirrel"]
+    if squirrel then
+        battle.hand[#battle.hand + 1] = {
+            id = squirrel.id,
+            name = squirrel.name,
+            cost = squirrel.cost,
+            attack = squirrel.attack,
+            hp = squirrel.hp,
+            max_hp = squirrel.hp,
+            sigils = squirrel.sigils or {},
+        }
+    end
+    -- 再随机抽2张
+    Combat.draw_cards(2)
 
     Combat.spawn_enemy_cards()
 
@@ -79,7 +93,13 @@ end
 function Combat.draw_cards(n)
     local card_types = {"squirrel", "stoat", "wolf", "bullfrog", "raven"}
     for i = 1, n do
-        local id = card_types[love.math.random(#card_types)]
+        -- 30%概率抽到免费的squirrel
+        local id
+        if love.math.random() < 0.3 then
+            id = "squirrel"
+        else
+            id = card_types[love.math.random(#card_types)]
+        end
         local template = CardData.cards[id]
         if template then
             battle.hand[#battle.hand + 1] = {
