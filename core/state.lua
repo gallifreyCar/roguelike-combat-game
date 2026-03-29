@@ -1,28 +1,22 @@
 -- core/state.lua - 游戏状态机
--- 管理：菜单→战斗→奖励→死亡的流程
 
 local State = {
-    stack = {},      -- 状态栈（支持叠加）
-    current = nil,   -- 当前状态
-    states = {},     -- 已注册的状态
+    stack = {},
+    current = nil,
+    states = {},
 }
 
--- 注册状态
 function State.register(name, state_impl)
     State.states[name] = state_impl
 end
 
--- 初始化
 function State.init()
-    -- 注册各场景
     State.register("menu", require("scenes.menu"))
     State.register("combat", require("scenes.combat"))
     State.register("victory", require("scenes.victory"))
-    State.register("reward", require("scenes.reward"))
     State.register("death", require("scenes.death"))
 end
 
--- 直接切换（清空栈）
 function State.switch(name)
     if State.current and State.current.exit then
         State.current.exit()
@@ -34,7 +28,6 @@ function State.switch(name)
     end
 end
 
--- 压栈（暂停当前）
 function State.push(name)
     if State.current then
         State.stack[#State.stack + 1] = State.current
@@ -46,7 +39,6 @@ function State.push(name)
     end
 end
 
--- 弹栈（恢复上一个）
 function State.pop()
     if State.current and State.current.exit then
         State.current.exit()
@@ -62,31 +54,39 @@ function State.pop()
     end
 end
 
--- 更新
 function State.update(dt)
     if State.current and State.current.update then
         State.current.update(dt)
     end
 end
 
--- 渲染
 function State.draw()
     if State.current and State.current.draw then
         State.current.draw()
     end
 end
 
--- 键盘事件转发
 function State.keypressed(key)
     if State.current and State.current.keypressed then
         State.current.keypressed(key)
     end
 end
 
--- 鼠标点击事件转发
 function State.mousepressed(x, y, button)
     if State.current and State.current.mousepressed then
         State.current.mousepressed(x, y, button)
+    end
+end
+
+function State.mousemoved(x, y, dx, dy)
+    if State.current and State.current.mousemoved then
+        State.current.mousemoved(x, y, dx, dy)
+    end
+end
+
+function State.mousereleased(x, y, button)
+    if State.current and State.current.mousereleased then
+        State.current.mousereleased(x, y, button)
     end
 end
 

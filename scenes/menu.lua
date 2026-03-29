@@ -15,38 +15,37 @@ function Menu.draw()
     love.graphics.clear(0.08, 0.06, 0.04)
 
     -- 标题
-    love.graphics.setColor(0.6, 0.5, 0.3)
-    love.graphics.print("CARD SACRIFICE", 480, 150)
-    love.graphics.setColor(0.4, 0.35, 0.25)
-    love.graphics.print("A Roguelike Auto-Battler", 450, 190)
+    love.graphics.setColor(0.7, 0.55, 0.3)
+    love.graphics.print("CARD SACRIFICE", 440, 100)
+    love.graphics.setColor(0.45, 0.4, 0.3)
+    love.graphics.print("A Roguelike Auto-Battler", 420, 140)
 
-    -- 游戏说明
+    -- 说明
     love.graphics.setColor(0.7, 0.65, 0.5)
-    love.graphics.print("HOW TO PLAY:", 450, 280)
+    love.graphics.print("HOW TO PLAY:", 420, 220)
 
-    love.graphics.setColor(0.5, 0.5, 0.5)
+    love.graphics.setColor(0.55, 0.5, 0.45)
     local instructions = {
-        "1. Click card to select (or Q/W/E/R/T)",
-        "2. Click slot to place (or 1-4)",
-        "3. Cards with cost need BLOOD (sacrifice your cards)",
-        "4. Click BATTLE button to start (or SPACE)",
-        "5. Cards attack automatically!",
+        "1. DRAG cards from right panel",
+        "2. DROP on empty slots",
+        "3. Cards need BLOOD (cost)",
+        "4. Dead cards = +1 Blood",
+        "5. Click BATTLE to fight!",
         "",
-        "When your card dies, you gain +1 Blood",
+        "Cards attack automatically each turn.",
     }
     for i, line in ipairs(instructions) do
-        love.graphics.print(line, 400, 310 + (i - 1) * 25)
+        love.graphics.print(line, 380, 250 + (i - 1) * 28)
     end
 
     -- 开始按钮
-    love.graphics.setColor(0.3, 0.5, 0.3)
-    love.graphics.rectangle("fill", 450, 500, 200, 50, 8, 8)
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print(">> START GAME <<", 470, 515)
+    love.graphics.setColor(0.3, 0.45, 0.3)
+    love.graphics.rectangle("fill", 420, 480, 200, 50, 8, 8)
+    love.graphics.setColor(0.9, 0.85, 0.5)
+    love.graphics.print(">> START GAME <<", 445, 495)
 
-    -- 退出提示
     love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.print("Press ESC to Quit", 480, 580)
+    love.graphics.print("Press SPACE or click button to start", 370, 560)
 end
 
 function Menu.keypressed(key)
@@ -59,8 +58,7 @@ end
 function Menu.mousepressed(x, y, button)
     if button ~= 1 then return end
 
-    -- 点击开始按钮
-    if x >= 450 and x <= 650 and y >= 500 and y <= 550 then
+    if x >= 420 and x <= 620 and y >= 480 and y <= 530 then
         local State = require("core.state")
         State.switch("combat")
     end
