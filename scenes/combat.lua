@@ -8,6 +8,7 @@ local State = require("core.state")
 -- 战斗配置
 local BOARD_SLOTS = 4
 local PLAYER_MAX_HP = 15
+local MAX_BLOOD = 6  -- Blood上限
 
 -- 手牌区域（右侧）
 local HAND_X = 1100
@@ -89,7 +90,7 @@ function Combat.enter()
 
     battle.dragging = false
     battle.dragging_index = nil
-    battle.message = "Blood resets each turn. Right-click your card to SACRIFICE for blood!"
+    battle.message = "Turn 1 - Blood: 1/" .. MAX_BLOOD .. " | Right-click card to sacrifice for +1 blood!"
 end
 
 function Combat.exit()
@@ -200,11 +201,11 @@ function Combat.draw_player_board()
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("HP: " .. battle.player.hp .. "/" .. battle.player.max_hp, 55, 463)
 
-    -- Blood（红色数字，更醒目）
+    -- Blood（显示上限）
     love.graphics.setColor(0.9, 0.2, 0.2)
-    love.graphics.rectangle("fill", 220, 460, 120, 25)
+    love.graphics.rectangle("fill", 220, 460, 140, 25)
     love.graphics.setColor(1, 1, 0.5)
-    love.graphics.print("Blood: " .. battle.player.blood, 230, 463)
+    love.graphics.print("Blood: " .. battle.player.blood .. "/" .. MAX_BLOOD, 230, 463)
 
     -- 玩家格子
     for i = 1, BOARD_SLOTS do
@@ -366,10 +367,14 @@ function Combat.mousepressed(x, y, button)
             if x >= slot_x and x <= slot_x + CARD_WIDTH and y >= slot_y and y <= slot_y + CARD_HEIGHT then
                 local card = battle.player.board[i]
                 if card then
-                    -- 献祭：获得blood，移除卡牌
-                    battle.player.blood = battle.player.blood + 1
-                    battle.message = "Sacrificed " .. card.name .. " for +1 Blood!"
-                    battle.player.board[i] = nil
+                    -- 献祭：获得blood（有上限）
+                    if battle.player.blood < MAX_BLOOD then
+                        battle.player.blood = battle.player.blood + 1
+                        battle.message = "Sacrificed " .. card.name .. " for +1 Blood!"
+                        battle.player.board[i] = nil
+                    else
+                        battle.message = "Blood already at max (" .. MAX_BLOOD .. ")!"
+                    end
                     return
                 end
             end
@@ -513,17 +518,19 @@ function Combat.execute_battle()
         battle.phase = "result"
         battle.message = "DEFEAT! Click to retry."
     else
-        -- 下一回合：重置blood为1
+        -- 下一回合：Blood +1（有上限）
         battle.turn = battle.turn + 1
         battle.phase = "play"
-        battle.player.blood = 1  -- 每回合重置为1
+
+        -- 每回合+1 blood，最多MAX_BLOOD
+        battle.player.blood = math.min(battle.player.blood + 1, MAX_BLOOD)
 
         if #battle.hand < 3 then
             Combat.draw_cards(1)
         end
 
         Combat.enemy_play_card()
-        battle.message = "Turn " .. battle.turn .. " - Blood reset to 1. Sacrifice for more!"
+        battle.message = "Turn " .. battle.turn .. " - Blood: " .. battle.player.blood .. "/" .. MAX_BLOOD
     end
 end
 
