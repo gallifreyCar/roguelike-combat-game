@@ -115,6 +115,12 @@ end
 function Combat.exit()
 end
 
+-- 从奖励场景返回后继续下一关
+function Combat.resume()
+    battle.level = battle.level + 1
+    Combat.enter()
+end
+
 -- 抽牌（使用 Deck 模块）
 function Combat.draw_cards(n)
     Deck.draw_cards(n)
@@ -549,11 +555,14 @@ function Combat.mousepressed(x, y, button)
         if x >= btn_x and x <= btn_x + btn_w and y >= btn_y and y <= btn_y + btn_h then
             local max_levels = LevelData.get_max_levels()
             if battle.enemy.hp <= 0 and battle.level < max_levels then
-                -- 进入下一关
-                battle.level = battle.level + 1
+                -- 胜利：进入奖励场景
+                State.push("reward")
+            elseif battle.enemy.hp <= 0 then
+                -- 全部通关：显示胜利后重置
+                battle.level = 1
                 Combat.enter()
             else
-                -- 重新开始
+                -- 失败：重新开始
                 battle.level = 1
                 Combat.enter()
             end
