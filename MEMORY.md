@@ -29,10 +29,17 @@ type: project
 **问题描述**：
 - 设置无法保存/加载
 - 存档无法正常工作
+- UI图标/emoji加载不出来
 
 **修复内容**：
-- `systems/settings_manager.lua`: 改用 `love.filesystem` 替代 `io` 文件操作
-- `systems/save.lua`: 改用 `love.filesystem` 替代 `io` 文件操作
+1. **文件系统修复**：
+   - `systems/settings_manager.lua`: 改用 `love.filesystem` 替代 `io` 文件操作
+   - `systems/save.lua`: 改用 `love.filesystem` 替代 `io` 文件操作
+
+2. **图标/Emoji修复**：
+   - 替换所有emoji为ASCII等效文本
+   - ⚔ → [!], ♥ → HP:, 🗺 → [MAP], 🏆 → **, 等
+   - 原因：NotoSansSC字体不支持emoji字符
 
 **原因**：Love2D 沙盒环境限制 `io` 操作，必须使用 `love.filesystem` API
 
