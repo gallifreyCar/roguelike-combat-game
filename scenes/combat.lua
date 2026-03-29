@@ -392,7 +392,7 @@ function Combat.draw_card(card, x, y, is_player)
     -- 印记指示
     if card.sigils and #card.sigils > 0 then
         love.graphics.setColor(0.8, 0.6, 0.4)
-        Fonts.print("★" .. #card.sigils, x + 75, y + 110, 12)
+        Fonts.print("*" .. #card.sigils, x + 75, y + 110, 12)
     end
 
     -- 敌人意图显示（敌方卡牌）

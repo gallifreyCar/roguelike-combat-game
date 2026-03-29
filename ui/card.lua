@@ -59,7 +59,7 @@ function CardUI.draw_full(card, x, y, is_player, options)
     -- 印记图标（如有）
     if card.sigils and #card.sigils > 0 then
         love.graphics.setColor(Colors.sigil_text)
-        Fonts.print("★", x + 80, y + 8)
+        Fonts.print("*", x + 80, y + 8)
     end
 end
 

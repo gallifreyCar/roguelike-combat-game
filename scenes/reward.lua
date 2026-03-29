@@ -140,7 +140,7 @@ function Reward.draw()
         -- 印记
         if #choice.sigils > 0 then
             love.graphics.setColor(0.9, 0.7, 0.5)
-            local sigil_text = "★ " .. #choice.sigils .. " sigil(s)"
+            local sigil_text = "* " .. #choice.sigils .. " sigil(s)"
             Fonts.print(sigil_text, x + 15, y + 180, 12)
         end
 
