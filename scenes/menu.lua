@@ -52,7 +52,9 @@ end
 function Menu.keypressed(key)
     if key == "space" then
         local State = require("core.state")
-        State.switch("combat")
+        local Map = require("systems.map")
+        Map.generate()  -- 生成新地图
+        State.switch("map")
     end
 end
 
@@ -61,7 +63,9 @@ function Menu.mousepressed(x, y, button)
 
     if x >= 420 and x <= 620 and y >= 480 and y <= 530 then
         local State = require("core.state")
-        State.switch("combat")
+        local Map = require("systems.map")
+        Map.generate()  -- 生成新地图
+        State.switch("map")
     end
 end
 
