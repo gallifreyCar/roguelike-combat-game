@@ -315,40 +315,70 @@ function Combat.draw_hand_panel()
 end
 
 function Combat.draw_card(card, x, y, is_player)
-    -- 背景
-    if is_player then
-        love.graphics.setColor(0.22, 0.32, 0.22)
-    else
-        love.graphics.setColor(0.32, 0.22, 0.22)
-    end
-    love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
+    -- 卡牌阴影
+    love.graphics.setColor(0, 0, 0, 0.3)
+    love.graphics.rectangle("fill", x + 3, y + 3, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
-    -- 边框
-    love.graphics.setColor(0.5, 0.4, 0.25)
+    -- 背景（渐变效果）
+    if is_player then
+        love.graphics.setColor(0.15, 0.28, 0.15)
+        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
+        love.graphics.setColor(0.22, 0.35, 0.22)
+        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT * 0.7, 5, 5)
+    else
+        love.graphics.setColor(0.28, 0.15, 0.15)
+        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
+        love.graphics.setColor(0.35, 0.2, 0.18)
+        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT * 0.7, 5, 5)
+    end
+
+    -- 金色边框
+    love.graphics.setColor(0.6, 0.5, 0.3)
     love.graphics.rectangle("line", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
+    -- 卡牌头部区域
+    love.graphics.setColor(0.1, 0.15, 0.1)
+    love.graphics.rectangle("fill", x + 2, y + 2, CARD_WIDTH - 4, 25, 3, 3)
+
     -- 名称
+    love.graphics.setColor(1, 0.95, 0.85)
+    Fonts.print(card.name, x + 8, y + 6, 14)
+
+    -- Cost（红圈白字）
+    love.graphics.setColor(0.7, 0.25, 0.2)
+    love.graphics.circle("fill", x + 15, y + 45, 14)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print(card.name, x + 8, y + 8)
+    Fonts.print(tostring(card.cost), x + 11, y + 38, 14)
 
-    -- Cost
-    if card.cost then
-        love.graphics.setColor(0.9, 0.4, 0.3)
-        Fonts.print("Cost:" .. card.cost, x + 8, y + 28)
-    end
+    -- 属性图标和数值
+    -- 攻击力（剑图标）
+    love.graphics.setColor(1, 0.6, 0.2)
+    Fonts.print("⚔", x + 35, y + 50, 12)
+    Fonts.print(tostring(card.attack), x + 50, y + 50, 14)
 
-    -- 属性
-    love.graphics.setColor(1, 0.75, 0.3)
-    Fonts.print("ATK:" .. card.attack, x + 8, y + 50)
-    love.graphics.setColor(0.4, 0.8, 0.4)
-    Fonts.print("HP:" .. card.hp, x + 55, y + 50)
+    -- HP（心图标）
+    love.graphics.setColor(0.9, 0.3, 0.3)
+    Fonts.print("♥", x + 35, y + 70, 12)
+    Fonts.print(tostring(card.hp), x + 50, y + 70, 14)
 
     -- 血量条
-    love.graphics.setColor(0.2, 0.2, 0.2)
-    love.graphics.rectangle("fill", x + 8, y + 75, 84, 8)
-    love.graphics.setColor(0.3, 0.7, 0.3)
-    local hp_bar = (card.hp / card.max_hp) * 84
-    love.graphics.rectangle("fill", x + 8, y + 75, hp_bar, 8)
+    love.graphics.setColor(0.15, 0.15, 0.15)
+    love.graphics.rectangle("fill", x + 8, y + 95, 84, 10, 2, 2)
+    local hp_ratio = card.hp / (card.max_hp or card.hp)
+    if hp_ratio > 0.5 then
+        love.graphics.setColor(0.3, 0.7, 0.3)
+    elseif hp_ratio > 0.25 then
+        love.graphics.setColor(0.8, 0.7, 0.2)
+    else
+        love.graphics.setColor(0.8, 0.3, 0.3)
+    end
+    love.graphics.rectangle("fill", x + 8, y + 95, 84 * hp_ratio, 10, 2, 2)
+
+    -- 印记指示
+    if card.sigils and #card.sigils > 0 then
+        love.graphics.setColor(0.8, 0.6, 0.4)
+        Fonts.print("★" .. #card.sigils, x + 75, y + 110, 12)
+    end
 end
 
 function Combat.draw_card_small(card, x, y, hover)
