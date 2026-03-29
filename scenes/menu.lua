@@ -26,10 +26,10 @@ function Menu.draw()
 
     love.graphics.setColor(0.5, 0.5, 0.5)
     local instructions = {
-        "1. Select card from hand (Q/W/E/R/T)",
-        "2. Place on board (1-4)",
+        "1. Click card to select (or Q/W/E/R/T)",
+        "2. Click slot to place (or 1-4)",
         "3. Cards with cost need BLOOD (sacrifice your cards)",
-        "4. Press SPACE to start battle",
+        "4. Click BATTLE button to start (or SPACE)",
         "5. Cards attack automatically!",
         "",
         "When your card dies, you gain +1 Blood",
@@ -38,16 +38,29 @@ function Menu.draw()
         love.graphics.print(line, 400, 310 + (i - 1) * 25)
     end
 
-    -- 开始提示
-    love.graphics.setColor(0.8, 0.7, 0.4)
-    love.graphics.print("Press SPACE to Start", 480, 520)
+    -- 开始按钮
+    love.graphics.setColor(0.3, 0.5, 0.3)
+    love.graphics.rectangle("fill", 450, 500, 200, 50, 8, 8)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print(">> START GAME <<", 470, 515)
 
+    -- 退出提示
     love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.print("Press ESC to Quit", 500, 560)
+    love.graphics.print("Press ESC to Quit", 480, 580)
 end
 
 function Menu.keypressed(key)
     if key == "space" then
+        local State = require("core.state")
+        State.switch("combat")
+    end
+end
+
+function Menu.mousepressed(x, y, button)
+    if button ~= 1 then return end
+
+    -- 点击开始按钮
+    if x >= 450 and x <= 650 and y >= 500 and y <= 550 then
         local State = require("core.state")
         State.switch("combat")
     end

@@ -42,4 +42,7 @@ end
 function love.mousepressed(x, y, button)
     -- 鼠标事件
     Input.on_mouse_press(x, y, button)
+
+    -- 转发给当前状态
+    State.mousepressed(x, y, button)
 end

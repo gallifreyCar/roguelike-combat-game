@@ -83,4 +83,11 @@ function State.keypressed(key)
     end
 end
 
+-- 鼠标点击事件转发
+function State.mousepressed(x, y, button)
+    if State.current and State.current.mousepressed then
+        State.current.mousepressed(x, y, button)
+    end
+end
+
 return State

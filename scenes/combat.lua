@@ -282,8 +282,17 @@ function Combat.draw_status()
     }
     love.graphics.print(phase_text[battle.phase] or battle.phase, 50, 40)
 
+    -- 战斗按钮（放置阶段显示）
+    if battle.phase == "play" then
+        love.graphics.setColor(0.3, 0.5, 0.3)
+        love.graphics.rectangle("fill", 550, 280, 180, 40, 5, 5)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print(">> BATTLE <<", 580, 290)
+    end
+
     -- 操作提示
     love.graphics.setColor(0.5, 0.5, 0.5)
+    love.graphics.print("Click card to select, click slot to place", 50, 560)
     love.graphics.print("[1-4] Select slot  [Q-T] Select hand  [SPACE] Start battle  [R] Restart", 50, 580)
 end
 
@@ -318,6 +327,52 @@ function Combat.keypressed(key)
 
     -- 重新开始
     if key == "r" and battle.phase == "result" then
+        Combat.enter()
+    end
+end
+
+-- 鼠标点击处理
+function Combat.mousepressed(x, y, button)
+    if button ~= 1 then return end  -- 只处理左键
+
+    if battle.phase == "play" then
+        -- 检测点击手牌
+        for i = 1, #battle.hand do
+            local card_x = 50 + (i - 1) * 120
+            local card_y = 730
+            if x >= card_x and x <= card_x + 110 and y >= card_y and y <= card_y + 130 then
+                battle.selected_card = i
+                battle.message = "Selected: " .. battle.hand[i].name .. " - Click a slot to place"
+                return
+            end
+        end
+
+        -- 检测点击玩家格子
+        for i = 1, BOARD_SLOTS do
+            local slot_x = 200 + (i - 1) * 130
+            local slot_y = 350
+            if x >= slot_x and x <= slot_x + 110 and y >= slot_y and y <= slot_y + 140 then
+                if battle.selected_card and battle.hand[battle.selected_card] then
+                    if battle.player.board[i] == nil then
+                        Combat.place_card(battle.selected_card, i)
+                    else
+                        battle.message = "Slot " .. i .. " is occupied!"
+                    end
+                else
+                    battle.message = "Select a card from hand first!"
+                end
+                return
+            end
+        end
+
+        -- 检测点击战斗按钮
+        if x >= 550 and x <= 730 and y >= 280 and y <= 320 then
+            Combat.start_battle()
+            return
+        end
+
+    elseif battle.phase == "result" then
+        -- 点击任意位置重新开始
         Combat.enter()
     end
 end
