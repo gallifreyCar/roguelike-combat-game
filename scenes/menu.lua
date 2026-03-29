@@ -1,3 +1,4 @@
+local Fonts = require("core.fonts")
 -- scenes/menu.lua - 主菜单场景
 
 local Menu = {}
@@ -16,13 +17,13 @@ function Menu.draw()
 
     -- 标题
     love.graphics.setColor(0.7, 0.55, 0.3)
-    love.graphics.print("CARD SACRIFICE", 440, 100)
+    Fonts.print("CARD SACRIFICE", 440, 100)
     love.graphics.setColor(0.45, 0.4, 0.3)
-    love.graphics.print("A Roguelike Auto-Battler", 420, 140)
+    Fonts.print("A Roguelike Auto-Battler", 420, 140)
 
     -- 说明
     love.graphics.setColor(0.7, 0.65, 0.5)
-    love.graphics.print("HOW TO PLAY:", 420, 220)
+    Fonts.print("HOW TO PLAY:", 420, 220)
 
     love.graphics.setColor(0.55, 0.5, 0.45)
     local instructions = {
@@ -35,17 +36,17 @@ function Menu.draw()
         "Cards attack automatically each turn.",
     }
     for i, line in ipairs(instructions) do
-        love.graphics.print(line, 380, 250 + (i - 1) * 28)
+        Fonts.print(line, 380, 250 + (i - 1) * 28)
     end
 
     -- 开始按钮
     love.graphics.setColor(0.3, 0.45, 0.3)
     love.graphics.rectangle("fill", 420, 480, 200, 50, 8, 8)
     love.graphics.setColor(0.9, 0.85, 0.5)
-    love.graphics.print(">> START GAME <<", 445, 495)
+    Fonts.print(">> START GAME <<", 445, 495)
 
     love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.print("Press SPACE or click button to start", 370, 560)
+    Fonts.print("Press SPACE or click button to start", 370, 560)
 end
 
 function Menu.keypressed(key)

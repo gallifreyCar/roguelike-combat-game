@@ -2,8 +2,13 @@
 
 local State = require("core.state")
 local Input = require("core.input")
+local Fonts = require("core.fonts")
 
 function love.load()
+    -- 初始化字体（支持中文）
+    Fonts.init()
+
+    -- 初始化状态机
     State.init()
     State.switch("menu")
 end
