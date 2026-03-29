@@ -1,5 +1,5 @@
 -- scenes/combat.lua - 战斗场景
--- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统 + 特效系统
+-- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统 + 特效系统 + 敌人意图
 
 local Combat = {}
 local CardData = require("data.cards")
@@ -10,6 +10,7 @@ local Deck = require("systems.deck")
 local Settings = require("config.settings")
 local Sigils = require("systems.sigils")
 local Effects = require("systems.effects")
+local Enemy = require("systems.enemy")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -144,8 +145,22 @@ function Combat.spawn_level_enemies()
                 attack = template.attack,
                 hp = template.hp,
                 max_hp = template.hp,
+                -- 敌人意图
+                intent = Combat.roll_enemy_intent(),
             }
         end
+    end
+end
+
+-- 随机敌人意图
+function Combat.roll_enemy_intent()
+    local roll = love.math.random()
+    if roll < 0.6 then
+        return {type = "attack", value = love.math.random(2, 4)}
+    elseif roll < 0.85 then
+        return {type = "defend", value = love.math.random(2, 3)}
+    else
+        return {type = "buff", value = 1}
     end
 end
 
@@ -378,6 +393,32 @@ function Combat.draw_card(card, x, y, is_player)
     if card.sigils and #card.sigils > 0 then
         love.graphics.setColor(0.8, 0.6, 0.4)
         Fonts.print("★" .. #card.sigils, x + 75, y + 110, 12)
+    end
+
+    -- 敌人意图显示（敌方卡牌）
+    if not is_player and card.intent then
+        local intent = card.intent
+        local intent_text, intent_color
+
+        if intent.type == "attack" then
+            intent_text = "⚔" .. intent.value
+            intent_color = {1, 0.3, 0.3}
+        elseif intent.type == "defend" then
+            intent_text = "🛡" .. intent.value
+            intent_color = {0.3, 0.6, 1}
+        elseif intent.type == "buff" then
+            intent_text = "↑"
+            intent_color = {1, 0.8, 0.3}
+        else
+            intent_text = "?"
+            intent_color = {0.7, 0.7, 0.7}
+        end
+
+        -- 意图背景
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.8)
+        love.graphics.rectangle("fill", x + CARD_WIDTH - 35, y + 2, 32, 18, 3, 3)
+        love.graphics.setColor(intent_color[1], intent_color[2], intent_color[3])
+        Fonts.print(intent_text, x + CARD_WIDTH - 32, y + 4, 12)
     end
 end
 
@@ -837,6 +878,7 @@ function Combat.enemy_play_card()
                 attack = template.attack,
                 hp = template.hp,
                 max_hp = template.hp,
+                intent = Combat.roll_enemy_intent(),  -- 添加意图
             }
         end
     end
