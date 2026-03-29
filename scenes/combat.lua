@@ -1,5 +1,5 @@
 -- scenes/combat.lua - 战斗场景（邪恶冥刻风格）
--- 卡牌放置 + 自动攻击 + 拖拽功能
+-- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统
 
 local Combat = {}
 local CardData = require("data.cards")
@@ -7,7 +7,7 @@ local State = require("core.state")
 
 -- 战斗配置
 local BOARD_SLOTS = 4
-local PLAYER_MAX_HP = 10
+local PLAYER_MAX_HP = 15
 
 -- 手牌区域（右侧）
 local HAND_X = 1100
@@ -23,13 +23,14 @@ local battle = {
     player = {
         hp = PLAYER_MAX_HP,
         max_hp = PLAYER_MAX_HP,
-        blood = 0,
+        blood = 1,        -- 当前blood
+        max_blood = 1,    -- 本回合最大blood（每回合重置为1）
         board = {},
     },
 
     enemy = {
-        hp = 10,
-        max_hp = 10,
+        hp = 12,
+        max_hp = 12,
         board = {},
     },
 
@@ -55,36 +56,40 @@ function Combat.enter()
     battle.turn = 1
     battle.phase = "play"
     battle.player.hp = PLAYER_MAX_HP
-    battle.player.blood = 1  -- 初始给1点blood
     battle.player.max_hp = PLAYER_MAX_HP
-    battle.enemy.hp = 10
-    battle.enemy.max_hp = 10
+    battle.player.blood = 1
+    battle.player.max_blood = 1
+    battle.enemy.hp = 12
+    battle.enemy.max_hp = 12
 
     init_board(battle.player.board)
     init_board(battle.enemy.board)
 
     battle.hand = {}
-    -- 第一张牌必定是免费的Squirrel
-    local squirrel = CardData.cards["squirrel"]
-    if squirrel then
-        battle.hand[#battle.hand + 1] = {
-            id = squirrel.id,
-            name = squirrel.name,
-            cost = squirrel.cost,
-            attack = squirrel.attack,
-            hp = squirrel.hp,
-            max_hp = squirrel.hp,
-            sigils = squirrel.sigils or {},
-        }
+
+    -- 第一回合给2张Squirrel（免费献祭材料）
+    for i = 1, 2 do
+        local squirrel = CardData.cards["squirrel"]
+        if squirrel then
+            battle.hand[#battle.hand + 1] = {
+                id = squirrel.id,
+                name = squirrel.name,
+                cost = squirrel.cost,
+                attack = squirrel.attack,
+                hp = squirrel.hp,
+                max_hp = squirrel.hp,
+                sigils = squirrel.sigils or {},
+            }
+        end
     end
-    -- 再随机抽2张
-    Combat.draw_cards(2)
+    -- 再随机抽1张
+    Combat.draw_cards(1)
 
     Combat.spawn_enemy_cards()
 
     battle.dragging = false
     battle.dragging_index = nil
-    battle.message = "Drag cards from right panel to your slots!"
+    battle.message = "Blood resets each turn. Right-click your card to SACRIFICE for blood!"
 end
 
 function Combat.exit()
@@ -93,9 +98,9 @@ end
 function Combat.draw_cards(n)
     local card_types = {"squirrel", "stoat", "wolf", "bullfrog", "raven"}
     for i = 1, n do
-        -- 30%概率抽到免费的squirrel
+        -- 40%概率抽到免费的squirrel
         local id
-        if love.math.random() < 0.3 then
+        if love.math.random() < 0.4 then
             id = "squirrel"
         else
             id = card_types[love.math.random(#card_types)]
@@ -116,9 +121,9 @@ function Combat.draw_cards(n)
 end
 
 function Combat.spawn_enemy_cards()
+    -- 第一回合只放1个弱敌
     local enemy_cards = {
-        {id = "stoat", slot = 1},
-        {id = "wolf", slot = 3},
+        {id = "stoat", slot = 2},
     }
 
     for _, ec in ipairs(enemy_cards) do
@@ -146,7 +151,7 @@ function Combat.draw()
     Combat.draw_hand_panel()
     Combat.draw_status()
 
-    -- 绘制正在拖拽的卡牌（最后绘制，在最上层）
+    -- 绘制正在拖拽的卡牌
     if battle.dragging and battle.hand[battle.dragging_index] then
         Combat.draw_card(battle.hand[battle.dragging_index],
                          battle.drag_x - battle.drag_offset_x,
@@ -156,7 +161,7 @@ function Combat.draw()
 
     if battle.message then
         love.graphics.setColor(0.9, 0.8, 0.6)
-        love.graphics.print(battle.message, 300, 50)
+        love.graphics.print(battle.message, 250, 50)
     end
 end
 
@@ -186,25 +191,27 @@ function Combat.draw_enemy_area()
 end
 
 function Combat.draw_player_board()
-    -- 玩家HP和Blood
+    -- 玩家HP
     love.graphics.setColor(0.15, 0.15, 0.35)
-    love.graphics.rectangle("fill", 50, 460, 180, 25)
+    love.graphics.rectangle("fill", 50, 460, 150, 25)
     love.graphics.setColor(0.2, 0.4, 0.7)
-    local hp_w = (battle.player.hp / battle.player.max_hp) * 180
+    local hp_w = (battle.player.hp / battle.player.max_hp) * 150
     love.graphics.rectangle("fill", 50, 460, hp_w, 25)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("You: " .. battle.player.hp .. "/" .. battle.player.max_hp, 55, 463)
+    love.graphics.print("HP: " .. battle.player.hp .. "/" .. battle.player.max_hp, 55, 463)
 
-    -- Blood
-    love.graphics.setColor(0.6, 0.15, 0.15)
-    love.graphics.print("Blood: " .. battle.player.blood, 250, 463)
+    -- Blood（红色数字，更醒目）
+    love.graphics.setColor(0.9, 0.2, 0.2)
+    love.graphics.rectangle("fill", 220, 460, 120, 25)
+    love.graphics.setColor(1, 1, 0.5)
+    love.graphics.print("Blood: " .. battle.player.blood, 230, 463)
 
     -- 玩家格子
     for i = 1, BOARD_SLOTS do
         local x = 150 + (i - 1) * 130
         local y = 280
 
-        -- 格子高亮（拖拽悬停时）
+        -- 格子高亮
         if battle.dragging then
             local mx, my = love.mouse.getPosition()
             if mx >= x and mx <= x + CARD_WIDTH and my >= y and my <= y + CARD_HEIGHT then
@@ -228,12 +235,15 @@ function Combat.draw_player_board()
         local card = battle.player.board[i]
         if card then
             Combat.draw_card(card, x, y, true)
+            -- 提示可以献祭
+            love.graphics.setColor(0.6, 0.5, 0.3)
+            love.graphics.print("右键献祭", x + 15, y + 115)
         end
     end
 end
 
 function Combat.draw_hand_panel()
-    -- 右侧手牌面板背景
+    -- 右侧手牌面板
     love.graphics.setColor(0.1, 0.08, 0.06)
     love.graphics.rectangle("fill", 1070, 50, 180, 500, 8, 8)
 
@@ -241,14 +251,11 @@ function Combat.draw_hand_panel()
     love.graphics.print("YOUR HAND", 1095, 60)
     love.graphics.print("(" .. #battle.hand .. " cards)", 1100, 80)
 
-    -- 绘制手牌（垂直排列）
     for i, card in ipairs(battle.hand) do
         local x = HAND_X
         local y = HAND_Y + (i - 1) * 90
 
-        -- 跳过正在拖拽的卡
         if not (battle.dragging and battle.dragging_index == i) then
-            -- 检查鼠标悬停
             local mx, my = love.mouse.getPosition()
             local hover = mx >= x and mx <= x + CARD_WIDTH and my >= y and my <= y + 80
 
@@ -274,9 +281,9 @@ function Combat.draw_card(card, x, y, is_player)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(card.name, x + 8, y + 8)
 
-    -- Cost (只有玩家卡牌有)
+    -- Cost
     if card.cost then
-        love.graphics.setColor(0.7, 0.25, 0.25)
+        love.graphics.setColor(0.9, 0.4, 0.3)
         love.graphics.print("Cost:" .. card.cost, x + 8, y + 28)
     end
 
@@ -295,7 +302,6 @@ function Combat.draw_card(card, x, y, is_player)
 end
 
 function Combat.draw_card_small(card, x, y, hover)
-    -- 小卡牌（手牌列表用）
     if hover then
         love.graphics.setColor(0.35, 0.45, 0.35)
     else
@@ -309,7 +315,8 @@ function Combat.draw_card_small(card, x, y, hover)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(card.name, x + 5, y + 5)
 
-    love.graphics.setColor(0.7, 0.25, 0.25)
+    -- Cost用红色突出
+    love.graphics.setColor(0.9, 0.3, 0.3)
     love.graphics.print("$" .. card.cost, x + 5, y + 25)
 
     love.graphics.setColor(1, 0.75, 0.3)
@@ -327,19 +334,16 @@ function Combat.draw_status()
     love.graphics.setColor(0.5, 0.5, 0.5)
     love.graphics.print("Turn " .. battle.turn, 50, 50)
 
-    local phase_text = {
-        play = "Place cards then click BATTLE",
-        battle = "Fighting...",
-        result = "Game Over",
-    }
-    love.graphics.print(phase_text[battle.phase] or "", 50, 70)
+    -- 操作提示
+    love.graphics.setColor(0.6, 0.55, 0.45)
+    love.graphics.print("Left-click: drag card  |  Right-click: sacrifice for blood", 250, 490)
 
     -- 战斗按钮
     if battle.phase == "play" then
-        love.graphics.setColor(0.25, 0.4, 0.25)
-        love.graphics.rectangle("fill", 400, 430, 150, 40, 5, 5)
+        love.graphics.setColor(0.25, 0.45, 0.25)
+        love.graphics.rectangle("fill", 350, 430, 180, 45, 5, 5)
         love.graphics.setColor(0.9, 0.85, 0.5)
-        love.graphics.print(">> BATTLE <<", 430, 442)
+        love.graphics.print(">> BATTLE <<", 390, 445)
     end
 end
 
@@ -353,6 +357,25 @@ function Combat.keypressed(key)
 end
 
 function Combat.mousepressed(x, y, button)
+    -- 右键献祭场上的牌
+    if button == 2 and battle.phase == "play" then
+        for i = 1, BOARD_SLOTS do
+            local slot_x = 150 + (i - 1) * 130
+            local slot_y = 280
+
+            if x >= slot_x and x <= slot_x + CARD_WIDTH and y >= slot_y and y <= slot_y + CARD_HEIGHT then
+                local card = battle.player.board[i]
+                if card then
+                    -- 献祭：获得blood，移除卡牌
+                    battle.player.blood = battle.player.blood + 1
+                    battle.message = "Sacrificed " .. card.name .. " for +1 Blood!"
+                    battle.player.board[i] = nil
+                    return
+                end
+            end
+        end
+    end
+
     if button ~= 1 then return end
 
     if battle.phase == "play" then
@@ -368,13 +391,13 @@ function Combat.mousepressed(x, y, button)
                 battle.drag_y = y
                 battle.drag_offset_x = x - card_x
                 battle.drag_offset_y = y - card_y
-                battle.message = "Dragging " .. battle.hand[i].name .. " - drop on a slot!"
+                battle.message = "Dragging " .. battle.hand[i].name
                 return
             end
         end
 
         -- 检测点击战斗按钮
-        if x >= 400 and x <= 550 and y >= 430 and y <= 470 then
+        if x >= 350 and x <= 530 and y >= 430 and y <= 475 then
             Combat.start_battle()
             return
         end
@@ -395,7 +418,6 @@ function Combat.mousereleased(x, y, button)
     if button ~= 1 then return end
 
     if battle.dragging and battle.dragging_index then
-        -- 检测放到哪个格子
         for i = 1, BOARD_SLOTS do
             local slot_x = 150 + (i - 1) * 130
             local slot_y = 280
@@ -404,7 +426,7 @@ function Combat.mousereleased(x, y, button)
                 if battle.player.board[i] == nil then
                     Combat.place_card(battle.dragging_index, i)
                 else
-                    battle.message = "Slot " .. i .. " is occupied!"
+                    battle.message = "Slot occupied! Sacrifice first with RIGHT-click."
                 end
                 break
             end
@@ -420,7 +442,7 @@ function Combat.place_card(hand_index, slot)
     if not card then return end
 
     if card.cost > battle.player.blood then
-        battle.message = "Need " .. card.cost .. " Blood! Your cards must die first."
+        battle.message = "Need " .. card.cost .. " Blood! Right-click a card to sacrifice."
         return
     end
 
@@ -436,7 +458,7 @@ function Combat.place_card(hand_index, slot)
     }
 
     table.remove(battle.hand, hand_index)
-    battle.message = card.name .. " placed! (-" .. card.cost .. " Blood)"
+    battle.message = card.name .. " placed!"
 end
 
 function Combat.start_battle()
@@ -473,10 +495,9 @@ function Combat.execute_battle()
         end
     end
 
-    -- 清理死亡
+    -- 清理死亡（玩家卡死亡不给blood，因为回合结束重置）
     for i = 1, BOARD_SLOTS do
         if battle.player.board[i] and battle.player.board[i].hp <= 0 then
-            battle.player.blood = battle.player.blood + 1
             battle.player.board[i] = nil
         end
         if battle.enemy.board[i] and battle.enemy.board[i].hp <= 0 then
@@ -492,15 +513,17 @@ function Combat.execute_battle()
         battle.phase = "result"
         battle.message = "DEFEAT! Click to retry."
     else
+        -- 下一回合：重置blood为1
         battle.turn = battle.turn + 1
         battle.phase = "play"
+        battle.player.blood = 1  -- 每回合重置为1
 
         if #battle.hand < 3 then
             Combat.draw_cards(1)
         end
 
         Combat.enemy_play_card()
-        battle.message = "Turn " .. battle.turn .. " - Drag cards to fight!"
+        battle.message = "Turn " .. battle.turn .. " - Blood reset to 1. Sacrifice for more!"
     end
 end
 
@@ -514,7 +537,7 @@ function Combat.enemy_play_card()
 
     if #empty_slots > 0 then
         local slot = empty_slots[love.math.random(#empty_slots)]
-        local card_types = {"stoat", "wolf", "bullfrog"}
+        local card_types = {"stoat", "wolf"}
         local id = card_types[love.math.random(#card_types)]
         local template = CardData.cards[id]
 
