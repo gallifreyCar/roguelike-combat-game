@@ -18,6 +18,7 @@ function State.init()
     State.register("reward", require("scenes.reward"))
     State.register("fusion", require("scenes.fusion"))
     State.register("map", require("scenes.map"))
+    State.register("settings", require("scenes.settings"))
 end
 
 function State.switch(name)
