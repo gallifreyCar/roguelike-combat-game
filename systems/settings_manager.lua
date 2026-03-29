@@ -1,4 +1,4 @@
--- systems/settings.lua - 游戏设置管理
+-- systems/settings_manager.lua - 游戏设置管理
 -- 持久化设置：音量、语言、游戏选项
 
 local SettingsManager = {}
@@ -27,28 +27,29 @@ local default_settings = {
 local current_settings = {}
 
 -- 设置文件路径
-local settings_file = "save/settings.json"
+local settings_file = "settings.json"
 
 -- 加载设置
 function SettingsManager.load()
-    -- 尝试读取设置文件
-    local file = io.open(settings_file, "r")
-    if file then
-        local content = file:read("*all")
-        file:close()
+    -- 使用love.filesystem读取
+    if love.filesystem.getInfo(settings_file) then
+        local content = love.filesystem.read(settings_file)
+        if content then
+            -- 解析JSON（简单实现）
+            local success, settings = pcall(function()
+                return load("return " .. content:gsub("'", '"'))()
+            end)
 
-        -- 解析JSON（简单实现）
-        local success, settings = pcall(function()
-            return load("return " .. content:gsub("'", '"'))()
-        end)
-
-        if success and type(settings) == "table" then
-            current_settings = settings
-            -- 填充缺失的默认值
-            for key, value in pairs(default_settings) do
-                if current_settings[key] == nil then
-                    current_settings[key] = value
+            if success and type(settings) == "table" then
+                current_settings = settings
+                -- 填充缺失的默认值
+                for key, value in pairs(default_settings) do
+                    if current_settings[key] == nil then
+                        current_settings[key] = value
+                    end
                 end
+            else
+                current_settings = SettingsManager.reset()
             end
         else
             current_settings = SettingsManager.reset()
@@ -62,37 +63,33 @@ end
 
 -- 保存设置
 function SettingsManager.save()
-    local file = io.open(settings_file, "w")
-    if file then
-        -- 简单JSON序列化
-        local function serialize(t, indent)
-            indent = indent or ""
-            local result = "{\n"
-            for k, v in pairs(t) do
-                result = result .. indent .. "  "
-                if type(k) == "string" then
-                    result = result .. '"' .. k .. '": '
-                end
-                if type(v) == "string" then
-                    result = result .. '"' .. v .. '"'
-                elseif type(v) == "number" then
-                    result = result .. tostring(v)
-                elseif type(v) == "boolean" then
-                    result = result .. tostring(v)
-                elseif type(v) == "table" then
-                    result = result .. serialize(v, indent .. "  ")
-                end
-                result = result .. ",\n"
+    -- 简单JSON序列化
+    local function serialize(t, indent)
+        indent = indent or ""
+        local result = "{\n"
+        for k, v in pairs(t) do
+            result = result .. indent .. "  "
+            if type(k) == "string" then
+                result = result .. '["' .. k .. '"] = '
             end
-            result = result .. indent .. "}"
-            return result
+            if type(v) == "string" then
+                result = result .. '"' .. v .. '"'
+            elseif type(v) == "number" then
+                result = result .. tostring(v)
+            elseif type(v) == "boolean" then
+                result = result .. tostring(v)
+            elseif type(v) == "table" then
+                result = result .. serialize(v, indent .. "  ")
+            end
+            result = result .. ",\n"
         end
-
-        file:write(serialize(current_settings))
-        file:close()
-        return true
+        result = result .. indent .. "}"
+        return result
     end
-    return false
+
+    local content = "return " .. serialize(current_settings)
+    love.filesystem.write(settings_file, content)
+    return true
 end
 
 -- 获取设置值

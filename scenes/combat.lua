@@ -207,7 +207,7 @@ function Combat.draw()
     local level_info = LevelData.get_level(battle.level)
     local level_name = level_info and level_info.name or "Level " .. battle.level
     love.graphics.setColor(0.8, 0.7, 0.5)
-    Fonts.print("⚔ " .. level_name .. " ⚔", 450, 12, 18)
+    Fonts.print(">> " .. level_name .. " <<", 450, 12, 18)
 
     -- 分隔线
     love.graphics.setColor(0.25, 0.2, 0.15)
@@ -366,15 +366,15 @@ function Combat.draw_card(card, x, y, is_player)
     Fonts.print(tostring(card.cost), x + 11, y + 38, 14)
 
     -- 属性图标和数值
-    -- 攻击力（剑图标）
+    -- 攻击力
     love.graphics.setColor(1, 0.6, 0.2)
-    Fonts.print("⚔", x + 35, y + 50, 12)
-    Fonts.print(tostring(card.attack), x + 50, y + 50, 14)
+    Fonts.print("ATK:", x + 8, y + 50, 11)
+    Fonts.print(tostring(card.attack), x + 40, y + 50, 14)
 
-    -- HP（心图标）
+    -- HP
     love.graphics.setColor(0.9, 0.3, 0.3)
-    Fonts.print("♥", x + 35, y + 70, 12)
-    Fonts.print(tostring(card.hp), x + 50, y + 70, 14)
+    Fonts.print("HP:", x + 55, y + 50, 11)
+    Fonts.print(tostring(card.hp), x + 78, y + 50, 14)
 
     -- 血量条
     love.graphics.setColor(0.15, 0.15, 0.15)
@@ -401,13 +401,13 @@ function Combat.draw_card(card, x, y, is_player)
         local intent_text, intent_color
 
         if intent.type == "attack" then
-            intent_text = "⚔" .. intent.value
+            intent_text = "ATK:" .. intent.value
             intent_color = {1, 0.3, 0.3}
         elseif intent.type == "defend" then
-            intent_text = "🛡" .. intent.value
+            intent_text = "DEF:" .. intent.value
             intent_color = {0.3, 0.6, 1}
         elseif intent.type == "buff" then
-            intent_text = "↑"
+            intent_text = "BUF"
             intent_color = {1, 0.8, 0.3}
         else
             intent_text = "?"
@@ -522,7 +522,7 @@ function Combat.draw_battle_button()
 
         -- 文字
         love.graphics.setColor(1, 0.95, 0.7)
-        Fonts.print("⚔ BATTLE ⚔", btn_x + 35, btn_y + 18, 18)
+        Fonts.print(">> BATTLE <<", btn_x + 30, btn_y + 18, 18)
 
         -- 快捷键提示
         love.graphics.setColor(0.6, 0.6, 0.5)
@@ -545,7 +545,7 @@ function Combat.draw_battle_button()
             love.graphics.setColor(0.4, 0.6, 0.4)
             love.graphics.rectangle("fill", btn_x - 20, btn_y, btn_w + 40, btn_h, 8, 8)
             love.graphics.setColor(1, 1, 0.8)
-            Fonts.print("🏆 VICTORY! 🏆", btn_x + 10, btn_y + 18, 18)
+            Fonts.print("VICTORY!", btn_x + 30, btn_y + 18, 18)
         else
             love.graphics.setColor(0.5, 0.3, 0.3)
             love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)

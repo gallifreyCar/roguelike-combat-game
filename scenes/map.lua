@@ -46,7 +46,7 @@ function MapScene.draw()
     love.graphics.setColor(0.3, 0.4, 0.5)
     love.graphics.rectangle("fill", 450, 20, 250, 40, 6, 6)
     love.graphics.setColor(1, 0.9, 0.8)
-    Fonts.print("🗺 MAP 🗺", 530, 28, 18)
+    Fonts.print("[ MAP ]", 530, 28, 18)
 
     local map_data = Map.get_map()
     local current_row = Map.get_current_row()
@@ -94,7 +94,7 @@ function MapScene.draw()
             -- 已完成标记
             if node.completed then
                 love.graphics.setColor(0.5, 0.8, 0.5)
-                Fonts.print("✓", x + 80, y + 5, 14)
+                Fonts.print("[OK]", x + 65, y + 5, 12)
             end
         end
     end

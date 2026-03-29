@@ -4,7 +4,7 @@
 local Save = {}
 
 -- 存档文件路径
-local SAVE_FILE = "save/game_save.json"
+local SAVE_FILE = "game_save.lua"
 
 -- 存档数据结构
 local save_data = {
@@ -69,30 +69,31 @@ function Save.save(player_data, deck_data, map_data)
     save_data.deck = deck_data or save_data.deck
     save_data.map = map_data or save_data.map
 
-    local file = io.open(SAVE_FILE, "w")
-    if file then
-        file:write("return " .. serialize(save_data))
-        file:close()
+    local content = "return " .. serialize(save_data)
+    local success, err = pcall(function()
+        love.filesystem.write(SAVE_FILE, content)
+    end)
+
+    if success then
         print("Game saved successfully!")
         return true
+    else
+        print("Failed to save game: " .. tostring(err))
+        return false
     end
-
-    print("Failed to save game!")
-    return false
 end
 
 -- 加载游戏
 function Save.load()
-    local file = io.open(SAVE_FILE, "r")
-    if file then
-        local content = file:read("*all")
-        file:close()
-
-        local success, data = pcall(load(content))
-        if success and type(data) == "table" then
-            save_data = data
-            print("Game loaded successfully!")
-            return save_data
+    if love.filesystem.getInfo(SAVE_FILE) then
+        local content = love.filesystem.read(SAVE_FILE)
+        if content then
+            local success, data = pcall(load(content))
+            if success and type(data) == "table" then
+                save_data = data
+                print("Game loaded successfully!")
+                return save_data
+            end
         end
     end
 
@@ -102,17 +103,12 @@ end
 
 -- 检查存档是否存在
 function Save.exists()
-    local file = io.open(SAVE_FILE, "r")
-    if file then
-        file:close()
-        return true
-    end
-    return false
+    return love.filesystem.getInfo(SAVE_FILE) ~= nil
 end
 
 -- 删除存档
 function Save.delete()
-    os.remove(SAVE_FILE)
+    love.filesystem.remove(SAVE_FILE)
     save_data = {
         version = 1,
         timestamp = 0,

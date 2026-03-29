@@ -9,19 +9,19 @@ local ACHIEVEMENTS = {
     first_blood = {
         name = "First Blood",
         desc = "Win your first battle",
-        icon = "⚔",
+        icon = "*",
         unlocked = false,
     },
     veteran = {
         name = "Veteran",
         desc = "Win 10 battles",
-        icon = "🏆",
+        icon = "**",
         unlocked = false,
     },
     slayer = {
         name = "Slayer",
         desc = "Defeat 50 enemies",
-        icon = "💀",
+        icon = "***",
         unlocked = false,
     },
 
@@ -29,13 +29,13 @@ local ACHIEVEMENTS = {
     collector = {
         name = "Collector",
         desc = "Have 20 cards in your deck",
-        icon = "📚",
+        icon = "[D]",
         unlocked = false,
     },
     fusion_master = {
         name = "Fusion Master",
         desc = "Fuse 5 cards",
-        icon = "⚗",
+        icon = "[F]",
         unlocked = false,
     },
 
@@ -43,13 +43,13 @@ local ACHIEVEMENTS = {
     explorer = {
         name = "Explorer",
         desc = "Complete 5 map floors",
-        icon = "🗺",
+        icon = "[M]",
         unlocked = false,
     },
     boss_slayer = {
         name = "Boss Slayer",
         desc = "Defeat the final boss",
-        icon = "👑",
+        icon = "[B]",
         unlocked = false,
     },
 

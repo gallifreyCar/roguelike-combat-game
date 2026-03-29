@@ -100,7 +100,7 @@ function SettingsScene.draw()
 
     -- 操作提示
     love.graphics.setColor(0.5, 0.5, 0.5)
-    Fonts.print("↑↓ Select  |  ←→ Change  |  Enter Toggle", 400, 620, 12)
+    Fonts.print("UP/DOWN Select  |  LEFT/RIGHT Change  |  Enter Toggle", 380, 620, 12)
 end
 
 function SettingsScene.keypressed(key)

@@ -49,7 +49,7 @@ function Menu.draw()
     love.graphics.setColor(0.35, 0.35, 0.4)
     love.graphics.rectangle("fill", 420, 500, 200, 40, 6, 6)
     love.graphics.setColor(0.8, 0.8, 0.85)
-    Fonts.print("⚙ SETTINGS", 470, 510)
+    Fonts.print("[ SETTINGS ]", 450, 510)
 
     love.graphics.setColor(0.4, 0.4, 0.4)
     Fonts.print("Press SPACE to start, S for settings", 390, 570)

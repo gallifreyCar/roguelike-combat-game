@@ -84,7 +84,7 @@ function Reward.draw()
     love.graphics.setColor(0.2, 0.4, 0.2)
     love.graphics.rectangle("fill", 420, 40, 280, 60, 8, 8)
     love.graphics.setColor(1, 0.9, 0.5)
-    Fonts.print("⚔ VICTORY REWARD ⚔", 450, 55, 20)
+    Fonts.print(">> VICTORY REWARD <<", 450, 55, 20)
 
     love.graphics.setColor(0.7, 0.65, 0.5)
     Fonts.print("Choose a card to add to your deck", 440, 120, 14)
