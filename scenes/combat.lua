@@ -1,5 +1,5 @@
 -- scenes/combat.lua - 战斗场景
--- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统
+-- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统 + 特效系统
 
 local Combat = {}
 local CardData = require("data.cards")
@@ -9,6 +9,7 @@ local Fonts = require("core.fonts")
 local Deck = require("systems.deck")
 local Settings = require("config.settings")
 local Sigils = require("systems.sigils")
+local Effects = require("systems.effects")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -171,6 +172,9 @@ function Combat.update(dt)
             table.remove(battle.combat_log, i)
         end
     end
+
+    -- 更新特效
+    Effects.update(dt)
 end
 
 function Combat.draw()
@@ -210,6 +214,9 @@ function Combat.draw()
         love.graphics.setColor(0.9, 0.8, 0.6)
         Fonts.print(battle.message, 300, 60)
     end
+
+    -- 绘制特效
+    Effects.draw()
 end
 
 function Combat.draw_enemy_area()
@@ -624,11 +631,19 @@ function Combat.execute_battle()
             local enemy_card = battle.enemy.board[i]
             local attack_count = Sigils.get_attack_count(card)
 
+            -- 计算卡牌位置
+            local card_x = 150 + (i - 1) * 130
+            local enemy_x = 150 + (i - 1) * 130
+
             for _ = 1, attack_count do
                 if enemy_card and enemy_card.hp > 0 then
                     local dmg = card.attack
                     enemy_card.hp = enemy_card.hp - dmg
                     add_log(card.name .. " → " .. enemy_card.name .. " (-" .. dmg .. " HP)")
+
+                    -- 伤害数字特效
+                    Effects.damage(dmg, enemy_x + 50, UI_ENEMY_AREA_Y + 30)
+                    Effects.attack_flash(enemy_x, UI_ENEMY_AREA_Y, CARD_WIDTH, CARD_HEIGHT)
 
                     -- 处理毒印记
                     if Sigils.has(card, "poison") then
@@ -640,6 +655,9 @@ function Combat.execute_battle()
                         local dmg = card.attack
                         battle.enemy.hp = battle.enemy.hp - dmg
                         add_log(card.name .. " → Enemy (-" .. dmg .. " HP)")
+
+                        -- 敌方HP伤害数字
+                        Effects.damage(dmg, 1100, 20)
                     end
                 end
             end
@@ -651,6 +669,10 @@ function Combat.execute_battle()
         local card = battle.enemy.board[i]
         if card and card.hp > 0 then
             local player_card = battle.player.board[i]
+
+            -- 计算卡牌位置
+            local card_x = 150 + (i - 1) * 130
+
             if player_card and player_card.hp > 0 then
                 local dmg = card.attack
                 -- 恶臭减攻击
@@ -659,10 +681,17 @@ function Combat.execute_battle()
                 end
                 player_card.hp = player_card.hp - dmg
                 add_log(card.name .. " → " .. player_card.name .. " (-" .. dmg .. " HP)")
+
+                -- 伤害数字特效
+                Effects.damage(dmg, card_x + 50, UI_PLAYER_BOARD_Y + 30)
+                Effects.attack_flash(card_x, UI_PLAYER_BOARD_Y, CARD_WIDTH, CARD_HEIGHT)
             else
                 local dmg = card.attack
                 battle.player.hp = battle.player.hp - dmg
                 add_log(card.name .. " → YOU (-" .. dmg .. " HP)")
+
+                -- 玩家HP伤害数字
+                Effects.damage(dmg, 100, UI_STATUS_BAR_Y)
             end
         end
     end
