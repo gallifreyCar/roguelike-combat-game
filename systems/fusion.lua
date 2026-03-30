@@ -261,7 +261,7 @@ end
 -- 在牌组中查找可融合的卡牌对
 function Fusion.find_fusible_pairs(deck)
     local card_counts = {}
-    local pairs = {}
+    local result_pairs = {}  -- 改名避免与内置函数 pairs() 冲突
 
     -- 统计每种卡牌数量
     for i, card in ipairs(deck) do
@@ -277,7 +277,7 @@ function Fusion.find_fusible_pairs(deck)
     -- 找出可以融合的配对
     for id, data in pairs(card_counts) do
         if data.count >= 2 then
-            table.insert(pairs, {
+            table.insert(result_pairs, {
                 card_id = id,
                 count = data.count,
                 indices = data.indices,
@@ -285,7 +285,7 @@ function Fusion.find_fusible_pairs(deck)
         end
     end
 
-    return pairs
+    return result_pairs
 end
 
 -- ==================== 骰子融合（新功能） ====================

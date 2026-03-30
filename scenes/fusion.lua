@@ -30,13 +30,13 @@ function Fusion.enter()
     message = ""
     message_timer = 0
 
-    -- 缓存卡牌列表，避免在 draw 中重复获取
+    -- 缓存卡牌列表
     cached_all_cards = Deck.get_all_cards_for_fusion() or {}
 
     -- 查找可融合的卡牌对
     fusible_pairs = FusionSystem.find_fusible_pairs(cached_all_cards) or {}
 
-    -- 预计算骰子融合候选（避免在 draw 中计算）
+    -- 查找骰子融合候选
     dice_fusion_candidates = Fusion.find_dice_candidates(cached_all_cards) or {}
 end
 
