@@ -11,6 +11,7 @@ local Settings = require("config.settings")
 local Sigils = require("systems.sigils")
 local Effects = require("systems.effects")
 local Enemy = require("systems.enemy")
+local Map = require("systems.map")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -484,7 +485,7 @@ function Combat.draw_status_bar()
 
     -- 操作提示（底部）
     love.graphics.setColor(0.5, 0.45, 0.4)
-    Fonts.print("Left-click: drag  |  Right-click: sacrifice  |  Space: battle", 50, UI_HINT_Y + 20, 13)
+    Fonts.print("Left-click: drag  |  Right-click: sacrifice  |  Space: battle  |  ESC: menu", 50, UI_HINT_Y + 20, 13)
 
     -- 战斗日志（右侧悬浮）
     if #battle.combat_log > 0 then
@@ -561,6 +562,11 @@ function Combat.keypressed(key)
     end
     if key == "r" and battle.phase == "result" then
         Combat.enter()
+    end
+    if key == "escape" then
+        -- ESC 返回主菜单
+        Map.reset()
+        State.switch("menu")
     end
 end
 

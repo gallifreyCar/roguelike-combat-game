@@ -113,11 +113,15 @@ function SettingsScene.draw()
 
     -- 操作提示（居中）
     love.graphics.setColor(0.5, 0.5, 0.5)
-    Fonts.print("UP/DOWN Select  |  LEFT/RIGHT Change  |  Enter Toggle", win_w / 2 - 120, 620, 12)
+    Fonts.print("UP/DOWN Select  |  LEFT/RIGHT Change  |  ENTER/ESC Save & Back", win_w / 2 - 130, 620, 12)
 end
 
 function SettingsScene.keypressed(key)
     if key == "escape" then
+        SettingsManager.save()
+        State.pop()
+    elseif key == "return" then
+        -- 回车键：保存并返回
         SettingsManager.save()
         State.pop()
     elseif key == "up" then
@@ -152,15 +156,6 @@ function SettingsScene.keypressed(key)
                 if opt.key == "language" then
                     I18n.set_lang(settings[opt.key])
                 end
-            end
-        end
-    elseif key == "return" then
-        local opt = options[selected_option]
-        if opt and opt.type == "toggle" then
-            settings[opt.key] = not settings[opt.key]
-            SettingsManager.set(opt.key, settings[opt.key])
-            if opt.key == "fullscreen" then
-                SettingsManager.toggle_fullscreen()
             end
         end
     end
