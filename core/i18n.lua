@@ -103,6 +103,22 @@ local translations = {
         purchase_failed = "Purchase failed",
         not_enough_gold = "Not enough Gold",
 
+        -- 商店界面
+        shop_title = "SHOP & DECK",
+        shop_my_deck = "MY DECK",
+        shop_shop = "SHOP",
+        shop_deck_info = "Deck: %d cards",
+        shop_draw_pile = "Draw Pile: %d",
+        shop_discard = "Discard: %d",
+        shop_hand = "Hand: %d",
+        shop_empty = "Your deck is empty. Win battles to add cards!",
+        shop_cost = "Cost",
+        shop_atk = "ATK",
+        shop_hp = "HP",
+        shop_price = "Price",
+        shop_buy = "BUY",
+        shop_back = "[ESC] Back to Map",
+
         -- 融合
         fusion_title = "CARD FUSION",
         fusion_same_card = "Same Card",
@@ -236,6 +252,22 @@ local translations = {
         purchase_failed = "购买失败",
         not_enough_gold = "金币不足",
 
+        -- 商店界面
+        shop_title = "商店与牌库",
+        shop_my_deck = "我的牌库",
+        shop_shop = "商店",
+        shop_deck_info = "牌库: %d 张",
+        shop_draw_pile = "抽牌堆: %d",
+        shop_discard = "弃牌堆: %d",
+        shop_hand = "手牌: %d",
+        shop_empty = "牌库为空。赢得战斗获得卡牌！",
+        shop_cost = "费用",
+        shop_atk = "攻击",
+        shop_hp = "生命",
+        shop_price = "价格",
+        shop_buy = "购买",
+        shop_back = "[ESC] 返回地图",
+
         -- 融合
         fusion_title = "卡牌融合",
         fusion_same_card = "同卡融合",
@@ -349,6 +381,22 @@ local translations = {
         purchase_failed = "購入失敗",
         not_enough_gold = "ゴールド不足",
 
+        -- 商店界面
+        shop_title = "ショップ＆デッキ",
+        shop_my_deck = "マイデッキ",
+        shop_shop = "ショップ",
+        shop_deck_info = "デッキ: %d枚",
+        shop_draw_pile = "山札: %d",
+        shop_discard = "捨札: %d",
+        shop_hand = "手札: %d",
+        shop_empty = "デッキが空です。戦闘に勝ってカードを追加！",
+        shop_cost = "コスト",
+        shop_atk = "攻撃",
+        shop_hp = "HP",
+        shop_price = "価格",
+        shop_buy = "購入",
+        shop_back = "[ESC] マップに戻る",
+
         -- 融合
         fusion_title = "カード融合",
         fusion_same_card = "同カード",
@@ -442,6 +490,22 @@ local translations = {
         purchase_success = "구매 성공",
         purchase_failed = "구매 실패",
         not_enough_gold = "골드 부족",
+
+        -- 상점 화면
+        shop_title = "상점 & 덱",
+        shop_my_deck = "내 덱",
+        shop_shop = "상점",
+        shop_deck_info = "덱: %d장",
+        shop_draw_pile = "뽑기 더미: %d",
+        shop_discard = "버린 더미: %d",
+        shop_hand = "패: %d",
+        shop_empty = "덱이 비어있습니다. 전투에서 승리하여 카드를 획득하세요!",
+        shop_cost = "비용",
+        shop_atk = "공격",
+        shop_hp = "HP",
+        shop_price = "가격",
+        shop_buy = "구매",
+        shop_back = "[ESC] 맵으로",
 
         -- 융합
         fusion_title = "카드 융합",

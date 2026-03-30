@@ -61,7 +61,7 @@ function Shop.draw()
     local win_w, win_h = Layout.get_size()
 
     -- 标题
-    Components.text("SHOP & DECK", win_w / 2, 20, {
+    Components.text(I18n.t("shop_title"), win_w / 2, 20, {
         color = "accent_gold",
         size = 24,
         align = "center",
@@ -97,7 +97,7 @@ function Shop.draw()
     end
 
     -- 返回提示
-    Components.text("[ESC] Back to Map", win_w / 2, win_h - 40, {
+    Components.text(I18n.t("shop_back"), win_w / 2, win_h - 40, {
         color = "text_hint",
         align = "center",
     })
@@ -112,7 +112,7 @@ function Shop.draw_tabs(win_w)
     local deck_active = selected_tab == "deck"
     Theme.setColor(deck_active and "bg_slot_hover" or "bg_slot")
     love.graphics.rectangle("fill", start_x, 60, tab_width, 35, 6, 6)
-    Components.text("MY DECK", start_x + tab_width / 2, 68, {
+    Components.text(I18n.t("shop_my_deck"), start_x + tab_width / 2, 68, {
         color = deck_active and "accent_gold" or "text_secondary",
         align = "center",
     })
@@ -121,7 +121,7 @@ function Shop.draw_tabs(win_w)
     local shop_active = selected_tab == "shop"
     Theme.setColor(shop_active and "bg_slot_hover" or "bg_slot")
     love.graphics.rectangle("fill", start_x + tab_width + tab_gap, 60, tab_width, 35, 6, 6)
-    Components.text("SHOP", start_x + tab_width + tab_gap + tab_width / 2, 68, {
+    Components.text(I18n.t("shop_shop"), start_x + tab_width + tab_gap + tab_width / 2, 68, {
         color = shop_active and "accent_gold" or "text_secondary",
         align = "center",
     })
@@ -134,14 +134,14 @@ function Shop.draw_deck_view(win_w, win_h)
     -- 牌库统计
     Theme.setColor("bg_panel")
     love.graphics.rectangle("fill", 50, 110, win_w - 100, 50, 6, 6)
-    Components.text("Deck: " .. info.deck_size .. " cards", 70, 120, {color = "text_primary"})
-    Components.text("Draw Pile: " .. info.draw_pile_size, 250, 120, {color = "text_secondary"})
-    Components.text("Discard: " .. info.discard_pile_size, 400, 120, {color = "text_secondary"})
-    Components.text("Hand: " .. info.hand_size, 550, 120, {color = "text_secondary"})
+    Components.text(I18n.tf("shop_deck_info", info.deck_size), 70, 120, {color = "text_primary"})
+    Components.text(I18n.tf("shop_draw_pile", info.draw_pile_size), 250, 120, {color = "text_secondary"})
+    Components.text(I18n.tf("shop_discard", info.discard_pile_size), 400, 120, {color = "text_secondary"})
+    Components.text(I18n.tf("shop_hand", info.hand_size), 550, 120, {color = "text_secondary"})
 
     -- 显示牌库中的卡牌
     if #deck == 0 then
-        Components.text("Your deck is empty. Win battles to add cards!", win_w / 2, 300, {
+        Components.text(I18n.t("shop_empty"), win_w / 2, 300, {
             color = "text_hint",
             align = "center",
         })
@@ -172,20 +172,20 @@ function Shop.draw_deck_view(win_w, win_h)
         Theme.setColor("border_gold", 0.3)
         love.graphics.rectangle("line", x, y, card_width, 80, 6, 6)
 
-        -- 卡牌信息
-        Components.text(data.template.name, x + 10, y + 8, {color = "text_primary"})
+        -- 卡牌信息（使用翻译）
+        Components.text(I18n.card_name(data.template.id), x + 10, y + 8, {color = "text_primary"})
         Components.text("x" .. data.count, x + card_width - 30, y + 8, {
             color = "accent_gold",
         })
-        Components.text("Cost: " .. (data.template.cost or 0), x + 10, y + 30, {
+        Components.text(I18n.t("shop_cost") .. ": " .. (data.template.cost or 0), x + 10, y + 30, {
             color = "accent_red",
             size = 12,
         })
-        Components.text("ATK: " .. (data.template.attack or 0), x + 10, y + 50, {
+        Components.text(I18n.t("shop_atk") .. ": " .. (data.template.attack or 0), x + 10, y + 50, {
             color = "accent_gold",
             size = 12,
         })
-        Components.text("HP: " .. (data.template.hp or 0), x + 80, y + 50, {
+        Components.text(I18n.t("shop_hp") .. ": " .. (data.template.hp or 0), x + 80, y + 50, {
             color = "accent_green",
             size = 12,
         })
@@ -235,21 +235,21 @@ function Shop.draw_shop_view(win_w, win_h)
             Theme.setColor("accent_blue", 0.3)
             love.graphics.rectangle("line", x, y, card_width, 90, 6, 6)
 
-            -- 卡牌信息
-            Components.text(template.name, x + 10, y + 8, {color = "text_primary"})
-            Components.text("Price: " .. item.price, x + card_width - 60, y + 8, {
+            -- 卡牌信息（使用翻译）
+            Components.text(I18n.card_name(template.id), x + 10, y + 8, {color = "text_primary"})
+            Components.text(I18n.t("shop_price") .. ": " .. item.price, x + card_width - 60, y + 8, {
                 color = "accent_gold",
                 size = 12,
             })
-            Components.text("Cost: " .. (template.cost or 0), x + 10, y + 35, {
+            Components.text(I18n.t("shop_cost") .. ": " .. (template.cost or 0), x + 10, y + 35, {
                 color = "accent_red",
                 size = 12,
             })
-            Components.text("ATK: " .. (template.attack or 0), x + 10, y + 55, {
+            Components.text(I18n.t("shop_atk") .. ": " .. (template.attack or 0), x + 10, y + 55, {
                 color = "accent_gold",
                 size = 12,
             })
-            Components.text("HP: " .. (template.hp or 0), x + 80, y + 55, {
+            Components.text(I18n.t("shop_hp") .. ": " .. (template.hp or 0), x + 80, y + 55, {
                 color = "accent_green",
                 size = 12,
             })
@@ -259,7 +259,7 @@ function Shop.draw_shop_view(win_w, win_h)
             local can_afford = coins >= item.price
             Theme.setColor(can_afford and "accent_green" or "bg_slot", can_afford and 0.4 or 0.5)
             love.graphics.rectangle("fill", x + card_width - 60, y + 55, 50, 25, 4, 4)
-            Components.text("BUY", x + card_width - 45, y + 60, {
+            Components.text(I18n.t("shop_buy"), x + card_width - 45, y + 60, {
                 color = can_afford and "text_value" or "text_hint",
                 size = 12,
             })
