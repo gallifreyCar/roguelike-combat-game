@@ -47,6 +47,12 @@ type: project
    - 原因：effect 对象没有 duration 字段，使用 effect.duration 会报 nil error
    - 解决：使用硬编码的 duration 值替代 effect.duration
 
+4. **ESC键退出游戏问题修复**：
+   - `core/input.lua`: 移除全局 ESC -> love.event.quit() 处理
+   - `scenes/menu.lua`: 添加 ESC -> quit（只有菜单应该退出）
+   - `core/state.lua`: State.pop() 栈空时返回 menu 而不是 nil
+   - 原因：input.lua 全局处理 ESC 导致设置场景无法返回
+
 **原因**：Love2D 沙盒环境限制 `io` 操作，必须使用 `love.filesystem` API
 
 ---
