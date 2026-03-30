@@ -89,7 +89,7 @@ function Reward.draw()
     Fonts.print(">> VICTORY REWARD <<", 450, 55, 20)
 
     love.graphics.setColor(0.7, 0.65, 0.5)
-    Fonts.print("Choose a card to add to your deck", 440, 120, 14)
+    Fonts.print(I18n.t("reward_choose"), 440, 120, 14)
 
     -- 绘制卡牌选项
     for i, choice in ipairs(choices) do
@@ -134,11 +134,11 @@ function Reward.draw()
 
         -- 属性
         love.graphics.setColor(1, 0.7, 0.3)
-        Fonts.print("Cost: " .. choice.cost, x + 15, y + 90, 14)
+        Fonts.print(I18n.t("reward_cost") .. ": " .. choice.cost, x + 15, y + 90, 14)
         love.graphics.setColor(0.9, 0.5, 0.3)
-        Fonts.print("ATK: " .. choice.attack, x + 15, y + 120, 14)
+        Fonts.print(I18n.t("reward_atk") .. ": " .. choice.attack, x + 15, y + 120, 14)
         love.graphics.setColor(0.4, 0.8, 0.4)
-        Fonts.print("HP: " .. choice.hp, x + 15, y + 150, 14)
+        Fonts.print(I18n.t("reward_hp") .. ": " .. choice.hp, x + 15, y + 150, 14)
 
         -- 印记
         if #choice.sigils > 0 then
@@ -155,7 +155,7 @@ function Reward.draw()
 
     -- 操作提示
     love.graphics.setColor(0.5, 0.5, 0.5)
-    Fonts.print("Press 1-3 to select, ENTER to confirm, ESC to skip", 350, 480, 14)
+    Fonts.print(I18n.t("reward_hint"), 350, 480, 14)
 
     -- 已选择提示
     if selected > 0 and choices[selected] then

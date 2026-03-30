@@ -98,6 +98,14 @@ local translations = {
         select_reward = "SELECT REWARD",
         gold = "Gold",
 
+        -- 奖励界面
+        reward_choose = "Choose a card to add to your deck",
+        reward_cost = "Cost",
+        reward_atk = "ATK",
+        reward_hp = "HP",
+        reward_hint = "Press 1-3 to select, ENTER to confirm, ESC to skip",
+        reward_added = "Added %s to deck!",
+
         -- 商店
         purchase_success = "Purchased",
         purchase_failed = "Purchase failed",
@@ -246,6 +254,14 @@ local translations = {
         -- 奖励
         select_reward = "选择奖励",
         gold = "金币",
+
+        -- 奖励界面
+        reward_choose = "选择一张卡牌加入牌组",
+        reward_cost = "费用",
+        reward_atk = "攻击",
+        reward_hp = "生命",
+        reward_hint = "按1-3选择，回车确认，ESC跳过",
+        reward_added = "已将 %s 加入牌组！",
 
         -- 商店
         purchase_success = "购买成功",
