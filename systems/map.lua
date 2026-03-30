@@ -16,13 +16,13 @@ local NODE_TYPES = {
         name = "Battle",
         icon = "[!]",
         color = {0.8, 0.3, 0.3},
-        weight = 0.50,
+        weight = 0.40,
     },
     elite = {
         name = "Elite",
         icon = "[E]",
         color = {0.8, 0.5, 0.2},
-        weight = 0.15,
+        weight = 0.10,
     },
     reward = {
         name = "Reward",
@@ -30,16 +30,22 @@ local NODE_TYPES = {
         color = {0.3, 0.7, 0.3},
         weight = 0.15,
     },
-    shop = {
-        name = "Shop",
-        icon = "[$]",
-        color = {0.5, 0.5, 0.8},
-        weight = 0.10,
+    fusion = {
+        name = "Fusion",
+        icon = "[F]",
+        color = {0.6, 0.3, 0.7},
+        weight = 0.15,
     },
     event = {
         name = "Event",
         icon = "[?]",
         color = {0.7, 0.7, 0.3},
+        weight = 0.10,
+    },
+    shop = {
+        name = "Shop",
+        icon = "[$]",
+        color = {0.5, 0.5, 0.8},
         weight = 0.10,
     },
     boss = {
@@ -133,7 +139,12 @@ function Map.get_next_nodes()
     local next_row = map_state.current_row + 1
     if next_row > MAP_CONFIG.rows then return {} end
 
-    return map_state.nodes[next_row] or {}
+    -- [BUG FIX] 确保 nodes 数组存在，防止返回 nil
+    local nodes = map_state.nodes[next_row]
+    if not nodes then
+        return {}
+    end
+    return nodes
 end
 
 -- 选择下一个节点

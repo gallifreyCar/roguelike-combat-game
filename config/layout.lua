@@ -40,6 +40,17 @@ function Layout.relative(x_percent, y_percent)
     return w * x_percent, h * y_percent
 end
 
+-- 相对定位（仅 X）
+function Layout.relative_x(x_percent)
+    return Layout.get_size() * x_percent
+end
+
+-- 相对定位（仅 Y）
+function Layout.relative_y(y_percent)
+    local _, h = Layout.get_size()
+    return h * y_percent
+end
+
 -- 卡牌布局
 function Layout.card_slot(index, total_slots)
     local Settings = require("config.settings")
@@ -55,9 +66,10 @@ end
 -- 敌人区域
 function Layout.enemy_area()
     local Settings = require("config.settings")
+    local _, h = Layout.get_size()
     return {
         x = Layout.card_slot(1, 4),
-        y = Settings.ui_enemy_area_y,
+        y = h * 0.07,  -- 相对位置
         width = Settings.card_width,
         height = Settings.card_height,
     }
@@ -66,9 +78,10 @@ end
 -- 玩家棋盘区域
 function Layout.player_board()
     local Settings = require("config.settings")
+    local _, h = Layout.get_size()
     return {
         x = Layout.card_slot(1, 4),
-        y = Settings.ui_player_board_y,
+        y = h * 0.375,  -- 相对位置
         width = Settings.card_width,
         height = Settings.card_height,
     }
@@ -79,10 +92,10 @@ function Layout.hand_panel()
     local Settings = require("config.settings")
     local w, h = Layout.get_size()
     return {
-        x = w - 180,
-        y = 50,
-        width = 180,
-        height = h - 100,
+        x = w - w * 0.14,  -- 右侧 14% 宽度
+        y = h * 0.07,
+        width = w * 0.14,
+        height = h * 0.86,
     }
 end
 
@@ -94,7 +107,7 @@ function Layout.battle_button()
     local btn_h = Settings.button_height
     return {
         x = (w - btn_w) / 2,
-        y = Settings.ui_button_area_y + 5,
+        y = h * 0.605,
         width = btn_w,
         height = btn_h,
     }
@@ -102,14 +115,67 @@ end
 
 -- 状态栏
 function Layout.status_bar()
-    local Settings = require("config.settings")
-    local w = Layout.get_size()
+    local w, h = Layout.get_size()
     return {
-        x = 50,
-        y = Settings.ui_status_bar_y,
-        width = w - 100,
-        height = 35,
+        x = w * 0.04,
+        y = h * 0.71,
+        width = w * 0.72,
+        height = h * 0.05,
     }
+end
+
+-- 敌人 HP 条
+function Layout.enemy_hp_bar()
+    local w, h = Layout.get_size()
+    return {
+        x = w * 0.82,
+        y = h * 0.01,
+        width = w * 0.14,
+        height = h * 0.04,
+    }
+end
+
+-- 标题栏
+function Layout.title_bar()
+    local w, h = Layout.get_size()
+    return {
+        x = 0,
+        y = 0,
+        width = w,
+        height = h * 0.06,
+    }
+end
+
+-- 分隔线区域
+function Layout.separator()
+    local w, h = Layout.get_size()
+    return {
+        x = w * 0.08,
+        y = h * 0.33,
+        width = w * 0.68,
+        height = h * 0.04,
+    }
+end
+
+-- 提示文本位置
+function Layout.hint_position()
+    local w, h = Layout.get_size()
+    return w * 0.04, h * 0.77
+end
+
+-- 战斗日志位置
+function Layout.combat_log()
+    local w, h = Layout.get_size()
+    return {
+        x = w * 0.55,
+        y = h * 0.21,
+    }
+end
+
+-- 消息显示位置
+function Layout.message_position()
+    local w, h = Layout.get_size()
+    return w * 0.23, h * 0.08
 end
 
 -- 底部按钮区域
@@ -118,13 +184,33 @@ function Layout.bottom_buttons(button_count, button_width, button_height, gap)
     local w, h = Layout.get_size()
     local total_width = button_count * button_width + (button_count - 1) * gap
     local start_x = (w - total_width) / 2
-    local y = h - 100
+    local y = h * 0.86
 
     local buttons = {}
     for i = 1, button_count do
         buttons[i] = {
             x = start_x + (i - 1) * (button_width + gap),
             y = y,
+            width = button_width,
+            height = button_height,
+        }
+    end
+    return buttons
+end
+
+-- 菜单按钮（垂直排列）
+function Layout.menu_buttons(button_count, button_width, button_height, gap)
+    gap = gap or 15
+    local w, h = Layout.get_size()
+    local start_x = (w - button_width) / 2
+    local total_height = button_count * button_height + (button_count - 1) * gap
+    local start_y = (h - total_height) * 0.65  -- 略微偏上居中
+
+    local buttons = {}
+    for i = 1, button_count do
+        buttons[i] = {
+            x = start_x,
+            y = start_y + (i - 1) * (button_height + gap),
             width = button_width,
             height = button_height,
         }

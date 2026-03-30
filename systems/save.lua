@@ -6,8 +6,8 @@ local Save = {}
 -- 存档文件路径
 local SAVE_FILE = "game_save.lua"
 
--- 存档数据结构
-local save_data = {
+-- 存档数据结构（默认值）
+local default_save_data = {
     version = 1,
     timestamp = 0,
 
@@ -34,6 +34,22 @@ local save_data = {
         enemies_defeated = 0,
     },
 }
+
+-- 当前存档数据
+local save_data = {}
+
+-- 深度合并默认值
+local function merge_defaults(data, defaults)
+    local result = {}
+    for k, v in pairs(defaults) do
+        if type(v) == "table" then
+            result[k] = merge_defaults(data[k] or {}, v)
+        else
+            result[k] = data[k] ~= nil and data[k] or v
+        end
+    end
+    return result
+end
 
 -- 序列化表为字符串
 local function serialize(t, indent)
@@ -88,11 +104,16 @@ function Save.load()
     if love.filesystem.getInfo(SAVE_FILE) then
         local content = love.filesystem.read(SAVE_FILE)
         if content then
-            local success, data = pcall(load(content))
-            if success and type(data) == "table" then
-                save_data = data
-                print("Game loaded successfully!")
-                return save_data
+            -- [BUG FIX] 安全加载：确保 load() 返回有效函数
+            local load_func = load(content)
+            if load_func then
+                local success, data = pcall(load_func)
+                if success and type(data) == "table" then
+                    -- 合并默认值（处理版本升级时缺失字段）
+                    save_data = merge_defaults(data, default_save_data)
+                    print("Game loaded successfully!")
+                    return save_data
+                end
             end
         end
     end
@@ -109,14 +130,10 @@ end
 -- 删除存档
 function Save.delete()
     love.filesystem.remove(SAVE_FILE)
-    save_data = {
-        version = 1,
-        timestamp = 0,
-        player = { hp = 20, max_hp = 20, level = 1 },
-        deck = {},
-        map = { current_row = 1, current_col = 1 },
-        stats = { battles_won = 0, cards_played = 0, enemies_defeated = 0 },
-    }
+    save_data = {}
+    for k, v in pairs(default_save_data) do
+        save_data[k] = v
+    end
     print("Save deleted!")
 end
 

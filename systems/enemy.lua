@@ -70,6 +70,10 @@ function Enemy.roll_intent(enemy)
 end
 
 function Enemy.get_action(enemy)
+    -- [BUG FIX] 确保 next_intent 有默认值
+    if not enemy.next_intent then
+        Enemy.roll_intent(enemy)
+    end
     local action = enemy.next_intent
     Enemy.roll_intent(enemy)  -- 预判下一步
     return action
@@ -112,12 +116,14 @@ function Enemy.draw(enemies)
         love.graphics.setColor(0.3, 0.1, 0.1)
         love.graphics.rectangle("fill", enemy.x + 10, enemy.y + 90, 80, 12)
         love.graphics.setColor(0.8, 0.2, 0.2)
-        local hp_width = (enemy.hp / enemy.max_hp) * 80
+        -- [BUG FIX] 防止 max_hp 为 nil 导致除零错误
+        local max_hp = math.max(1, enemy.max_hp or enemy.hp or 1)
+        local hp_width = (enemy.hp / max_hp) * 80
         love.graphics.rectangle("fill", enemy.x + 10, enemy.y + 90, hp_width, 12)
 
         -- HP text
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print(enemy.hp .. "/" .. enemy.max_hp, enemy.x + 15, enemy.y + 91)
+        love.graphics.print(enemy.hp .. "/" .. max_hp, enemy.x + 15, enemy.y + 91)
 
         -- Block
         if enemy.block > 0 then

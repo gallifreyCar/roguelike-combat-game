@@ -2,6 +2,7 @@
 -- 管理战斗特效：伤害数字、闪光、动画
 
 local Effects = {}
+local Fonts = require("core.fonts")
 
 -- 活跃特效列表
 local active_effects = {}
@@ -17,8 +18,7 @@ local EFFECT_TYPES = {
         draw = function(effect)
             if effect.alpha <= 0 then return end
             love.graphics.setColor(1, 0.3, 0.3, effect.alpha)
-            love.graphics.setFont(love.graphics.newFont(20))
-            love.graphics.print("-" .. effect.value, effect.x, effect.y)
+            Fonts.print("-" .. effect.value, effect.x, effect.y, 20)
         end,
     },
     heal_number = {
@@ -30,8 +30,7 @@ local EFFECT_TYPES = {
         draw = function(effect)
             if effect.alpha <= 0 then return end
             love.graphics.setColor(0.3, 1, 0.3, effect.alpha)
-            love.graphics.setFont(love.graphics.newFont(18))
-            love.graphics.print("+" .. effect.value, effect.x, effect.y)
+            Fonts.print("+" .. effect.value, effect.x, effect.y, 18)
         end,
     },
     flash = {

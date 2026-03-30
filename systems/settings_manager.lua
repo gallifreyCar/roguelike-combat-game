@@ -35,9 +35,9 @@ function SettingsManager.load()
     if love.filesystem.getInfo(settings_file) then
         local content = love.filesystem.read(settings_file)
         if content then
-            -- 解析JSON（简单实现）
+            -- 解析Lua表格式（保存时就是Lua格式）
             local success, settings = pcall(function()
-                return load("return " .. content:gsub("'", '"'))()
+                return load(content)()  -- content 已经是 "return {...}" 格式
             end)
 
             if success and type(settings) == "table" then

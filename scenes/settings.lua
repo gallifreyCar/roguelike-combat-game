@@ -103,7 +103,9 @@ function SettingsScene.draw()
 
         elseif opt.type == "select" then
             local lang_names = {en = "EN", zh = "CN", ja = "JP", ko = "KR"}
-            Components.button(lang_names[value] or value:upper(), value_x, y + 20, 80, 25, {
+            -- [BUG FIX] 确保 value 不为 nil，防止 :upper() 调用失败
+            local display_value = value or "en"
+            Components.button(lang_names[display_value] or display_value:upper(), value_x, y + 20, 80, 25, {
                 radius = 4,
                 font_size = 14,
             })

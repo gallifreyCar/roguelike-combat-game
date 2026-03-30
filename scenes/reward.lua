@@ -6,6 +6,8 @@ local State = require("core.state")
 local Fonts = require("core.fonts")
 local I18n = require("core.i18n")
 local Theme = require("config.theme")
+local Map = require("systems.map")  -- 添加地图模块
+local Components = require("ui.components")  -- [BUG FIX] 添加缺失的 Components 模块导入
 
 local choices = {}
 local selected = 0
@@ -174,10 +176,11 @@ function Reward.keypressed(key)
             Deck.add_to_deck(choices[selected].card_id)
             print("Added " .. choices[selected].name .. " to deck!")
         end
-        State.pop()
+        -- 奖励结束，返回地图选择下一关
+        State.switch("map")
     elseif key == "escape" then
-        -- 跳过奖励
-        State.pop()
+        -- 跳过奖励，返回地图
+        State.switch("map")
     end
 end
 

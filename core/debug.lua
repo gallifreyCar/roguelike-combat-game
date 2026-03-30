@@ -68,12 +68,15 @@ function Debug.draw()
 
     -- FPS 显示
     if show_fps or enabled then
-        local fps = math.floor(1 / frame_time)
+        -- [BUG FIX] 防止 frame_time 为 0 导致除零错误
+        local fps = frame_time > 0 and math.floor(1 / frame_time) or 0
         local avg_fps = 0
-        for _, f in ipairs(fps_history) do
-            avg_fps = avg_fps + f
+        if #fps_history > 0 then
+            for _, f in ipairs(fps_history) do
+                avg_fps = avg_fps + f
+            end
+            avg_fps = math.floor(avg_fps / #fps_history)
         end
-        avg_fps = math.floor(avg_fps / #fps_history)
 
         love.graphics.setColor(1, 1, 0)
         love.graphics.print(string.format("FPS: %d (avg: %d)", fps, avg_fps), 10, y)

@@ -17,6 +17,7 @@ function State.init()
     State.register("death", require("scenes.death"))
     State.register("reward", require("scenes.reward"))
     State.register("fusion", require("scenes.fusion"))
+    State.register("shop", require("scenes.shop"))
     State.register("map", require("scenes.map"))
     State.register("settings", require("scenes.settings"))
 end
@@ -54,10 +55,20 @@ function State.pop()
             State.current.resume()
         end
     else
-        -- 栈为空时返回主菜单
-        State.current = State.states["menu"]
-        if State.current and State.current.enter then
-            State.current.enter()
+        -- [BUG FIX] 栈为空时安全返回主菜单，检查 menu 是否已注册
+        local menu_state = State.states["menu"]
+        if menu_state then
+            State.current = menu_state
+            if menu_state.enter then
+                menu_state.enter()
+            end
+        else
+            -- 如果 menu 未注册，尝试初始化后再次获取
+            State.init()
+            State.current = State.states["menu"]
+            if State.current and State.current.enter then
+                State.current.enter()
+            end
         end
     end
 end

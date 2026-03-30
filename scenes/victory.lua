@@ -1,6 +1,9 @@
 -- scenes/victory.lua - 胜利场景
 
 local Victory = {}
+local State = require("core.state")
+local Map = require("systems.map")
+local Deck = require("systems.deck")  -- [BUG FIX] 添加缺失的模块导入
 
 function Victory.enter()
 end
@@ -32,8 +35,11 @@ end
 
 function Victory.keypressed(key)
     if key == "space" then
-        local State = require("core.state")
-        State.switch("combat")
+        -- [BUG FIX] 正确初始化新游戏状态
+        Map.reset()
+        Map.generate()
+        Deck.reset()
+        State.switch("map")
     end
 end
 
@@ -42,8 +48,11 @@ function Victory.mousepressed(x, y, button)
 
     -- 点击继续按钮
     if x >= 450 and x <= 650 and y >= 340 and y <= 380 then
-        local State = require("core.state")
-        State.switch("combat")
+        -- [BUG FIX] 正确初始化新游戏状态
+        Map.reset()
+        Map.generate()
+        Deck.reset()
+        State.switch("map")
     end
 end
 

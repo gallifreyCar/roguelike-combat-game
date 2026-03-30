@@ -4,6 +4,7 @@
 local Death = {}
 local State = require("core.state")
 local Map = require("systems.map")
+local Deck = require("systems.deck")  -- [BUG FIX] 添加 Deck 模块导入
 local Fonts = require("core.fonts")
 local I18n = require("core.i18n")
 local Theme = require("config.theme")
@@ -74,9 +75,11 @@ function Death.keypressed(key)
     if key == "space" then
         Map.reset()
         Map.generate()
+        Deck.reset()  -- [BUG FIX] 重试时重置牌组
         State.switch("map")
     elseif key == "escape" then
         Map.reset()
+        Deck.reset()  -- [BUG FIX] 返回菜单时重置牌组
         State.switch("menu")
     end
 end
@@ -87,9 +90,11 @@ function Death.mousepressed(x, y, button)
     if Layout.mouse_in_button(buttons.retry) then
         Map.reset()
         Map.generate()
+        Deck.reset()  -- [BUG FIX] 重试时重置牌组
         State.switch("map")
     elseif Layout.mouse_in_button(buttons.menu) then
         Map.reset()
+        Deck.reset()  -- [BUG FIX] 返回菜单时重置牌组
         State.switch("menu")
     end
 end

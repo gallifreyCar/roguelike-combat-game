@@ -45,6 +45,14 @@ local translations = {
         placed = "%s placed!",
         slot_occupied = "Slot occupied! Sacrifice first with RIGHT-click.",
         combat_hint = "Left-click: drag  |  Right-click: sacrifice  |  Space: battle  |  ESC: menu",
+        enemy = "Enemy",
+        dragging = "Dragging %s",
+        your_card_died = "Your %s died!",
+        enemy_card_died = "Enemy %s died!",
+        enemy_card_revived = "Enemy %s revived!",
+        turn_blood = "Turn %d - Blood: %d/%d",
+        boss_damage = "%s → Boss (-%d HP)",
+        air_strike_boss = "%s [AIR] → Boss (-%d HP)",
 
         -- 敌人意图
         atk = "ATK",
@@ -79,6 +87,12 @@ local translations = {
         you_are_here = "You are here",
         click_select = "Click to select this node",
         ok = "[OK]",
+        node_battle = "Battle",
+        node_elite = "Elite",
+        node_reward = "Reward",
+        node_fusion = "Fusion",
+        node_shop = "Shop",
+        node_event = "Event",
 
         -- 奖励
         select_reward = "SELECT REWARD",
@@ -91,6 +105,7 @@ local translations = {
 
         -- 卡牌名称
         card_squirrel = "Squirrel",
+        card_battle_squirrel = "Battle Squirrel",
         card_stoat = "Stoat",
         card_bullfrog = "Bullfrog",
         card_rat = "Rat",
@@ -144,6 +159,14 @@ local translations = {
         placed = "%s 已放置！",
         slot_occupied = "格子被占用！先右键献祭。",
         combat_hint = "左键：拖拽  |  右键：献祭  |  空格：战斗  |  ESC：菜单",
+        enemy = "敌人",
+        dragging = "拖拽中 %s",
+        your_card_died = "你的%s死亡了！",
+        enemy_card_died = "敌方%s死亡了！",
+        enemy_card_revived = "敌方%s复活了！",
+        turn_blood = "回合 %d - 鲜血: %d/%d",
+        boss_damage = "%s → Boss (-%d HP)",
+        air_strike_boss = "%s [飞行] → Boss (-%d HP)",
 
         -- 敌人意图
         atk = "攻击",
@@ -190,6 +213,7 @@ local translations = {
 
         -- 卡牌名称
         card_squirrel = "松鼠",
+        card_battle_squirrel = "战斗松鼠",
         card_stoat = "白鼬",
         card_bullfrog = "牛蛙",
         card_rat = "老鼠",

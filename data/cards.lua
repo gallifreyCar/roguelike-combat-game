@@ -228,7 +228,7 @@ local Sigils = {
 local Rarities = {
     common = {"squirrel", "stoat", "bullfrog", "rat", "wolf"},
     uncommon = {"turtle", "raven", "adder", "skunk"},
-    rare = {"cat", "grizzly", "moose", "mant", "ox", "eagle"},
+    rare = {"cat", "grizzly", "moose", "mantis", "ox", "eagle"},  -- [BUG FIX] "mant" 改为 "mantis"
     legendary = {"deathcard", "hydra"},
 }
 

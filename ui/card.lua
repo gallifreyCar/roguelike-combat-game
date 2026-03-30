@@ -53,7 +53,9 @@ function CardUI.draw_full(card, x, y, is_player, options)
     love.graphics.setColor(Colors.hp_bar_bg)
     love.graphics.rectangle("fill", x + 8, y + 75, 84, 8)
     love.graphics.setColor(Colors.hp_bar_fill)
-    local hp_ratio = card.hp / (card.max_hp or card.hp)
+    -- [BUG FIX] 防止 max_hp 为 0 或 nil 导致除零错误
+    local safe_max_hp = math.max(1, card.max_hp or card.hp or 1)
+    local hp_ratio = card.hp / safe_max_hp
     love.graphics.rectangle("fill", x + 8, y + 75, 84 * hp_ratio, 8)
 
     -- 印记图标（如有）

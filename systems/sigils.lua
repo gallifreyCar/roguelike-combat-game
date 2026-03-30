@@ -159,6 +159,7 @@ end
 
 -- 应用印记的生成效果
 function Sigils.apply_spawn_effects(card)
+    if not card then return end
     for _, sigil_name in ipairs(card.sigils or {}) do
         local effect = SIGIL_EFFECTS[sigil_name]
         if effect and effect.on_spawn then

@@ -1,5 +1,5 @@
 -- scenes/map.lua - 关卡地图场景
--- 使用 Theme 和 Components 重构
+-- 使用 Theme 和 Components 重构，响应式布局
 
 local MapScene = {}
 local Map = require("systems.map")
@@ -37,7 +37,7 @@ function MapScene.update(dt)
 
     if #next_nodes == 0 then return end
 
-    -- 计算节点位置
+    -- 计算节点位置（响应式）
     local node_w = Settings.map_node_width
     local node_h = Settings.map_node_height
     local spacing = Settings.map_node_spacing
@@ -45,7 +45,7 @@ function MapScene.update(dt)
     local node_count = #next_nodes
     local total_width = node_count * node_w + (node_count - 1) * (spacing - node_w)
     local center_x = (win_w - total_width) / 2
-    local base_y = win_h - 100
+    local base_y = win_h * 0.86  -- 使用百分比
     local node_y = base_y - (next_row - 1) * Settings.map_row_spacing
 
     for col, node in ipairs(next_nodes) do
@@ -62,12 +62,12 @@ function MapScene.draw()
 
     local win_w, win_h = Layout.get_size()
 
-    -- 标题
-    local title_w = 250
-    Components.panel(Layout.center_x(title_w), 20, title_w, 40, {
+    -- 标题（响应式）
+    local title_w = win_w * 0.2
+    Components.panel(Layout.center_x(title_w), win_h * 0.03, title_w, win_h * 0.055, {
         bg = "bg_button",
     })
-    Components.text(I18n.t("map_title"), win_w / 2, 28, {
+    Components.text(I18n.t("map_title"), win_w / 2, win_h * 0.04, {
         color = "text_primary",
         align = "center",
     })
@@ -76,9 +76,9 @@ function MapScene.draw()
     local node_w = Settings.map_node_width
     local node_h = Settings.map_node_height
     local spacing = Settings.map_node_spacing
-    local base_y = win_h - 100
+    local base_y = win_h * 0.86  -- 使用百分比
 
-    -- 绘制所有层
+    -- 绘制所有层（响应式）
     for row, nodes in ipairs(map_data.nodes) do
         local y = base_y - (row - 1) * Settings.map_row_spacing
         local node_count = #nodes
@@ -87,12 +87,12 @@ function MapScene.draw()
 
         -- 层标签
         local label = (row == #map_data.nodes) and I18n.t("boss") or I18n.t("floor") .. " " .. row
-        Components.text(label, center_x - 80, y + 30, {color = "text_hint"})
+        Components.text(label, center_x - win_w * 0.06, y + node_h * 0.6, {color = "text_hint"})
 
         for col, node in ipairs(nodes) do
             local x = center_x + (col - 1) * spacing
             local node_type = Map.get_node_type(node.type)
-            local base_color = node_type.color  -- 直接从 NODE_TYPES 获取颜色
+            local base_color = node_type.color
 
             -- 节点背景
             if node.completed then
@@ -114,30 +114,31 @@ function MapScene.draw()
 
             -- 节点内容
             Theme.setColor("text_value")
-            Fonts.print(node_type.icon, x + 40, y + 5, 16)
+            Fonts.print(node_type.icon, x + node_w * 0.4, y + node_h * 0.1, 16)
             Theme.setColor("text_primary")
-            Fonts.print(node_type.name, x + 20, y + 30, 12)
+            Fonts.print(node_type.name, x + node_w * 0.2, y + node_h * 0.6, 12)
 
             -- 已完成标记
             if node.completed then
                 Theme.setColor("accent_green")
-                Fonts.print(I18n.t("ok"), x + 65, y + 5, 12)
+                Fonts.print(I18n.t("ok"), x + node_w * 0.65, y + node_h * 0.1, 12)
             end
         end
     end
 
-    -- 当前位置指示
-    Components.text("▼ " .. I18n.t("you_are_here"), win_w / 2, win_h - 40, {
+    -- 当前位置指示（响应式）
+    Components.text("▼ " .. I18n.t("you_are_here"), win_w / 2, win_h * 0.94, {
         color = "accent_yellow",
         align = "center",
     })
 
-    -- 悬停提示
+    -- 悬停提示（响应式）
     if hovered_node then
-        Components.panel((win_w - 250) / 2, win_h - 80, 250, 40, {
+        local hint_w = win_w * 0.2
+        Components.panel(Layout.center_x(hint_w), win_h * 0.89, hint_w, win_h * 0.055, {
             bg = "bg_panel",
         })
-        Components.text(I18n.t("click_select"), win_w / 2, win_h - 70, {
+        Components.text(I18n.t("click_select"), win_w / 2, win_h * 0.9, {
             color = "text_primary",
             align = "center",
         })
@@ -161,6 +162,17 @@ function MapScene.mousepressed(x, y, button)
                 State.switch("combat")
             elseif node.type == "reward" then
                 State.push("reward")
+            elseif node.type == "fusion" then
+                State.push("fusion")
+            elseif node.type == "shop" then
+                State.push("shop")
+            elseif node.type == "event" then
+                -- 随机事件：50%奖励，50%战斗
+                if love.math.random() < 0.5 then
+                    State.push("reward")
+                else
+                    State.switch("combat")
+                end
             else
                 State.switch("combat")
             end
