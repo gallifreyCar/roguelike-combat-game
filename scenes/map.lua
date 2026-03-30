@@ -92,29 +92,36 @@ function MapScene.draw()
         for col, node in ipairs(nodes) do
             local x = center_x + (col - 1) * spacing
             local node_type = Map.get_node_type(node.type)
-            local node_color = Theme.node_color(node.type)
+            local base_color = node_type.color  -- 直接从 NODE_TYPES 获取颜色
 
             -- 节点背景
             if node.completed then
-                Theme.setColor("bg_slot")
+                love.graphics.setColor(0.3, 0.3, 0.35)
             elseif node == hovered_node then
-                Theme.setColor({node_color[1] + 0.2, node_color[2] + 0.2, node_color[3] + 0.2})
+                love.graphics.setColor(base_color[1] + 0.2, base_color[2] + 0.2, base_color[3] + 0.2)
             else
-                Theme.setColor({node_color[1] * 0.7, node_color[2] * 0.7, node_color[3] * 0.7})
+                love.graphics.setColor(base_color[1] * 0.7, base_color[2] * 0.7, base_color[3] * 0.7)
             end
             love.graphics.rectangle("fill", x, y, node_w, node_h, 6, 6)
 
             -- 节点边框
-            Theme.setColor(node == hovered_node and "border_highlight" or "border_normal")
+            if node == hovered_node then
+                love.graphics.setColor(1, 1, 1)
+            else
+                love.graphics.setColor(0.5, 0.5, 0.5)
+            end
             love.graphics.rectangle("line", x, y, node_w, node_h, 6, 6)
 
             -- 节点内容
-            Components.text(node_type.icon, x + 40, y + 5, {color = "text_value", size = 16})
-            Components.text(node_type.name, x + 20, y + 30, {color = "text_primary", size = 12})
+            Theme.setColor("text_value")
+            Fonts.print(node_type.icon, x + 40, y + 5, 16)
+            Theme.setColor("text_primary")
+            Fonts.print(node_type.name, x + 20, y + 30, 12)
 
             -- 已完成标记
             if node.completed then
-                Components.text(I18n.t("ok"), x + 65, y + 5, {color = "accent_green", size = 12})
+                Theme.setColor("accent_green")
+                Fonts.print(I18n.t("ok"), x + 65, y + 5, 12)
             end
         end
     end

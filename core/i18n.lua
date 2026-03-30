@@ -88,6 +88,24 @@ local translations = {
         victory_title = "VICTORY!",
         all_levels = "All levels cleared!",
         continue_btn = "Continue",
+
+        -- 卡牌名称
+        card_squirrel = "Squirrel",
+        card_stoat = "Stoat",
+        card_bullfrog = "Bullfrog",
+        card_rat = "Rat",
+        card_turtle = "Turtle",
+        card_wolf = "Wolf",
+        card_raven = "Raven",
+        card_adder = "Adder",
+        card_skunk = "Skunk",
+        card_cat = "Cat",
+        card_grizzly = "Grizzly",
+        card_moose = "Moose",
+        card_mantis = "Mantis",
+        card_ox = "Ox",
+        card_eagle = "Eagle",
+        card_hydra = "Hydra",
     },
     zh = {
         -- 主菜单
@@ -169,6 +187,24 @@ local translations = {
         victory_title = "胜利！",
         all_levels = "全部通关！",
         continue_btn = "继续",
+
+        -- 卡牌名称
+        card_squirrel = "松鼠",
+        card_stoat = "白鼬",
+        card_bullfrog = "牛蛙",
+        card_rat = "老鼠",
+        card_turtle = "乌龟",
+        card_wolf = "狼",
+        card_raven = "渡鸦",
+        card_adder = "蝰蛇",
+        card_skunk = "臭鼬",
+        card_cat = "猫",
+        card_grizzly = "灰熊",
+        card_moose = "驼鹿",
+        card_mantis = "螳螂",
+        card_ox = "公牛",
+        card_eagle = "老鹰",
+        card_hydra = "九头蛇",
     },
     ja = {
         -- メインメニュー
@@ -358,6 +394,21 @@ end
 function I18n.tf(key, ...)
     local text = I18n.t(key)
     return string.format(text, ...)
+end
+
+-- 获取卡牌名称翻译
+function I18n.card_name(card_id)
+    local key = "card_" .. card_id
+    local lang_texts = translations[I18n.current_lang]
+    if lang_texts and lang_texts[key] then
+        return lang_texts[key]
+    end
+    -- Fallback to English
+    if translations.en[key] then
+        return translations.en[key]
+    end
+    -- 最后返回原始 ID
+    return card_id
 end
 
 return I18n

@@ -359,8 +359,8 @@ function Combat.draw_card(card, x, y, is_player)
     Theme.setColor("bg_slot")
     love.graphics.rectangle("fill", x + 2, y + 2, CARD_WIDTH - 4, 25, 3, 3)
 
-    -- 名称
-    Components.text(card.name, x + 8, y + 6, {color = "text_primary", size = 14})
+    -- 名称（使用翻译）
+    Components.text(I18n.card_name(card.id), x + 8, y + 6, {color = "text_primary", size = 14})
 
     -- Cost（红圈白字）
     Theme.setColor("accent_red")
@@ -418,30 +418,26 @@ end
 
 function Combat.draw_card_small(card, x, y, hover)
     if hover then
-        love.graphics.setColor(0.35, 0.45, 0.35)
+        Theme.setColor("bg_slot_hover")
     else
-        love.graphics.setColor(0.25, 0.22, 0.18)
+        Theme.setColor("bg_slot")
     end
     love.graphics.rectangle("fill", x, y, CARD_WIDTH, 80, 4, 4)
 
-    love.graphics.setColor(0.5, 0.4, 0.25)
+    Theme.setColor("border_gold", 0.5)
     love.graphics.rectangle("line", x, y, CARD_WIDTH, 80, 4, 4)
 
-    love.graphics.setColor(1, 1, 1)
-    Fonts.print(card.name, x + 5, y + 5)
+    -- 名称（使用翻译）
+    Components.text(I18n.card_name(card.id), x + 5, y + 5, {color = "text_primary"})
 
-    -- Cost用红色突出
-    love.graphics.setColor(0.9, 0.3, 0.3)
-    Fonts.print("$" .. card.cost, x + 5, y + 25)
+    -- Cost
+    Components.text("$" .. card.cost, x + 5, y + 25, {color = "accent_red"})
 
-    love.graphics.setColor(1, 0.75, 0.3)
-    Fonts.print("A:" .. card.attack, x + 5, y + 45)
-    love.graphics.setColor(0.4, 0.8, 0.4)
-    Fonts.print("H:" .. card.hp, x + 45, y + 45)
+    Components.text("A:" .. card.attack, x + 5, y + 45, {color = "accent_gold"})
+    Components.text("H:" .. card.hp, x + 45, y + 45, {color = "accent_green"})
 
     if hover then
-        love.graphics.setColor(0.6, 0.6, 0.4)
-        Fonts.print("[drag]", x + 55, y + 60)
+        Components.text("[drag]", x + 55, y + 60, {color = "text_hint"})
     end
 end
 
@@ -567,7 +563,7 @@ function Combat.mousepressed(x, y, button)
     -- 右键献祭场上的牌
     if button == 2 and battle.phase == "play" then
         for i = 1, BOARD_SLOTS do
-            local slot_x = 150 + (i - 1) * 130
+            local slot_x = Layout.card_slot(i, BOARD_SLOTS)
             local slot_y = UI_PLAYER_BOARD_Y
 
             if x >= slot_x and x <= slot_x + CARD_WIDTH and y >= slot_y and y <= slot_y + CARD_HEIGHT then
@@ -590,16 +586,15 @@ function Combat.mousepressed(x, y, button)
     if button ~= 1 then return end
 
     -- 战斗按钮区域
-    local btn_x = 600
-    local btn_y = UI_BUTTON_AREA_Y + 5
-    local btn_w = 160
-    local btn_h = 55
+    local btn = Layout.battle_button()
+    local btn_x, btn_y, btn_w, btn_h = btn.x, btn.y, btn.width, btn.height
 
     if battle.phase == "play" then
         -- 检测点击手牌
         local hand = Deck.get_hand()
+        local panel = Layout.hand_panel()
         for i = 1, #hand do
-            local card_x = HAND_X
+            local card_x = panel.x + 30
             local card_y = HAND_Y + (i - 1) * 90
 
             if x >= card_x and x <= card_x + CARD_WIDTH and y >= card_y and y <= card_y + 80 then
@@ -652,7 +647,7 @@ function Combat.mousereleased(x, y, button)
 
     if battle.dragging and battle.dragging_index then
         for i = 1, BOARD_SLOTS do
-            local slot_x = 150 + (i - 1) * 130
+            local slot_x = Layout.card_slot(i, BOARD_SLOTS)
             local slot_y = UI_PLAYER_BOARD_Y
 
             if x >= slot_x and x <= slot_x + CARD_WIDTH and y >= slot_y and y <= slot_y + CARD_HEIGHT then
