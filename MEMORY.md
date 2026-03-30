@@ -30,7 +30,7 @@ type: project
 - 设置无法保存/加载
 - 存档无法正常工作
 - UI图标/emoji加载不出来
-- 游戏崩溃
+- 游戏崩溃：effects.lua duration nil error
 
 **修复内容**：
 1. **文件系统修复**：
@@ -40,8 +40,12 @@ type: project
 2. **图标/Emoji修复**：
    - 替换所有emoji为ASCII等效文本
    - ⚔ → [!], ♥ → HP:, 🗺 → [MAP], 🏆 → **, ★ → *
-   - 修复文件: combat.lua, map.lua, menu.lua, reward.lua, settings.lua, achievements.lua, ui/card.lua
    - 原因：NotoSansSC字体不支持emoji字符
+
+3. **effects.lua nil错误修复**：
+   - `systems/effects.lua`: 修复 attack_flash, flash, shake 的 update 函数
+   - 原因：effect 对象没有 duration 字段，使用 effect.duration 会报 nil error
+   - 解决：使用硬编码的 duration 值替代 effect.duration
 
 **原因**：Love2D 沙盒环境限制 `io` 操作，必须使用 `love.filesystem` API
 
