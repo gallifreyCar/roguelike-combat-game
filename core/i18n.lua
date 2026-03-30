@@ -1,93 +1,312 @@
--- core/i18n.lua - 多语言系统（中英日三语）
+-- core/i18n.lua - 多语言系统（中英日韩四语）
 
 local I18n = {
-    current_lang = "en",  -- 默认英文（中文/日文待完善）
-    langs = {"en", "zh", "ja"},
+    current_lang = "en",
+    langs = {"en", "zh", "ja", "ko"},
     texts = {},
 }
 
--- 文本库
+-- 完整文本库
 local translations = {
-    zh = {
+    en = {
         -- 主菜单
-        title = "回合制肉鸽游戏",
-        press_start = "按 空格 开始游戏",
-        press_quit = "按 ESC 退出",
-        language = "按 L 切换语言",
+        title = "CARD SACRIFICE",
+        subtitle = "A Roguelike Auto-Battler",
+        how_to_play = "HOW TO PLAY:",
+        instruction1 = "1. DRAG cards from right panel",
+        instruction2 = "2. DROP on empty slots",
+        instruction3 = "3. Cards need BLOOD (cost)",
+        instruction4 = "4. Dead cards = +1 Blood",
+        instruction5 = "5. Click BATTLE to fight!",
+        instruction6 = "Cards attack automatically each turn.",
+        start_game = ">> START GAME <<",
+        settings = "[ SETTINGS ]",
+        press_hint = "Press SPACE to start, S for settings",
 
         -- 战斗界面
-        energy = "能量",
+        your_board = "YOUR BOARD",
+        your_hand = "YOUR HAND",
+        cards = "cards",
+        hp = "HP",
+        blood = "Blood",
+        turn = "Turn",
+        deck = "Deck",
+        discard = "Discard",
+        battle_btn = ">> BATTLE <<",
+        battle_progress = "Battle in progress...",
+        next_level = "Next Level",
+        victory = "VICTORY!",
+        retry_level = "Retry Level 1",
+        drag_hint = "drag",
+        right_click_sacrifice = "Right-click to sacrifice",
+        sacrifice_msg = "Sacrificed %s for +1 Blood!",
+        blood_max = "Blood already at max (%d)!",
+        need_blood = "Need %d Blood! Right-click a card to sacrifice.",
+        placed = "%s placed!",
+        slot_occupied = "Slot occupied! Sacrifice first with RIGHT-click.",
+        combat_hint = "Left-click: drag  |  Right-click: sacrifice  |  Space: battle  |  ESC: menu",
+
+        -- 敌人意图
+        atk = "ATK",
+        def = "DEF",
+        buf = "BUF",
+
+        -- 死亡界面
+        defeated = "DEFEATED",
+        fallen = "Your cards have fallen...",
+        retry = ">> RETRY <<",
+        menu_btn = "[ESC] Menu",
+        death_hint = "SPACE: Retry  |  ESC: Return to Menu",
+
+        -- 设置界面
+        settings_title = "SETTINGS",
+        master_volume = "Master Volume",
+        music_volume = "Music Volume",
+        sfx_volume = "SFX Volume",
+        fullscreen = "Fullscreen",
+        language = "Language",
+        show_tutorial = "Show Tutorial",
+        reset = "Reset",
+        back = "[ESC] Back",
+        settings_hint = "UP/DOWN Select  |  LEFT/RIGHT Change  |  ENTER/ESC Save & Back",
+        on = "ON",
+        off = "OFF",
+
+        -- 地图
+        map_title = "[ MAP ]",
+        boss = "BOSS",
+        floor = "Floor",
+        you_are_here = "You are here",
+        click_select = "Click to select this node",
+        ok = "[OK]",
+
+        -- 奖励
+        select_reward = "SELECT REWARD",
+        gold = "Gold",
+
+        -- 胜利
+        victory_title = "VICTORY!",
+        all_levels = "All levels cleared!",
+        continue_btn = "Continue",
+    },
+    zh = {
+        -- 主菜单
+        title = "卡牌献祭",
+        subtitle = "回合制肉鸽自动战斗",
+        how_to_play = "游戏说明：",
+        instruction1 = "1. 从右侧拖拽卡牌",
+        instruction2 = "2. 放到空格子上",
+        instruction3 = "3. 卡牌需要鲜血（费用）",
+        instruction4 = "4. 死亡卡牌 = +1 鲜血",
+        instruction5 = "5. 点击战斗开始！",
+        instruction6 = "卡牌每回合自动攻击。",
+        start_game = ">> 开始游戏 <<",
+        settings = "[ 设置 ]",
+        press_hint = "按 空格 开始，S 键设置",
+
+        -- 战斗界面
+        your_board = "你的棋盘",
+        your_hand = "你的手牌",
+        cards = "张",
         hp = "生命",
-        block = "护盾",
-        end_turn = "按 E 结束回合",
+        blood = "鲜血",
+        turn = "回合",
+        deck = "牌组",
+        discard = "弃牌",
+        battle_btn = ">> 战斗 <<",
+        battle_progress = "战斗进行中...",
+        next_level = "下一关",
+        victory = "胜利！",
+        retry_level = "重试第1关",
+        drag_hint = "拖拽",
+        right_click_sacrifice = "右键献祭",
+        sacrifice_msg = "献祭 %s 获得 +1 鲜血！",
+        blood_max = "鲜血已满 (%d)！",
+        need_blood = "需要 %d 鲜血！右键献祭卡牌。",
+        placed = "%s 已放置！",
+        slot_occupied = "格子被占用！先右键献祭。",
+        combat_hint = "左键：拖拽  |  右键：献祭  |  空格：战斗  |  ESC：菜单",
 
-        -- 卡牌
-        strike = "打击",
-        defend = "防御",
-        bash = "重击",
-        damage = "伤害",
+        -- 敌人意图
+        atk = "攻击",
+        def = "防御",
+        buf = "增益",
 
-        -- 死亡
-        you_died = "你死了",
-        restart = "按 空格 重新开始",
+        -- 死亡界面
+        defeated = "战败",
+        fallen = "你的卡牌已倒下...",
+        retry = ">> 重试 <<",
+        menu_btn = "[ESC] 菜单",
+        death_hint = "空格：重试  |  ESC：返回菜单",
+
+        -- 设置界面
+        settings_title = "设置",
+        master_volume = "主音量",
+        music_volume = "音乐音量",
+        sfx_volume = "音效音量",
+        fullscreen = "全屏",
+        language = "语言",
+        show_tutorial = "显示教程",
+        reset = "重置",
+        back = "[ESC] 返回",
+        settings_hint = "上/下 选择  |  左/右 调整  |  回车/ESC 保存返回",
+        on = "开",
+        off = "关",
+
+        -- 地图
+        map_title = "[ 地图 ]",
+        boss = "首领",
+        floor = "第",
+        you_are_here = "你在这里",
+        click_select = "点击选择此节点",
+        ok = "[完成]",
 
         -- 奖励
         select_reward = "选择奖励",
         gold = "金币",
-    },
-    en = {
-        -- Main Menu
-        title = "Roguelike Combat Game",
-        press_start = "Press SPACE to Start",
-        press_quit = "Press ESC to Quit",
-        language = "Press L to Switch Language",
 
-        -- Combat
-        energy = "Energy",
-        hp = "HP",
-        block = "Block",
-        end_turn = "Press E to End Turn",
-
-        -- Cards
-        strike = "Strike",
-        defend = "Defend",
-        bash = "Bash",
-        damage = "Damage",
-
-        -- Death
-        you_died = "YOU DIED",
-        restart = "Press SPACE to Restart",
-
-        -- Reward
-        select_reward = "Select Reward",
-        gold = "Gold",
+        -- 胜利
+        victory_title = "胜利！",
+        all_levels = "全部通关！",
+        continue_btn = "继续",
     },
     ja = {
         -- メインメニュー
-        title = "ローグライク戦闘ゲーム",
-        press_start = "スペースで開始",
-        press_quit = "ESCで終了",
-        language = "Lで言語切替",
+        title = "カードサクリファイス",
+        subtitle = "ローグライクオートバトル",
+        how_to_play = "遊び方：",
+        instruction1 = "1. 右パネルからカードをドラッグ",
+        instruction2 = "2. 空きスロットにドロップ",
+        instruction3 = "3. カードにはBLOOD（コスト）が必要",
+        instruction4 = "4. 死んだカード = +1 Blood",
+        instruction5 = "5. BATTLEをクリック！",
+        instruction6 = "カードは毎ターン自動攻撃。",
+        start_game = ">> ゲーム開始 <<",
+        settings = "[ 設定 ]",
+        press_hint = "スペースで開始、Sで設定",
 
         -- 戦闘
-        energy = "エネルギー",
+        your_board = "あなたのボード",
+        your_hand = "あなたの手札",
+        cards = "枚",
         hp = "HP",
-        block = "ブロック",
-        end_turn = "Eでターン終了",
-
-        -- カード
-        strike = "打撃",
-        defend = "防御",
-        bash = "強打",
-        damage = "ダメージ",
+        blood = "ブラッド",
+        turn = "ターン",
+        deck = "デッキ",
+        discard = "捨札",
+        battle_btn = ">> バトル <<",
+        battle_progress = "バトル中...",
+        next_level = "次のレベル",
+        victory = "勝利！",
+        retry_level = "レベル1から再挑戦",
+        combat_hint = "左クリック：ドラッグ  |  右クリック：生贄  |  スペース：バトル  |  ESC：メニュー",
 
         -- 死亡
-        you_died = "死亡しました",
-        restart = "スペースで再開",
+        defeated = "敗北",
+        fallen = "カードが倒れました...",
+        retry = ">> 再挑戦 <<",
+        menu_btn = "[ESC] メニュー",
+        death_hint = "スペース：再挑戦  |  ESC：メニュー",
 
-        -- 報酬
+        -- 設定
+        settings_title = "設定",
+        master_volume = "マスター音量",
+        music_volume = "音楽音量",
+        sfx_volume = "効果音音量",
+        fullscreen = "フルスクリーン",
+        language = "言語",
+        show_tutorial = "チュートリアル表示",
+        reset = "リセット",
+        back = "[ESC] 戻る",
+        settings_hint = "上/下 選択  |  左/右 変更  |  Enter/ESC 保存して戻る",
+        on = "オン",
+        off = "オフ",
+
+        -- 地图
+        map_title = "[ マップ ]",
+        boss = "ボス",
+        floor = "階",
+        you_are_here = "現在地",
+        click_select = "クリックして選択",
+        ok = "[完了]",
+
+        -- 报酬
         select_reward = "報酬を選択",
         gold = "ゴールド",
+
+        -- 胜利
+        victory_title = "勝利！",
+        all_levels = "全レベルクリア！",
+        continue_btn = "続ける",
+    },
+    ko = {
+        -- 메인 메뉴
+        title = "카드 희생",
+        subtitle = "로그라이크 오토 배틀",
+        how_to_play = "게임 방법:",
+        instruction1 = "1. 오른쪽 패널에서 카드 드래그",
+        instruction2 = "2. 빈 슬롯에 드롭",
+        instruction3 = "3. 카드에는 BLOOD(비용)가 필요",
+        instruction4 = "4. 죽은 카드 = +1 Blood",
+        instruction5 = "5. BATTLE 클릭!",
+        instruction6 = "카드는 매 턴 자동 공격.",
+        start_game = ">> 게임 시작 <<",
+        settings = "[ 설정 ]",
+        press_hint = "스페이스로 시작, S로 설정",
+
+        -- 전투
+        your_board = "당신의 보드",
+        your_hand = "당신의 패",
+        cards = "장",
+        hp = "HP",
+        blood = "블러드",
+        turn = "턴",
+        deck = "덱",
+        discard = "버린 패",
+        battle_btn = ">> 배틀 <<",
+        battle_progress = "배틀 진행 중...",
+        next_level = "다음 레벨",
+        victory = "승리!",
+        retry_level = "레벨 1부터 재시도",
+        combat_hint = "좌클릭: 드래그  |  우클릭: 희생  |  스페이스: 배틀  |  ESC: 메뉴",
+
+        -- 사망
+        defeated = "패배",
+        fallen = "카드가 쓰러졌습니다...",
+        retry = ">> 재시도 <<",
+        menu_btn = "[ESC] 메뉴",
+        death_hint = "스페이스: 재시도  |  ESC: 메뉴",
+
+        -- 설정
+        settings_title = "설정",
+        master_volume = "마스터 볼륨",
+        music_volume = "음악 볼륨",
+        sfx_volume = "효과음 볼륨",
+        fullscreen = "전체화면",
+        language = "언어",
+        show_tutorial = "튜토리얼 표시",
+        reset = "리셋",
+        back = "[ESC] 뒤로",
+        settings_hint = "상/하 선택  |  좌/우 변경  |  Enter/ESC 저장 후 뒤로",
+        on = "켜기",
+        off = "끄기",
+
+        -- 맵
+        map_title = "[ 맵 ]",
+        boss = "보스",
+        floor = "층",
+        you_are_here = "현재 위치",
+        click_select = "클릭하여 선택",
+        ok = "[완료]",
+
+        -- 보상
+        select_reward = "보상 선택",
+        gold = "골드",
+
+        -- 승리
+        victory_title = "승리!",
+        all_levels = "모든 레벨 클리어!",
+        continue_btn = "계속",
     },
 }
 
@@ -114,8 +333,15 @@ function I18n.toggle_lang()
 end
 
 function I18n.t(key)
-    local text = translations[I18n.current_lang][key]
-    return text or key
+    local lang_texts = translations[I18n.current_lang]
+    if lang_texts and lang_texts[key] then
+        return lang_texts[key]
+    end
+    -- Fallback to English
+    if translations.en[key] then
+        return translations.en[key]
+    end
+    return key
 end
 
 function I18n.get_lang_name()
@@ -123,8 +349,15 @@ function I18n.get_lang_name()
         zh = "中文",
         en = "English",
         ja = "日本語",
+        ko = "한국어",
     }
     return names[I18n.current_lang] or I18n.current_lang
+end
+
+-- 格式化文本（支持参数替换）
+function I18n.tf(key, ...)
+    local text = I18n.t(key)
+    return string.format(text, ...)
 end
 
 return I18n

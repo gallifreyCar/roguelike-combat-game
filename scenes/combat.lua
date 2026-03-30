@@ -12,6 +12,7 @@ local Sigils = require("systems.sigils")
 local Effects = require("systems.effects")
 local Enemy = require("systems.enemy")
 local Map = require("systems.map")
+local I18n = require("core.i18n")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -214,7 +215,7 @@ function Combat.draw()
     love.graphics.setColor(0.25, 0.2, 0.15)
     love.graphics.rectangle("fill", 100, UI_SEPARATOR_Y, 870, 30)
     love.graphics.setColor(0.6, 0.5, 0.3)
-    Fonts.print("─── YOUR BOARD ───", 420, UI_SEPARATOR_Y + 8, 14)
+    Fonts.print("─── " .. I18n.t("your_board") .. " ───", 420, UI_SEPARATOR_Y + 8, 14)
 
     Combat.draw_enemy_area()
     Combat.draw_player_board()
@@ -314,7 +315,7 @@ function Combat.draw_hand_panel()
 
     love.graphics.setColor(0.7, 0.6, 0.4)
     Fonts.print("YOUR HAND", 1095, 60)
-    Fonts.print("(" .. Deck.hand_size() .. " cards)", 1100, 80)
+    Fonts.print("(" .. Deck.hand_size() .. " " .. I18n.t("cards") .. ")", 1100, 80)
 
     local hand = Deck.get_hand()
     for i, card in ipairs(hand) do
@@ -464,28 +465,28 @@ function Combat.draw_status_bar()
     local hp_w = (battle.player.hp / battle.player.max_hp) * 160
     love.graphics.rectangle("fill", 60, UI_STATUS_BAR_Y + 5, hp_w, 25, 4, 4)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("HP: " .. battle.player.hp .. "/" .. battle.player.max_hp, 70, UI_STATUS_BAR_Y + 8)
+    Fonts.print(I18n.t("hp") .. ": " .. battle.player.hp .. "/" .. battle.player.max_hp, 70, UI_STATUS_BAR_Y + 8)
 
     -- Blood
     love.graphics.setColor(0.6, 0.2, 0.2)
     love.graphics.rectangle("fill", 240, UI_STATUS_BAR_Y + 5, 120, 25, 4, 4)
     love.graphics.setColor(1, 0.8, 0.3)
-    Fonts.print("Blood: " .. battle.player.blood .. "/" .. MAX_BLOOD, 250, UI_STATUS_BAR_Y + 8)
+    Fonts.print(I18n.t("blood") .. ": " .. battle.player.blood .. "/" .. MAX_BLOOD, 250, UI_STATUS_BAR_Y + 8)
 
     -- 回合信息
     love.graphics.setColor(0.7, 0.6, 0.4)
-    Fonts.print("Turn: " .. battle.turn, 380, UI_STATUS_BAR_Y + 8)
+    Fonts.print(I18n.t("turn") .. ": " .. battle.turn, 380, UI_STATUS_BAR_Y + 8)
 
     -- 牌组信息
     local deck_info = Deck.get_info()
     love.graphics.setColor(0.5, 0.5, 0.7)
-    Fonts.print("Deck: " .. deck_info.draw_pile_size, 460, UI_STATUS_BAR_Y + 8)
+    Fonts.print(I18n.t("deck") .. ": " .. deck_info.draw_pile_size, 460, UI_STATUS_BAR_Y + 8)
     love.graphics.setColor(0.6, 0.5, 0.4)
-    Fonts.print("Discard: " .. deck_info.discard_pile_size, 550, UI_STATUS_BAR_Y + 8)
+    Fonts.print(I18n.t("discard") .. ": " .. deck_info.discard_pile_size, 550, UI_STATUS_BAR_Y + 8)
 
     -- 操作提示（底部）
     love.graphics.setColor(0.5, 0.45, 0.4)
-    Fonts.print("Left-click: drag  |  Right-click: sacrifice  |  Space: battle  |  ESC: menu", 50, UI_HINT_Y + 20, 13)
+    Fonts.print(I18n.t("combat_hint"), 50, UI_HINT_Y + 20, 13)
 
     -- 战斗日志（右侧悬浮）
     if #battle.combat_log > 0 then
@@ -523,7 +524,7 @@ function Combat.draw_battle_button()
 
         -- 文字
         love.graphics.setColor(1, 0.95, 0.7)
-        Fonts.print(">> BATTLE <<", btn_x + 30, btn_y + 18, 18)
+        Fonts.print(I18n.t("battle_btn"), btn_x + 30, btn_y + 18, 18)
 
         -- 快捷键提示
         love.graphics.setColor(0.6, 0.6, 0.5)
@@ -533,7 +534,7 @@ function Combat.draw_battle_button()
         love.graphics.setColor(0.4, 0.35, 0.25)
         love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
         love.graphics.setColor(0.8, 0.7, 0.5)
-        Fonts.print("Battle in progress...", btn_x + 20, btn_y + 20, 14)
+        Fonts.print(I18n.t("battle_progress"), btn_x + 20, btn_y + 20, 14)
 
     elseif battle.phase == "result" then
         local max_levels = LevelData.get_max_levels()
@@ -541,17 +542,17 @@ function Combat.draw_battle_button()
             love.graphics.setColor(0.3, 0.5, 0.3)
             love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
             love.graphics.setColor(1, 0.9, 0.6)
-            Fonts.print("→ Next Level", btn_x + 30, btn_y + 20, 16)
+            Fonts.print("→ " .. I18n.t("next_level"), btn_x + 30, btn_y + 20, 16)
         elseif battle.enemy.hp <= 0 then
             love.graphics.setColor(0.4, 0.6, 0.4)
             love.graphics.rectangle("fill", btn_x - 20, btn_y, btn_w + 40, btn_h, 8, 8)
             love.graphics.setColor(1, 1, 0.8)
-            Fonts.print("VICTORY!", btn_x + 30, btn_y + 18, 18)
+            Fonts.print(I18n.t("victory"), btn_x + 30, btn_y + 18, 18)
         else
             love.graphics.setColor(0.5, 0.3, 0.3)
             love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
             love.graphics.setColor(1, 0.6, 0.6)
-            Fonts.print("Retry Level 1", btn_x + 30, btn_y + 20, 16)
+            Fonts.print(I18n.t("retry_level"), btn_x + 30, btn_y + 20, 16)
         end
     end
 end

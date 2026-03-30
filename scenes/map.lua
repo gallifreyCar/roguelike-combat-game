@@ -5,6 +5,7 @@ local MapScene = {}
 local Map = require("systems.map")
 local State = require("core.state")
 local Fonts = require("core.fonts")
+local I18n = require("core.i18n")
 
 local hovered_node = nil
 
@@ -71,7 +72,7 @@ function MapScene.draw()
     love.graphics.setColor(0.3, 0.4, 0.5)
     love.graphics.rectangle("fill", (win_w - title_w) / 2, 20, title_w, 40, 6, 6)
     love.graphics.setColor(1, 0.9, 0.8)
-    Fonts.print("[ MAP ]", (win_w - title_w) / 2 + 80, 28, 18)
+    Fonts.print(I18n.t("map_title"), (win_w - title_w) / 2 + 80, 28, 18)
 
     local map_data = Map.get_map()
     local current_row = Map.get_current_row()
@@ -91,9 +92,9 @@ function MapScene.draw()
         -- 层标签
         love.graphics.setColor(0.4, 0.4, 0.45)
         if row == #map_data.nodes then
-            Fonts.print("BOSS", center_x - 80, y + 30, 12)
+            Fonts.print(I18n.t("boss"), center_x - 80, y + 30, 12)
         else
-            Fonts.print("Floor " .. row, center_x - 80, y + 30, 12)
+            Fonts.print(I18n.t("floor") .. " " .. row, center_x - 80, y + 30, 12)
         end
 
         for col, node in ipairs(nodes) do
@@ -127,21 +128,21 @@ function MapScene.draw()
             -- 已完成标记
             if node.completed then
                 love.graphics.setColor(0.5, 0.8, 0.5)
-                Fonts.print("[OK]", x + 65, y + 5, 12)
+                Fonts.print(I18n.t("ok"), x + 65, y + 5, 12)
             end
         end
     end
 
     -- 当前位置指示（居中）
     love.graphics.setColor(1, 1, 0.5)
-    Fonts.print("▼ You are here", win_w / 2 - 60, win_h - 40, 14)
+    Fonts.print("▼ " .. I18n.t("you_are_here"), win_w / 2 - 60, win_h - 40, 14)
 
     -- 悬停提示（居中）
     if hovered_node then
         love.graphics.setColor(0.2, 0.25, 0.3)
         love.graphics.rectangle("fill", (win_w - 250) / 2, win_h - 80, 250, 40, 4, 4)
         love.graphics.setColor(1, 1, 1)
-        Fonts.print("Click to select this node", (win_w - 230) / 2, win_h - 70, 14)
+        Fonts.print(I18n.t("click_select"), (win_w - 230) / 2, win_h - 70, 14)
     end
 end
 

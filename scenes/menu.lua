@@ -1,4 +1,5 @@
 local Fonts = require("core.fonts")
+local I18n = require("core.i18n")
 -- scenes/menu.lua - 主菜单场景
 
 local Menu = {}
@@ -20,42 +21,46 @@ function Menu.draw()
 
     -- 标题（居中）
     love.graphics.setColor(0.7, 0.55, 0.3)
-    Fonts.print("CARD SACRIFICE", win_w / 2 - 80, 80)
+    Fonts.print(I18n.t("title"), win_w / 2 - 80, 80)
     love.graphics.setColor(0.45, 0.4, 0.3)
-    Fonts.print("A Roguelike Auto-Battler", win_w / 2 - 120, 120)
+    Fonts.print(I18n.t("subtitle"), win_w / 2 - 120, 120)
 
     -- 说明（居中）
     love.graphics.setColor(0.7, 0.65, 0.5)
-    Fonts.print("HOW TO PLAY:", win_w / 2 - 50, 180)
+    Fonts.print(I18n.t("how_to_play"), win_w / 2 - 50, 180)
 
     love.graphics.setColor(0.55, 0.5, 0.45)
     local instructions = {
-        "1. DRAG cards from right panel",
-        "2. DROP on empty slots",
-        "3. Cards need BLOOD (cost)",
-        "4. Dead cards = +1 Blood",
-        "5. Click BATTLE to fight!",
-        "",
-        "Cards attack automatically each turn.",
+        "instruction1", "instruction2", "instruction3",
+        "instruction4", "instruction5", "instruction6",
     }
-    for i, line in ipairs(instructions) do
-        Fonts.print(line, win_w / 2 - 140, 210 + (i - 1) * 26)
+    for i, key in ipairs(instructions) do
+        local text = I18n.t(key)
+        if key == "instruction6" then
+            Fonts.print(text, win_w / 2 - 140, 210 + (i - 1) * 26)
+        else
+            Fonts.print(text, win_w / 2 - 140, 210 + (i - 1) * 26)
+        end
     end
 
     -- 开始按钮（居中）
     love.graphics.setColor(0.3, 0.45, 0.3)
     love.graphics.rectangle("fill", win_w / 2 - 100, 430, 200, 50, 8, 8)
     love.graphics.setColor(0.9, 0.85, 0.5)
-    Fonts.print(">> START GAME <<", win_w / 2 - 75, 445)
+    Fonts.print(I18n.t("start_game"), win_w / 2 - 75, 445)
 
     -- 设置按钮（居中）
     love.graphics.setColor(0.35, 0.35, 0.4)
     love.graphics.rectangle("fill", win_w / 2 - 100, 500, 200, 40, 6, 6)
     love.graphics.setColor(0.8, 0.8, 0.85)
-    Fonts.print("[ SETTINGS ]", win_w / 2 - 60, 510)
+    Fonts.print(I18n.t("settings"), win_w / 2 - 60, 510)
 
     love.graphics.setColor(0.4, 0.4, 0.4)
-    Fonts.print("Press SPACE to start, S for settings", win_w / 2 - 130, 570)
+    Fonts.print(I18n.t("press_hint"), win_w / 2 - 130, 570)
+
+    -- 显示当前语言
+    love.graphics.setColor(0.5, 0.5, 0.5)
+    Fonts.print("Language: " .. I18n.get_lang_name(), win_w / 2 - 50, 620)
 end
 
 function Menu.keypressed(key)

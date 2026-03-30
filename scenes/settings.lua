@@ -10,14 +10,16 @@ local I18n = require("core.i18n")
 local settings = {}
 local selected_option = 1
 
-local options = {
-    {key = "master_volume", name = "Master Volume", type = "slider", min = 0, max = 1, step = 0.1},
-    {key = "music_volume", name = "Music Volume", type = "slider", min = 0, max = 1, step = 0.1},
-    {key = "sfx_volume", name = "SFX Volume", type = "slider", min = 0, max = 1, step = 0.1},
-    {key = "fullscreen", name = "Fullscreen", type = "toggle"},
-    {key = "language", name = "Language", type = "select", values = {"en", "zh"}},
-    {key = "show_tutorial", name = "Show Tutorial", type = "toggle"},
-}
+local function get_options()
+    return {
+        {key = "master_volume", name = I18n.t("master_volume"), type = "slider", min = 0, max = 1, step = 0.1},
+        {key = "music_volume", name = I18n.t("music_volume"), type = "slider", min = 0, max = 1, step = 0.1},
+        {key = "sfx_volume", name = I18n.t("sfx_volume"), type = "slider", min = 0, max = 1, step = 0.1},
+        {key = "fullscreen", name = I18n.t("fullscreen"), type = "toggle"},
+        {key = "language", name = I18n.t("language"), type = "select", values = {"en", "zh", "ja", "ko"}},
+        {key = "show_tutorial", name = I18n.t("show_tutorial"), type = "toggle"},
+    }
+end
 
 function SettingsScene.enter()
     settings = SettingsManager.load()
@@ -46,11 +48,12 @@ function SettingsScene.draw()
     love.graphics.setColor(0.3, 0.35, 0.4)
     love.graphics.rectangle("fill", (win_w - title_w) / 2, 30, title_w, 50, 8, 8)
     love.graphics.setColor(1, 0.95, 0.9)
-    Fonts.print("SETTINGS", (win_w - title_w) / 2 + 100, 40, 20)
+    Fonts.print(I18n.t("settings_title"), (win_w - title_w) / 2 + 100, 40, 20)
 
     -- 设置选项（居中）
     local opt_w = 400
     local start_x = (win_w - opt_w) / 2
+    local options = get_options()
 
     for i, opt in ipairs(options) do
         local y = 120 + (i - 1) * 70
@@ -84,7 +87,7 @@ function SettingsScene.draw()
             Fonts.print(math.floor(value * 100) .. "%", value_x + slider_w + 15, y + 28, 14)
 
         elseif opt.type == "toggle" then
-            local toggle_text = value and "ON" or "OFF"
+            local toggle_text = value and I18n.t("on") or I18n.t("off")
             local toggle_color = value and {0.3, 0.7, 0.4} or {0.6, 0.3, 0.3}
             love.graphics.setColor(toggle_color[1], toggle_color[2], toggle_color[3])
             love.graphics.rectangle("fill", value_x, y + 20, 60, 25, 4, 4)
@@ -95,7 +98,9 @@ function SettingsScene.draw()
             love.graphics.setColor(0.4, 0.4, 0.5)
             love.graphics.rectangle("fill", value_x, y + 20, 80, 25, 4, 4)
             love.graphics.setColor(1, 1, 1)
-            Fonts.print(value:upper(), value_x + 10, y + 24, 14)
+            -- 显示语言名称而不是代码
+            local lang_names = {en = "EN", zh = "CN", ja = "JP", ko = "KR"}
+            Fonts.print(lang_names[value] or value:upper(), value_x + 30, y + 24, 14)
         end
     end
 
@@ -104,19 +109,21 @@ function SettingsScene.draw()
     love.graphics.setColor(0.3, 0.35, 0.4)
     love.graphics.rectangle("fill", (win_w - btn_w * 2 - 50) / 2, 550, btn_w, 40, 6, 6)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("Reset", (win_w - btn_w * 2 - 50) / 2 + 50, 560, 14)
+    Fonts.print(I18n.t("reset"), (win_w - btn_w * 2 - 50) / 2 + 50, 560, 14)
 
     love.graphics.setColor(0.4, 0.3, 0.35)
     love.graphics.rectangle("fill", (win_w - btn_w * 2 - 50) / 2 + btn_w + 50, 550, btn_w, 40, 6, 6)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("[ESC] Back", (win_w - btn_w * 2 - 50) / 2 + btn_w + 70, 560, 14)
+    Fonts.print(I18n.t("back"), (win_w - btn_w * 2 - 50) / 2 + btn_w + 70, 560, 14)
 
     -- 操作提示（居中）
     love.graphics.setColor(0.5, 0.5, 0.5)
-    Fonts.print("UP/DOWN Select  |  LEFT/RIGHT Change  |  ENTER/ESC Save & Back", win_w / 2 - 130, 620, 12)
+    Fonts.print(I18n.t("settings_hint"), win_w / 2 - 130, 620, 12)
 end
 
 function SettingsScene.keypressed(key)
+    local options = get_options()
+
     if key == "escape" then
         SettingsManager.save()
         State.pop()
