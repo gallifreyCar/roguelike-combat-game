@@ -191,24 +191,22 @@ function Deck.get_discard_pile()
 end
 
 -- 获取所有卡牌（手牌+牌库中，用于融合选择）
+-- [BUG FIX] 返回完整列表（不去重），这样才能正确选择两张相同卡牌进行融合
 function Deck.get_all_cards_for_fusion()
     local all_cards = {}
-    local added_ids = {}
 
-    -- 添加手牌
-    for _, card in ipairs(deck_state.hand) do
-        if not added_ids[card.id] then
-            table.insert(all_cards, card)
-            added_ids[card.id] = true
-        end
-    end
-
-    -- 添加牌库中的卡牌
+    -- 添加牌库中的所有卡牌（不去重！）
     for _, card in ipairs(deck_state.deck) do
-        if not added_ids[card.id] then
-            table.insert(all_cards, card)
-            added_ids[card.id] = true
-        end
+        table.insert(all_cards, {
+            id = card.id,
+            name = card.name,
+            cost = card.cost,
+            attack = card.attack,
+            hp = card.hp,
+            max_hp = card.max_hp or card.hp,
+            sigils = card.sigils or {},
+            fused = card.fused,
+        })
     end
 
     return all_cards
