@@ -1,11 +1,11 @@
 -- scenes/reward.lua - 奖励选择场景
--- 战斗胜利后选择卡牌加入牌组
-
 local Reward = {}
 local CardData = require("data.cards")
 local Deck = require("systems.deck")
 local State = require("core.state")
 local Fonts = require("core.fonts")
+local I18n = require("core.i18n")
+local Theme = require("config.theme")
 
 local choices = {}
 local selected = 0
@@ -125,9 +125,10 @@ function Reward.draw()
         love.graphics.setColor(1, 1, 1)
         Fonts.print(tostring(i), x + 15, y + 13, 16)
 
-        -- 卡牌名称
-        love.graphics.setColor(1, 1, 1)
-        Fonts.print(choice.name, x + 15, y + 50, 18)
+        -- 卡牌名称（使用翻译）
+        Components.text(I18n.card_name(choice.card_id), x + 15, y + 50, {
+            color = "text_primary", size = 18
+        })
 
         -- 属性
         love.graphics.setColor(1, 0.7, 0.3)
@@ -156,8 +157,8 @@ function Reward.draw()
 
     -- 已选择提示
     if selected > 0 and choices[selected] then
-        love.graphics.setColor(0.8, 0.9, 0.8)
-        Fonts.print("Selected: " .. choices[selected].name, 480, 520, 16)
+        Theme.setColor("text_primary")
+        Fonts.print("Selected: " .. I18n.card_name(choices[selected].card_id), 480, 520, 16)
     end
 end
 

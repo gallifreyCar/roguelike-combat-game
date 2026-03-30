@@ -666,28 +666,32 @@ function Combat.mousereleased(x, y, button)
 end
 
 function Combat.place_card(hand_index, slot)
-    local card = Deck.place_card(hand_index)
+    local hand = Deck.get_hand()
+    local card = hand[hand_index]
     if not card then return end
 
+    -- 先检查费用，不够的话不放牌
     if card.cost > battle.player.blood then
-        battle.message = "Need " .. card.cost .. " Blood! Right-click a card to sacrifice."
-        -- 放回手牌
-        Deck.draw_cards(0)  -- 什么都不做，只是占位
+        battle.message = I18n.tf("need_blood", card.cost)
         return
     end
 
-    battle.player.blood = battle.player.blood - card.cost
+    -- 费用足够，执行放置
+    local placed_card = Deck.place_card(hand_index)
+    if not placed_card then return end
+
+    battle.player.blood = battle.player.blood - placed_card.cost
 
     battle.player.board[slot] = {
-        id = card.id,
-        name = card.name,
-        attack = card.attack,
-        hp = card.hp,
-        max_hp = card.max_hp,
-        sigils = card.sigils,
+        id = placed_card.id,
+        name = placed_card.name,
+        attack = placed_card.attack,
+        hp = placed_card.hp,
+        max_hp = placed_card.max_hp,
+        sigils = placed_card.sigils,
     }
 
-    battle.message = card.name .. " placed!"
+    battle.message = I18n.tf("placed", I18n.card_name(placed_card.id))
 end
 
 function Combat.start_battle()
