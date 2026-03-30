@@ -13,6 +13,10 @@ local Effects = require("systems.effects")
 local Enemy = require("systems.enemy")
 local Map = require("systems.map")
 local I18n = require("core.i18n")
+local Theme = require("config.theme")
+local Layout = require("config.layout")
+local Components = require("ui.components")
+local Events = require("core.events")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -201,21 +205,27 @@ function Combat.update(dt)
 end
 
 function Combat.draw()
-    love.graphics.clear(0.08, 0.06, 0.05)
+    Theme.setColor("bg_primary")
+    love.graphics.clear()
 
     -- 绘制标题栏
-    love.graphics.setColor(0.15, 0.12, 0.1)
-    love.graphics.rectangle("fill", 0, 0, 1280, UI_TITLE_HEIGHT)
+    Theme.setColor("bg_panel")
+    love.graphics.rectangle("fill", 0, 0, Layout.get_size(), UI_TITLE_HEIGHT)
     local level_info = LevelData.get_level(battle.level)
     local level_name = level_info and level_info.name or "Level " .. battle.level
-    love.graphics.setColor(0.8, 0.7, 0.5)
-    Fonts.print(">> " .. level_name .. " <<", 450, 12, 18)
+    Components.text(">> " .. level_name .. " <<", Layout.get_size() / 2, 12, {
+        color = "text_secondary",
+        size = 18,
+        align = "center",
+    })
 
     -- 分隔线
-    love.graphics.setColor(0.25, 0.2, 0.15)
+    Theme.setColor("bg_slot")
     love.graphics.rectangle("fill", 100, UI_SEPARATOR_Y, 870, 30)
-    love.graphics.setColor(0.6, 0.5, 0.3)
-    Fonts.print("─── " .. I18n.t("your_board") .. " ───", 420, UI_SEPARATOR_Y + 8, 14)
+    Components.text("─── " .. I18n.t("your_board") .. " ───", Layout.get_size() / 2, UI_SEPARATOR_Y + 8, {
+        color = "text_secondary",
+        align = "center",
+    })
 
     Combat.draw_enemy_area()
     Combat.draw_player_board()
@@ -232,10 +242,9 @@ function Combat.draw()
                          true)
     end
 
-    -- 消息显示在分隔线上方
+    -- 消息显示
     if battle.message then
-        love.graphics.setColor(0.9, 0.8, 0.6)
-        Fonts.print(battle.message, 300, 60)
+        Components.text(battle.message, 300, 60, {color = "text_secondary"})
     end
 
     -- 绘制特效
@@ -243,25 +252,27 @@ function Combat.draw()
 end
 
 function Combat.draw_enemy_area()
-    -- 敌方HP（放在标题栏右侧）
-    love.graphics.setColor(0.5, 0.15, 0.15)
-    love.graphics.rectangle("fill", 1050, 8, 180, 32, 4, 4)
-    love.graphics.setColor(0.8, 0.2, 0.2)
-    local hp_w = (battle.enemy.hp / battle.enemy.max_hp) * 180
-    love.graphics.rectangle("fill", 1050, 8, hp_w, 32, 4, 4)
-    love.graphics.setColor(1, 1, 1)
-    Fonts.print("Enemy: " .. battle.enemy.hp .. "/" .. battle.enemy.max_hp, 1058, 13)
+    -- 敌方HP
+    Theme.setColor("accent_red", 0.3)
+    love.graphics.rectangle("fill", Settings.enemy_hp_bar_x, Settings.enemy_hp_bar_y,
+                            Settings.enemy_hp_bar_width, Settings.enemy_hp_bar_height, 4, 4)
+    Theme.setColor("accent_red")
+    local hp_w = (battle.enemy.hp / battle.enemy.max_hp) * Settings.enemy_hp_bar_width
+    love.graphics.rectangle("fill", Settings.enemy_hp_bar_x, Settings.enemy_hp_bar_y, hp_w,
+                            Settings.enemy_hp_bar_height, 4, 4)
+    Components.text("Enemy: " .. battle.enemy.hp .. "/" .. battle.enemy.max_hp,
+                    Settings.enemy_hp_bar_x + 8, Settings.enemy_hp_bar_y + 5, {
+        color = "text_value",
+    })
 
-    -- 敌方格子（使用新的Y坐标）
+    -- 敌方格子
     for i = 1, BOARD_SLOTS do
-        local x = 150 + (i - 1) * 130
+        local x = Layout.card_slot(i, BOARD_SLOTS)
         local y = UI_ENEMY_AREA_Y
 
-        love.graphics.setColor(0.12, 0.1, 0.08)
+        Theme.setColor("bg_slot")
         love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
-
-        -- 边框
-        love.graphics.setColor(0.4, 0.3, 0.2)
+        Theme.setColor("border_gold", 0.5)
         love.graphics.rectangle("line", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
         local card = battle.enemy.board[i]
@@ -272,60 +283,60 @@ function Combat.draw_enemy_area()
 end
 
 function Combat.draw_player_board()
-    -- 玩家格子（使用新的Y坐标）
+    -- 玩家格子
     for i = 1, BOARD_SLOTS do
-        local x = 150 + (i - 1) * 130
+        local x = Layout.card_slot(i, BOARD_SLOTS)
         local y = UI_PLAYER_BOARD_Y
 
         -- 格子高亮
         if battle.dragging then
             local mx, my = love.mouse.getPosition()
             if mx >= x and mx <= x + CARD_WIDTH and my >= y and my <= y + CARD_HEIGHT then
-                if battle.player.board[i] == nil then
-                    love.graphics.setColor(0.25, 0.35, 0.25)
-                else
-                    love.graphics.setColor(0.35, 0.25, 0.25)
-                end
+                Theme.setColor(battle.player.board[i] == nil and "bg_slot_hover" or "accent_red", 0.3)
             else
-                love.graphics.setColor(0.18, 0.15, 0.12)
+                Theme.setColor("bg_slot")
             end
         else
-            love.graphics.setColor(0.18, 0.15, 0.12)
+            Theme.setColor("bg_slot")
         end
         love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
         -- 边框
-        love.graphics.setColor(0.35, 0.28, 0.2)
+        Theme.setColor("border_gold", 0.5)
         love.graphics.rectangle("line", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
         local card = battle.player.board[i]
         if card then
             Combat.draw_card(card, x, y, true)
             -- 提示可以献祭
-            love.graphics.setColor(0.6, 0.5, 0.3)
-            Fonts.print("右键献祭", x + 15, y + 115)
+            Components.text(I18n.t("right_click_sacrifice"), x + 15, y + 115, {
+                color = "text_hint",
+                size = 12,
+            })
         end
     end
 end
 
 function Combat.draw_hand_panel()
     -- 右侧手牌面板
-    love.graphics.setColor(0.1, 0.08, 0.06)
-    love.graphics.rectangle("fill", 1070, 50, 180, 500, 8, 8)
+    local panel = Layout.hand_panel()
+    Components.panel(panel.x, panel.y, panel.width, panel.height, {
+        bg = "bg_panel",
+    })
 
-    love.graphics.setColor(0.7, 0.6, 0.4)
-    Fonts.print("YOUR HAND", 1095, 60)
-    Fonts.print("(" .. Deck.hand_size() .. " " .. I18n.t("cards") .. ")", 1100, 80)
+    Components.text("YOUR HAND", panel.x + 25, 60, {color = "text_secondary"})
+    Components.text("(" .. Deck.hand_size() .. " " .. I18n.t("cards") .. ")", panel.x + 30, 80, {
+        color = "text_hint",
+    })
 
     local hand = Deck.get_hand()
     for i, card in ipairs(hand) do
-        local x = HAND_X
+        local x = panel.x + 30
         local y = HAND_Y + (i - 1) * 90
 
         if not (battle.dragging and battle.dragging_index == i) then
             local mx, my = love.mouse.getPosition()
             local hover = mx >= x and mx <= x + CARD_WIDTH and my >= y and my <= y + 80
-
             Combat.draw_card_small(card, x, y, hover)
         end
     end
@@ -333,63 +344,44 @@ end
 
 function Combat.draw_card(card, x, y, is_player)
     -- 卡牌阴影
-    love.graphics.setColor(0, 0, 0, 0.3)
+    Theme.setColor("bg_primary", 0.3)
     love.graphics.rectangle("fill", x + 3, y + 3, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
-    -- 背景（渐变效果）
-    if is_player then
-        love.graphics.setColor(0.15, 0.28, 0.15)
-        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
-        love.graphics.setColor(0.22, 0.35, 0.22)
-        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT * 0.7, 5, 5)
-    else
-        love.graphics.setColor(0.28, 0.15, 0.15)
-        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
-        love.graphics.setColor(0.35, 0.2, 0.18)
-        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT * 0.7, 5, 5)
-    end
+    -- 背景
+    Theme.setColor(is_player and "bg_card" or "bg_card_enemy")
+    love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
     -- 金色边框
-    love.graphics.setColor(0.6, 0.5, 0.3)
+    Theme.setColor("border_gold")
     love.graphics.rectangle("line", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
     -- 卡牌头部区域
-    love.graphics.setColor(0.1, 0.15, 0.1)
+    Theme.setColor("bg_slot")
     love.graphics.rectangle("fill", x + 2, y + 2, CARD_WIDTH - 4, 25, 3, 3)
 
     -- 名称
-    love.graphics.setColor(1, 0.95, 0.85)
-    Fonts.print(card.name, x + 8, y + 6, 14)
+    Components.text(card.name, x + 8, y + 6, {color = "text_primary", size = 14})
 
     -- Cost（红圈白字）
-    love.graphics.setColor(0.7, 0.25, 0.2)
+    Theme.setColor("accent_red")
     love.graphics.circle("fill", x + 15, y + 45, 14)
-    love.graphics.setColor(1, 1, 1)
-    Fonts.print(tostring(card.cost), x + 11, y + 38, 14)
+    Components.text(tostring(card.cost), x + 11, y + 38, {color = "text_value", size = 14})
 
-    -- 属性图标和数值
-    -- 攻击力
-    love.graphics.setColor(1, 0.6, 0.2)
-    Fonts.print("ATK:", x + 8, y + 50, 11)
-    Fonts.print(tostring(card.attack), x + 40, y + 50, 14)
+    -- 属性
+    Components.text("ATK:", x + 8, y + 50, {color = "accent_gold", size = 11})
+    Components.text(tostring(card.attack), x + 40, y + 50, {color = "text_value", size = 14})
 
-    -- HP
-    love.graphics.setColor(0.9, 0.3, 0.3)
-    Fonts.print("HP:", x + 55, y + 50, 11)
-    Fonts.print(tostring(card.hp), x + 78, y + 50, 14)
+    Components.text("HP:", x + 55, y + 50, {color = "accent_red", size = 11})
+    Components.text(tostring(card.hp), x + 78, y + 50, {color = "text_value", size = 14})
 
     -- 血量条
-    love.graphics.setColor(0.15, 0.15, 0.15)
-    love.graphics.rectangle("fill", x + 8, y + 95, 84, 10, 2, 2)
     local hp_ratio = card.hp / (card.max_hp or card.hp)
-    if hp_ratio > 0.5 then
-        love.graphics.setColor(0.3, 0.7, 0.3)
-    elseif hp_ratio > 0.25 then
-        love.graphics.setColor(0.8, 0.7, 0.2)
-    else
-        love.graphics.setColor(0.8, 0.3, 0.3)
-    end
-    love.graphics.rectangle("fill", x + 8, y + 95, 84 * hp_ratio, 10, 2, 2)
+    local hp_color = hp_ratio > 0.5 and "hp_high" or (hp_ratio > 0.25 and "hp_mid" or "hp_low")
+    Components.progress_bar(x + 8, y + 95, 84, 10, card.hp, card.max_hp or card.hp, {
+        fill = hp_color,
+        bg = "bg_slot",
+        radius = 2,
+    })
 
     -- 印记指示
     if card.sigils and #card.sigils > 0 then

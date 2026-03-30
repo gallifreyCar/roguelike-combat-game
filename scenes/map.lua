@@ -1,22 +1,19 @@
 -- scenes/map.lua - 关卡地图场景
--- 显示肉鸽风格地图，选择下一关
+-- 使用 Theme 和 Components 重构
 
 local MapScene = {}
 local Map = require("systems.map")
 local State = require("core.state")
 local Fonts = require("core.fonts")
 local I18n = require("core.i18n")
+local Theme = require("config.theme")
+local Layout = require("config.layout")
+local Components = require("ui.components")
+local Settings = require("config.settings")
 
 local hovered_node = nil
 
--- 节点尺寸配置
-local NODE_WIDTH = 100
-local NODE_HEIGHT = 50
-local NODE_SPACING = 150  -- 列间距
-local ROW_SPACING = 70    -- 行间距
-
 function MapScene.enter()
-    -- 如果地图为空，生成新地图
     local map_data = Map.get_map()
     if not map_data.nodes or #map_data.nodes == 0 then
         Map.generate()
@@ -32,9 +29,7 @@ function MapScene.update(dt)
     local mx, my = love.mouse.getPosition()
     hovered_node = nil
 
-    -- 获取动态窗口尺寸
-    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
-
+    local win_w, win_h = Layout.get_size()
     local map_data = Map.get_map()
     local current_row = Map.get_current_row()
     local next_row = current_row + 1
@@ -42,113 +37,108 @@ function MapScene.update(dt)
 
     if #next_nodes == 0 then return end
 
-    -- 计算节点居中偏移
+    -- 计算节点位置
+    local node_w = Settings.map_node_width
+    local node_h = Settings.map_node_height
+    local spacing = Settings.map_node_spacing
+
     local node_count = #next_nodes
-    local total_width = node_count * NODE_WIDTH + (node_count - 1) * (NODE_SPACING - NODE_WIDTH)
+    local total_width = node_count * node_w + (node_count - 1) * (spacing - node_w)
     local center_x = (win_w - total_width) / 2
+    local base_y = win_h - 100
+    local node_y = base_y - (next_row - 1) * Settings.map_row_spacing
 
-    -- 计算下一层节点的 Y 坐标（基于窗口高度）
-    local base_y = win_h - 100  -- 底部基准位置
-    local node_y = base_y - (next_row - 1) * ROW_SPACING
-
-    -- 检测悬停
     for col, node in ipairs(next_nodes) do
-        local x = center_x + (col - 1) * NODE_SPACING
-        local y = node_y
-        if mx >= x and mx <= x + NODE_WIDTH and my >= y and my <= y + NODE_HEIGHT then
+        local x = center_x + (col - 1) * spacing
+        if mx >= x and mx <= x + node_w and my >= node_y and my <= node_y + node_h then
             hovered_node = node
         end
     end
 end
 
 function MapScene.draw()
-    love.graphics.clear(0.05, 0.08, 0.12)
+    Theme.setColor("bg_secondary")
+    love.graphics.clear()
 
-    -- 获取动态窗口尺寸
-    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
+    local win_w, win_h = Layout.get_size()
 
-    -- 标题（居中）
+    -- 标题
     local title_w = 250
-    love.graphics.setColor(0.3, 0.4, 0.5)
-    love.graphics.rectangle("fill", (win_w - title_w) / 2, 20, title_w, 40, 6, 6)
-    love.graphics.setColor(1, 0.9, 0.8)
-    Fonts.print(I18n.t("map_title"), (win_w - title_w) / 2 + 80, 28, 18)
+    Components.panel(Layout.center_x(title_w), 20, title_w, 40, {
+        bg = "bg_button",
+    })
+    Components.text(I18n.t("map_title"), win_w / 2, 28, {
+        color = "text_primary",
+        align = "center",
+    })
 
     local map_data = Map.get_map()
-    local current_row = Map.get_current_row()
-
-    -- 基准 Y 位置（与 update 函数一致）
+    local node_w = Settings.map_node_width
+    local node_h = Settings.map_node_height
+    local spacing = Settings.map_node_spacing
     local base_y = win_h - 100
 
     -- 绘制所有层
     for row, nodes in ipairs(map_data.nodes) do
-        local y = base_y - (row - 1) * ROW_SPACING
-
-        -- 计算该层节点居中偏移
+        local y = base_y - (row - 1) * Settings.map_row_spacing
         local node_count = #nodes
-        local total_width = node_count * NODE_WIDTH + (node_count - 1) * (NODE_SPACING - NODE_WIDTH)
+        local total_width = node_count * node_w + (node_count - 1) * (spacing - node_w)
         local center_x = (win_w - total_width) / 2
 
         -- 层标签
-        love.graphics.setColor(0.4, 0.4, 0.45)
-        if row == #map_data.nodes then
-            Fonts.print(I18n.t("boss"), center_x - 80, y + 30, 12)
-        else
-            Fonts.print(I18n.t("floor") .. " " .. row, center_x - 80, y + 30, 12)
-        end
+        local label = (row == #map_data.nodes) and I18n.t("boss") or I18n.t("floor") .. " " .. row
+        Components.text(label, center_x - 80, y + 30, {color = "text_hint"})
 
         for col, node in ipairs(nodes) do
-            local x = center_x + (col - 1) * NODE_SPACING
+            local x = center_x + (col - 1) * spacing
             local node_type = Map.get_node_type(node.type)
+            local node_color = Theme.node_color(node.type)
 
             -- 节点背景
             if node.completed then
-                love.graphics.setColor(0.3, 0.3, 0.35)
+                Theme.setColor("bg_slot")
             elseif node == hovered_node then
-                love.graphics.setColor(node_type.color[1] + 0.2, node_type.color[2] + 0.2, node_type.color[3] + 0.2)
+                Theme.setColor({node_color[1] + 0.2, node_color[2] + 0.2, node_color[3] + 0.2})
             else
-                love.graphics.setColor(node_type.color[1] * 0.7, node_type.color[2] * 0.7, node_type.color[3] * 0.7)
+                Theme.setColor({node_color[1] * 0.7, node_color[2] * 0.7, node_color[3] * 0.7})
             end
-
-            love.graphics.rectangle("fill", x, y, NODE_WIDTH, NODE_HEIGHT, 6, 6)
+            love.graphics.rectangle("fill", x, y, node_w, node_h, 6, 6)
 
             -- 节点边框
-            if node == hovered_node then
-                love.graphics.setColor(1, 1, 1)
-            else
-                love.graphics.setColor(0.5, 0.5, 0.5)
-            end
-            love.graphics.rectangle("line", x, y, NODE_WIDTH, NODE_HEIGHT, 6, 6)
+            Theme.setColor(node == hovered_node and "border_highlight" or "border_normal")
+            love.graphics.rectangle("line", x, y, node_w, node_h, 6, 6)
 
-            -- 节点图标和名称
-            love.graphics.setColor(1, 1, 1)
-            Fonts.print(node_type.icon, x + 40, y + 5, 16)
-            Fonts.print(node_type.name, x + 20, y + 30, 12)
+            -- 节点内容
+            Components.text(node_type.icon, x + 40, y + 5, {color = "text_value", size = 16})
+            Components.text(node_type.name, x + 20, y + 30, {color = "text_primary", size = 12})
 
             -- 已完成标记
             if node.completed then
-                love.graphics.setColor(0.5, 0.8, 0.5)
-                Fonts.print(I18n.t("ok"), x + 65, y + 5, 12)
+                Components.text(I18n.t("ok"), x + 65, y + 5, {color = "accent_green", size = 12})
             end
         end
     end
 
-    -- 当前位置指示（居中）
-    love.graphics.setColor(1, 1, 0.5)
-    Fonts.print("▼ " .. I18n.t("you_are_here"), win_w / 2 - 60, win_h - 40, 14)
+    -- 当前位置指示
+    Components.text("▼ " .. I18n.t("you_are_here"), win_w / 2, win_h - 40, {
+        color = "accent_yellow",
+        align = "center",
+    })
 
-    -- 悬停提示（居中）
+    -- 悬停提示
     if hovered_node then
-        love.graphics.setColor(0.2, 0.25, 0.3)
-        love.graphics.rectangle("fill", (win_w - 250) / 2, win_h - 80, 250, 40, 4, 4)
-        love.graphics.setColor(1, 1, 1)
-        Fonts.print(I18n.t("click_select"), (win_w - 230) / 2, win_h - 70, 14)
+        Components.panel((win_w - 250) / 2, win_h - 80, 250, 40, {
+            bg = "bg_panel",
+        })
+        Components.text(I18n.t("click_select"), win_w / 2, win_h - 70, {
+            color = "text_primary",
+            align = "center",
+        })
     end
 end
 
 function MapScene.keypressed(key)
     if key == "escape" then
-        -- 返回菜单（临时）
         Map.reset()
         State.switch("menu")
     end
@@ -160,13 +150,11 @@ function MapScene.mousepressed(x, y, button)
     if hovered_node then
         local success, node = Map.select_node(hovered_node.col)
         if success then
-            -- 根据节点类型进入对应场景
             if node.type == "battle" or node.type == "elite" or node.type == "boss" then
                 State.switch("combat")
             elseif node.type == "reward" then
                 State.push("reward")
             else
-                -- 默认进入战斗
                 State.switch("combat")
             end
         end

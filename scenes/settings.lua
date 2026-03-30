@@ -1,14 +1,18 @@
 -- scenes/settings.lua - 设置场景
--- 游戏设置界面
+-- 使用 Theme 和 Components 重构
 
 local SettingsScene = {}
 local SettingsManager = require("systems.settings_manager")
 local State = require("core.state")
 local Fonts = require("core.fonts")
 local I18n = require("core.i18n")
+local Theme = require("config.theme")
+local Layout = require("config.layout")
+local Components = require("ui.components")
 
 local settings = {}
 local selected_option = 1
+local buttons = {}
 
 local function get_options()
     return {
@@ -24,10 +28,13 @@ end
 function SettingsScene.enter()
     settings = SettingsManager.load()
     selected_option = 1
-    -- 同步语言设置到 I18n
     if settings.language then
         I18n.set_lang(settings.language)
     end
+
+    -- 计算按钮位置
+    local btn_w, btn_h = 150, 40
+    buttons = Layout.bottom_buttons(2, btn_w, btn_h, 50)
 end
 
 function SettingsScene.exit()
@@ -38,97 +45,88 @@ function SettingsScene.update(dt)
 end
 
 function SettingsScene.draw()
-    love.graphics.clear(0.06, 0.08, 0.1)
+    -- 背景
+    Theme.setColor("bg_secondary")
+    love.graphics.clear()
 
-    -- 获取动态窗口尺寸
-    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
+    local win_w, win_h = Layout.get_size()
 
-    -- 标题（居中）
+    -- 标题面板
     local title_w = 280
-    love.graphics.setColor(0.3, 0.35, 0.4)
-    love.graphics.rectangle("fill", (win_w - title_w) / 2, 30, title_w, 50, 8, 8)
-    love.graphics.setColor(1, 0.95, 0.9)
-    Fonts.print(I18n.t("settings_title"), (win_w - title_w) / 2 + 100, 40, 20)
+    Components.panel(Layout.center_x(title_w), 30, title_w, 50, {
+        bg = "bg_button",
+    })
+    Components.text(I18n.t("settings_title"), win_w / 2, 40, {
+        color = "text_primary",
+        size = 20,
+        align = "center",
+    })
 
-    -- 设置选项（居中）
+    -- 设置选项
     local opt_w = 400
-    local start_x = (win_w - opt_w) / 2
+    local start_x = Layout.center_x(opt_w)
     local options = get_options()
 
     for i, opt in ipairs(options) do
         local y = 120 + (i - 1) * 70
         local value = settings[opt.key]
 
-        -- 背景
-        if i == selected_option then
-            love.graphics.setColor(0.2, 0.25, 0.3)
-        else
-            love.graphics.setColor(0.15, 0.18, 0.22)
-        end
-        love.graphics.rectangle("fill", start_x, y, opt_w, 55, 6, 6)
+        -- 选项背景
+        local bg_color = (i == selected_option) and "bg_button_hover" or "bg_slot"
+        Components.panel(start_x, y, opt_w, 55, {bg = bg_color, radius = 6})
 
         -- 选项名称
-        love.graphics.setColor(0.9, 0.85, 0.8)
-        Fonts.print(opt.name, start_x + 20, y + 10, 16)
+        Components.text(opt.name, start_x + 20, y + 10, {color = "text_primary"})
 
         -- 值显示
         local value_x = start_x + opt_w - 150
+
         if opt.type == "slider" then
-            -- 滑块
-            local slider_w = 100
-            local fill_w = value * slider_w
-
-            love.graphics.setColor(0.2, 0.2, 0.25)
-            love.graphics.rectangle("fill", value_x, y + 30, slider_w, 15, 4, 4)
-            love.graphics.setColor(0.4, 0.6, 0.8)
-            love.graphics.rectangle("fill", value_x, y + 30, fill_w, 15, 4, 4)
-
-            love.graphics.setColor(1, 1, 1)
-            Fonts.print(math.floor(value * 100) .. "%", value_x + slider_w + 15, y + 28, 14)
+            Components.progress_bar(value_x, y + 30, 100, 15, value, 1, {
+                fill = "accent_blue",
+                bg = "bg_slot",
+                radius = 4,
+            })
+            Components.text(math.floor(value * 100) .. "%", value_x + 115, y + 28, {
+                color = "text_value",
+                size = 14,
+            })
 
         elseif opt.type == "toggle" then
             local toggle_text = value and I18n.t("on") or I18n.t("off")
-            local toggle_color = value and {0.3, 0.7, 0.4} or {0.6, 0.3, 0.3}
-            love.graphics.setColor(toggle_color[1], toggle_color[2], toggle_color[3])
-            love.graphics.rectangle("fill", value_x, y + 20, 60, 25, 4, 4)
-            love.graphics.setColor(1, 1, 1)
-            Fonts.print(toggle_text, value_x + 10, y + 24, 14)
+            local toggle_style = value and "primary" or "danger"
+            Components.button(toggle_text, value_x, y + 20, 60, 25, {
+                style = toggle_style,
+                radius = 4,
+                font_size = 14,
+            })
 
         elseif opt.type == "select" then
-            love.graphics.setColor(0.4, 0.4, 0.5)
-            love.graphics.rectangle("fill", value_x, y + 20, 80, 25, 4, 4)
-            love.graphics.setColor(1, 1, 1)
-            -- 显示语言名称而不是代码
             local lang_names = {en = "EN", zh = "CN", ja = "JP", ko = "KR"}
-            Fonts.print(lang_names[value] or value:upper(), value_x + 30, y + 24, 14)
+            Components.button(lang_names[value] or value:upper(), value_x, y + 20, 80, 25, {
+                radius = 4,
+                font_size = 14,
+            })
         end
     end
 
-    -- 底部按钮（居中）
-    local btn_w = 150
-    love.graphics.setColor(0.3, 0.35, 0.4)
-    love.graphics.rectangle("fill", (win_w - btn_w * 2 - 50) / 2, 550, btn_w, 40, 6, 6)
-    love.graphics.setColor(1, 1, 1)
-    Fonts.print(I18n.t("reset"), (win_w - btn_w * 2 - 50) / 2 + 50, 560, 14)
+    -- 底部按钮
+    Components.button(I18n.t("reset"), buttons[1].x, buttons[1].y,
+                      buttons[1].width, buttons[1].height, {})
+    Components.button(I18n.t("back"), buttons[2].x, buttons[2].y,
+                      buttons[2].width, buttons[2].height, {})
 
-    love.graphics.setColor(0.4, 0.3, 0.35)
-    love.graphics.rectangle("fill", (win_w - btn_w * 2 - 50) / 2 + btn_w + 50, 550, btn_w, 40, 6, 6)
-    love.graphics.setColor(1, 1, 1)
-    Fonts.print(I18n.t("back"), (win_w - btn_w * 2 - 50) / 2 + btn_w + 70, 560, 14)
-
-    -- 操作提示（居中）
-    love.graphics.setColor(0.5, 0.5, 0.5)
-    Fonts.print(I18n.t("settings_hint"), win_w / 2 - 130, 620, 12)
+    -- 操作提示
+    Components.text(I18n.t("settings_hint"), win_w / 2, 620, {
+        color = "text_hint",
+        align = "center",
+    })
 end
 
 function SettingsScene.keypressed(key)
     local options = get_options()
 
-    if key == "escape" then
-        SettingsManager.save()
-        State.pop()
-    elseif key == "return" then
-        -- 回车键：保存并返回
+    if key == "escape" or key == "return" then
         SettingsManager.save()
         State.pop()
     elseif key == "up" then
@@ -159,7 +157,6 @@ function SettingsScene.keypressed(key)
                 if idx > #opt.values then idx = 1 end
                 settings[opt.key] = opt.values[idx]
                 SettingsManager.set(opt.key, settings[opt.key])
-                -- 同步更新语言
                 if opt.key == "language" then
                     I18n.set_lang(settings[opt.key])
                 end
@@ -171,20 +168,10 @@ end
 function SettingsScene.mousepressed(x, y, button)
     if button ~= 1 then return end
 
-    -- 获取动态窗口尺寸
-    local win_w = love.graphics.getWidth()
-    local btn_w = 150
-
-    -- 重置按钮（居中）
-    local reset_x = (win_w - btn_w * 2 - 50) / 2
-    if x >= reset_x and x <= reset_x + btn_w and y >= 550 and y <= 590 then
+    if Layout.mouse_in_button(buttons[1]) then
         SettingsManager.reset()
         settings = SettingsManager.get_all()
-    end
-
-    -- 返回按钮（居中）
-    local back_x = reset_x + btn_w + 50
-    if x >= back_x and x <= back_x + btn_w and y >= 550 and y <= 590 then
+    elseif Layout.mouse_in_button(buttons[2]) then
         SettingsManager.save()
         State.pop()
     end
