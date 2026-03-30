@@ -11,6 +11,7 @@ local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
 local Sound = require("systems.sound")
+local I18n = require("core.i18n")
 
 local selected_cards = {}
 local fusible_pairs = {}
@@ -66,7 +67,7 @@ function Fusion.draw()
     -- 标题栏
     Theme.setColor("bg_panel")
     love.graphics.rectangle("fill", 0, 0, win_w, 50, 0, 0)
-    Components.text("CARD FUSION", win_w / 2, 12, {
+    Components.text(I18n.t("fusion_title"), win_w / 2, 12, {
         color = "text_secondary",
         size = 20,
         align = "center",
@@ -97,7 +98,7 @@ function Fusion.draw()
     love.graphics.rectangle("fill", btn_x, 500, 120, 40, 6, 6)
     Theme.setColor("border_gold", 0.5)
     love.graphics.rectangle("line", btn_x, 500, 120, 40, 6, 6)
-    Components.text("[ESC] Back", btn_x + 25, 510, {color = "text_secondary"})
+    Components.text(I18n.t("fusion_back"), btn_x + 25, 510, {color = "text_secondary"})
 end
 
 function Fusion.draw_mode_buttons()
@@ -112,7 +113,7 @@ function Fusion.draw_mode_buttons()
     love.graphics.rectangle("fill", start_x, 60, btn_width, 35, 6, 6)
     Theme.setColor(same_active and "accent_gold" or "border_gold", 0.5)
     love.graphics.rectangle("line", start_x, 60, btn_width, 35, 6, 6)
-    Components.text("Same Card", start_x + 45, 68, {
+    Components.text(I18n.t("fusion_same_card"), start_x + 45, 68, {
         color = same_active and "accent_gold" or "text_secondary",
     })
 
@@ -122,13 +123,13 @@ function Fusion.draw_mode_buttons()
     love.graphics.rectangle("fill", start_x + btn_width + gap, 60, btn_width, 35, 6, 6)
     Theme.setColor(dice_active and "accent_gold" or "border_gold", 0.5)
     love.graphics.rectangle("line", start_x + btn_width + gap, 60, btn_width, 35, 6, 6)
-    Components.text("Dice Fusion", start_x + btn_width + gap + 45, 68, {
+    Components.text(I18n.t("fusion_dice"), start_x + btn_width + gap + 45, 68, {
         color = dice_active and "accent_gold" or "text_secondary",
     })
 
     -- 骰子融合说明
     if fusion_mode == "dice" then
-        Components.text("Select 2 different cards for risky fusion!", win_w / 2, 100, {
+        Components.text(I18n.t("fusion_dice_hint"), win_w / 2, 100, {
             color = "text_hint",
             align = "center",
         })
@@ -139,16 +140,16 @@ function Fusion.draw_same_fusion_panel()
     local win_w = Layout.get_size()
 
     if #fusible_pairs == 0 then
-        Components.text("No same-card pairs available for fusion", win_w / 2, 200, {
+        Components.text(I18n.t("fusion_no_pairs"), win_w / 2, 200, {
             color = "text_secondary",
             align = "center",
         })
-        Components.text("You need 2 of the same card to fuse", win_w / 2, 230, {
+        Components.text(I18n.t("fusion_need_two"), win_w / 2, 230, {
             color = "text_hint",
             align = "center",
         })
     else
-        Components.text("Select a pair to fuse:", win_w / 2 - 150, 110, {
+        Components.text(I18n.t("fusion_select_pair"), win_w / 2 - 150, 110, {
             color = "text_secondary",
         })
 
@@ -163,8 +164,8 @@ function Fusion.draw_same_fusion_panel()
                 Theme.setColor("border_gold", 0.3)
                 love.graphics.rectangle("line", win_w / 2 - 250, y, 500, 70, 6, 6)
 
-                -- 卡牌名称和数量
-                Components.text(template.name .. " x" .. pair.count, win_w / 2 - 230, y + 10, {
+                -- 卡牌名称和数量（使用翻译）
+                Components.text(I18n.card_name(template.id) .. " x" .. pair.count, win_w / 2 - 230, y + 10, {
                     color = "text_primary",
                     size = 16,
                 })
@@ -173,11 +174,11 @@ function Fusion.draw_same_fusion_panel()
                 local preview = FusionSystem.preview(template, template)
                 if preview then
                     Theme.setColor("accent_gold")
-                    Components.text("ATK: " .. template.attack .. " -> " .. preview.attack, win_w / 2 - 230, y + 35, {
+                    Components.text(I18n.t("fusion_atk") .. ": " .. template.attack .. " -> " .. preview.attack, win_w / 2 - 230, y + 35, {
                         size = 12,
                     })
                     Theme.setColor("accent_green")
-                    Components.text("HP: " .. template.hp .. " -> " .. preview.hp, win_w / 2 - 100, y + 35, {
+                    Components.text(I18n.t("fusion_hp") .. ": " .. template.hp .. " -> " .. preview.hp, win_w / 2 - 100, y + 35, {
                         size = 12,
                     })
                 end
@@ -202,7 +203,7 @@ function Fusion.draw_dice_fusion_panel()
     local all_cards = cached_all_cards
 
     if not all_cards or #all_cards < 2 then
-        Components.text("Need at least 2 cards in deck for fusion", win_w / 2, 200, {
+        Components.text(I18n.t("fusion_need_two_cards"), win_w / 2, 200, {
             color = "text_secondary",
             align = "center",
         })
@@ -210,7 +211,7 @@ function Fusion.draw_dice_fusion_panel()
     end
 
     -- 显示卡牌供选择
-    Components.text("Click to select cards for fusion:", win_w / 2, 120, {
+    Components.text(I18n.t("fusion_click_select"), win_w / 2, 120, {
         color = "text_secondary",
         align = "center",
     })
@@ -239,8 +240,8 @@ function Fusion.draw_dice_fusion_panel()
         Theme.setColor(is_selected and "accent_gold" or "border_gold", 0.5)
         love.graphics.rectangle("line", x, y, card_width, card_height, 5, 5)
 
-        -- 卡牌信息
-        Components.text(card.name, x + 5, y + 5, {color = "text_primary", size = 12})
+        -- 卡牌信息（使用翻译）
+        Components.text(I18n.card_name(card.id), x + 5, y + 5, {color = "text_primary", size = 12})
         Components.text("$" .. card.cost, x + 5, y + 25, {color = "accent_red"})
         Components.text("A:" .. card.attack, x + 5, y + 45, {color = "accent_gold"})
         Components.text("H:" .. card.hp, x + 5, y + 65, {color = "accent_green"})
@@ -266,7 +267,7 @@ function Fusion.draw_dice_fusion_panel()
                 dice_preview = previews
 
                 -- 显示融合配方
-                Components.text("Available fusion recipes:", win_w / 2, 290, {
+                Components.text(I18n.t("fusion_recipes"), win_w / 2, 290, {
                     color = "text_secondary",
                     align = "center",
                 })
@@ -278,7 +279,7 @@ function Fusion.draw_dice_fusion_panel()
                     love.graphics.rectangle("fill", win_w / 2 - 200, y, 400, 50, 6, 6)
 
                     -- 配方信息
-                    Components.text(preview.result_name or "Enhanced", win_w / 2 - 180, y + 5, {
+                    Components.text(preview.result_name or I18n.t("fusion_enhanced"), win_w / 2 - 180, y + 5, {
                         color = "accent_gold",
                         size = 14,
                     })
@@ -290,7 +291,7 @@ function Fusion.draw_dice_fusion_panel()
                     -- 成功率和风险指示
                     local rate_color = preview.risk == "high" and "accent_red" or
                                        (preview.risk == "medium" and "accent_gold" or "accent_green")
-                    Components.text("Success: " .. preview.success_rate, win_w / 2 + 50, y + 5, {
+                    Components.text(I18n.t("fusion_success_rate") .. ": " .. preview.success_rate, win_w / 2 + 50, y + 5, {
                         color = rate_color,
                     })
 
@@ -302,14 +303,14 @@ function Fusion.draw_dice_fusion_panel()
                     })
                 end
             else
-                Components.text("No fusion recipe available for this combination", win_w / 2, 290, {
+                Components.text(I18n.t("fusion_no_recipe"), win_w / 2, 290, {
                     color = "text_hint",
                     align = "center",
                 })
             end
         end
     elseif #selected_cards == 1 then
-        Components.text("Select another card...", win_w / 2, 290, {
+        Components.text(I18n.t("fusion_select_another"), win_w / 2, 290, {
             color = "text_hint",
             align = "center",
         })
@@ -462,7 +463,7 @@ function Fusion.execute_same_fusion(pair)
             -- 播放融合音效
             Sound.play("fuse")
 
-            message = "Fusion success! Created " .. result.name
+            message = I18n.tf("fusion_success", result.name)
             message_timer = 2.0
 
             -- 刷新缓存和可融合列表
