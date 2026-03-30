@@ -64,6 +64,8 @@ function Menu.keypressed(key)
         State.switch("map")
     elseif key == "s" then
         State.push("settings")
+    elseif key == "escape" then
+        love.event.quit()
     end
 end
 

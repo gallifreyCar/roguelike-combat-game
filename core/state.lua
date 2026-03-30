@@ -54,7 +54,11 @@ function State.pop()
             State.current.resume()
         end
     else
-        State.current = nil
+        -- 栈为空时返回主菜单
+        State.current = State.states["menu"]
+        if State.current and State.current.enter then
+            State.current.enter()
+        end
     end
 end
 
