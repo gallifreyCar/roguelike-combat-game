@@ -10,10 +10,12 @@ local CardData = require("data.cards")
 local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
+local Sound = require("systems.sound")
 
 local selected_cards = {}
 local fusible_pairs = {}
 local dice_fusion_candidates = {}
+local cached_all_cards = {}  -- 缓存卡牌列表，避免 draw 中重复获取
 local preview_result = nil
 local dice_preview = nil
 local fusion_mode = "same"  -- "same" 或 "dice"
@@ -28,14 +30,14 @@ function Fusion.enter()
     message = ""
     message_timer = 0
 
-    -- 获取所有可用卡牌（从牌库，用于融合选择）
-    local all_cards = Deck.get_all_cards_for_fusion()
+    -- 缓存卡牌列表，避免在 draw 中重复获取
+    cached_all_cards = Deck.get_all_cards_for_fusion() or {}
 
-    -- 查找可融合的卡牌
-    fusible_pairs = FusionSystem.find_fusible_pairs(all_cards)
+    -- 查找可融合的卡牌对
+    fusible_pairs = FusionSystem.find_fusible_pairs(cached_all_cards) or {}
 
-    -- 查找可骰子融合的卡牌组合
-    dice_fusion_candidates = Fusion.find_dice_candidates(all_cards)
+    -- 预计算骰子融合候选（避免在 draw 中计算）
+    dice_fusion_candidates = Fusion.find_dice_candidates(cached_all_cards) or {}
 end
 
 function Fusion.exit()
@@ -195,9 +197,11 @@ end
 
 function Fusion.draw_dice_fusion_panel()
     local win_w = Layout.get_size()
-    local all_cards = Deck.get_all_cards_for_fusion()
 
-    if #all_cards < 2 then
+    -- 使用缓存的卡牌列表
+    local all_cards = cached_all_cards
+
+    if not all_cards or #all_cards < 2 then
         Components.text("Need at least 2 cards in deck for fusion", win_w / 2, 200, {
             color = "text_secondary",
             align = "center",
@@ -390,8 +394,8 @@ function Fusion.mousepressed(x, y, button)
             end
         end
     else
-        -- 骰子融合：选择卡牌
-        local all_cards = Deck.get_all_cards_for_fusion()
+        -- 骰子融合：选择卡牌（使用缓存）
+        local all_cards = cached_all_cards
         local card_width = 90
         local card_gap = 15
         local cards_start_x = win_w / 2 - (#all_cards * (card_width + card_gap)) / 2
@@ -437,7 +441,7 @@ function Fusion.mousepressed(x, y, button)
 end
 
 function Fusion.execute_same_fusion(pair)
-    local all_cards = Deck.get_all_cards_for_fusion()
+    local all_cards = cached_all_cards
     local indices = pair.indices
 
     if #indices >= 2 then
@@ -455,11 +459,15 @@ function Fusion.execute_same_fusion(pair)
             -- 添加融合卡牌到牌库
             Deck.add_fused_card(result)
 
+            -- 播放融合音效
+            Sound.play("fuse")
+
             message = "Fusion success! Created " .. result.name
             message_timer = 2.0
 
-            -- 刷新可融合列表
-            fusible_pairs = FusionSystem.find_fusible_pairs(Deck.get_all_cards_for_fusion())
+            -- 刷新缓存和可融合列表
+            cached_all_cards = Deck.get_all_cards_for_fusion() or {}
+            fusible_pairs = FusionSystem.find_fusible_pairs(cached_all_cards) or {}
         end
     end
 end
@@ -467,7 +475,7 @@ end
 function Fusion.execute_dice_fusion(recipe_index)
     if #selected_cards ~= 2 then return end
 
-    local all_cards = Deck.get_all_cards_for_fusion()
+    local all_cards = cached_all_cards
     local card1 = all_cards[selected_cards[1]]
     local card2 = all_cards[selected_cards[2]]
 
@@ -488,9 +496,13 @@ function Fusion.execute_dice_fusion(recipe_index)
     -- 如果成功，添加融合卡牌到牌库
     if success and result_card then
         Deck.add_fused_card(result_card)
+        Sound.play("fuse")
     elseif result_card then
         -- 失败但有返还卡牌
         Deck.add_fused_card(result_card)
+        Sound.play("click")
+    else
+        Sound.play("click")
     end
 
     message = result_msg
@@ -500,8 +512,9 @@ function Fusion.execute_dice_fusion(recipe_index)
     selected_cards = {}
     dice_preview = nil
 
-    -- 刷新候选列表
-    dice_fusion_candidates = Fusion.find_dice_candidates(Deck.get_all_cards_for_fusion())
+    -- 刷新缓存和候选列表
+    cached_all_cards = Deck.get_all_cards_for_fusion() or {}
+    dice_fusion_candidates = Fusion.find_dice_candidates(cached_all_cards) or {}
 end
 
 return Fusion
