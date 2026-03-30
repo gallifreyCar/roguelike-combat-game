@@ -27,13 +27,17 @@ function MapScene.update(dt)
 
     local map_data = Map.get_map()
     local current_row = Map.get_current_row()
+    local next_row = current_row + 1
     local next_nodes = Map.get_next_nodes()
+
+    -- 计算下一层节点的 Y 坐标（与 draw 函数一致）
+    local node_y = 500 - (next_row - 1) * 70
 
     -- 检测悬停
     for col, node in ipairs(next_nodes) do
         local x = 400 + (col - 1) * 150
-        local y = 300
-        if mx >= x and mx <= x + 100 and my >= y and my <= y + 80 then
+        local y = node_y
+        if mx >= x and mx <= x + 100 and my >= y and my <= y + 50 then
             hovered_node = node
         end
     end

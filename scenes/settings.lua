@@ -5,6 +5,7 @@ local SettingsScene = {}
 local SettingsManager = require("systems.settings_manager")
 local State = require("core.state")
 local Fonts = require("core.fonts")
+local I18n = require("core.i18n")
 
 local settings = {}
 local selected_option = 1
@@ -21,6 +22,10 @@ local options = {
 function SettingsScene.enter()
     settings = SettingsManager.load()
     selected_option = 1
+    -- 同步语言设置到 I18n
+    if settings.language then
+        I18n.set_lang(settings.language)
+    end
 end
 
 function SettingsScene.exit()
@@ -135,6 +140,10 @@ function SettingsScene.keypressed(key)
                 if idx > #opt.values then idx = 1 end
                 settings[opt.key] = opt.values[idx]
                 SettingsManager.set(opt.key, settings[opt.key])
+                -- 同步更新语言
+                if opt.key == "language" then
+                    I18n.set_lang(settings[opt.key])
+                end
             end
         end
     elseif key == "return" then
