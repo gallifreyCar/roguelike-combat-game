@@ -1,5 +1,5 @@
 -- core/fonts.lua - 字体管理
--- 支持中文/英文/日文的多语言字体
+-- 使用思源黑体 (Noto Sans SC) - 开源免费可商用
 
 local Fonts = {}
 
@@ -12,36 +12,27 @@ local DEFAULT_SIZE = 16
 function Fonts.init()
     -- 预加载常用字号
     local sizes = {12, 14, 16, 20, 24, 32}
-    local chinese_font_path = "assets/fonts/STHeiti Light.ttc"
-    local fallback_font_path = "assets/fonts/NotoSansSC-Regular.otf"
+    local font_path = "assets/fonts/NotoSansSC-Regular.otf"
 
     -- 检查字体文件是否存在
     local use_chinese_font = false
-    local font_source = nil
-
-    -- 优先使用 STHeiti (TTC)
-    if love.filesystem.getInfo(chinese_font_path) then
-        font_source = chinese_font_path
+    if love.filesystem.getInfo(font_path) then
         use_chinese_font = true
-        print("Found Chinese font: " .. chinese_font_path)
-    elseif love.filesystem.getInfo(fallback_font_path) then
-        font_source = fallback_font_path
-        use_chinese_font = true
-        print("Found fallback font: " .. fallback_font_path)
+        print("Found Chinese font: " .. font_path)
     else
-        print("No Chinese font found, using default")
+        print("Chinese font not found at " .. font_path)
+        print("Please download Noto Sans SC (free, open source):")
+        print("  https://fonts.google.com/noto/specimen/Noto+Sans+SC")
     end
 
     for _, size in ipairs(sizes) do
-        if use_chinese_font and font_source then
-            -- 尝试加载中文字体
-            local success, font = pcall(love.graphics.newFont, font_source, size)
+        if use_chinese_font then
+            local success, font = pcall(love.graphics.newFont, font_path, size)
             if success and font then
                 font_cache[size] = font
             else
-                -- 降级到默认字体
                 font_cache[size] = love.graphics.newFont(size)
-                print("Failed to load Chinese font at size " .. size .. ", using default")
+                print("Failed to load font at size " .. size)
             end
         else
             font_cache[size] = love.graphics.newFont(size)
@@ -64,16 +55,15 @@ function Fonts.get(size)
     end
 
     -- 动态创建新字号
-    local font_source = "assets/fonts/STHeiti Light.ttc"
-    if love.filesystem.getInfo(font_source) then
-        local success, font = pcall(love.graphics.newFont, font_source, size)
+    local font_path = "assets/fonts/NotoSansSC-Regular.otf"
+    if love.filesystem.getInfo(font_path) then
+        local success, font = pcall(love.graphics.newFont, font_path, size)
         if success and font then
             font_cache[size] = font
             return font
         end
     end
 
-    -- 降级到默认字体
     font_cache[size] = love.graphics.newFont(size)
     return font_cache[size]
 end
@@ -82,7 +72,6 @@ function Fonts.set(size)
     love.graphics.setFont(Fonts.get(size))
 end
 
--- 绘制多行文本（支持换行）
 function Fonts.print(text, x, y, size, color)
     size = size or DEFAULT_SIZE
     color = color or {1, 1, 1}
@@ -92,7 +81,6 @@ function Fonts.print(text, x, y, size, color)
     love.graphics.print(text, x, y)
 end
 
--- 绘制居中文本
 function Fonts.printCenter(text, x, y, size, color)
     size = size or DEFAULT_SIZE
     color = color or {1, 1, 1}
