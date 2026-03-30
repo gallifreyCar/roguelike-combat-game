@@ -17,6 +17,8 @@ local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
 local Events = require("core.events")
+local Save = require("systems.save")
+local Sound = require("systems.sound")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -492,6 +494,11 @@ function Combat.draw_status_bar()
     love.graphics.setColor(0.6, 0.5, 0.4)
     Fonts.print(I18n.t("discard") .. ": " .. deck_info.discard_pile_size, deck_x + info_gap, status_bar.y + 8)
 
+    -- 金币显示
+    local coins_x = deck_x + 2 * info_gap
+    love.graphics.setColor(1, 0.8, 0.2)  -- 金色
+    Fonts.print(I18n.t("gold") .. ": " .. Save.get_coins(), coins_x, status_bar.y + 8)
+
     -- 操作提示（响应式）
     local hint_x, hint_y = Layout.hint_position()
     love.graphics.setColor(0.5, 0.45, 0.4)
@@ -594,6 +601,8 @@ function Combat.mousepressed(x, y, button)
                     -- 献祭：获得blood（有上限）
                     if battle.player.blood < MAX_BLOOD then
                         battle.player.blood = battle.player.blood + 1
+                        -- 播放献祭音效
+                        Sound.play("sacrifice")
                         battle.message = I18n.tf("sacrifice_msg", I18n.card_name(card.id))
                         battle.player.board[i] = nil
                     else
@@ -720,12 +729,17 @@ function Combat.place_card(hand_index, slot)
 
     battle.player.board[slot] = board_card
 
+    -- 播放放置卡牌音效
+    Sound.play("play_card")
+
     battle.message = I18n.tf("placed", I18n.card_name(placed_card.id))
 end
 
 function Combat.start_battle()
     battle.phase = "battle"
     battle.combat_log = {}
+    -- 播放战斗开始音效
+    Sound.play("attack")
     add_log("=== BATTLE START ===")
     Combat.execute_battle()
 end
@@ -776,6 +790,9 @@ function Combat.execute_battle()
                     battle.enemy.hp = battle.enemy.hp - dmg
                     add_log(card.name .. " → Boss (-" .. dmg .. " HP)")
 
+                    -- 播放攻击音效
+                    Sound.play("hit")
+
                     -- 敌方HP伤害数字（响应式）
                     Effects.damage(dmg, enemy_hp_bar.x + enemy_hp_bar.width * 0.5, enemy_hp_bar.y + 16)
                     Effects.attack_flash(enemy_hp_bar.x, enemy_hp_bar.y, enemy_hp_bar.width, enemy_hp_bar.height)
@@ -801,6 +818,9 @@ function Combat.execute_battle()
                 end
                 player_card.hp = player_card.hp - dmg
                 add_log(card.name .. " → " .. player_card.name .. " (-" .. dmg .. " HP)")
+
+                -- 播放受击音效
+                Sound.play("hit")
 
                 -- 伤害数字特效
                 Effects.damage(dmg, card_x + 50, player_board.y + 30)
@@ -861,14 +881,24 @@ function Combat.execute_battle()
     -- 胜负判定
     if battle.enemy.hp <= 0 then
         battle.phase = "result"
+        -- 播放胜利音效
+        Sound.play("victory")
+        -- 金币奖励：基础奖励 + 关卡加成
+        local base_reward = 5
+        local level_bonus = battle.level * 2
+        local total_reward = base_reward + level_bonus
+        Save.add_coins(total_reward)
+        add_log(I18n.t("gold") .. " +" .. total_reward .. "!")
         local max_levels = LevelData.get_max_levels()
         if battle.level >= max_levels then
-            battle.message = I18n.t("victory") .. " " .. I18n.t("all_levels")
+            battle.message = I18n.t("victory") .. " " .. I18n.t("all_levels") .. " (+" .. total_reward .. " " .. I18n.t("gold") .. ")"
         else
-            battle.message = I18n.t("victory") .. " " .. I18n.tf("next_level")
+            battle.message = I18n.t("victory") .. " " .. I18n.tf("next_level") .. " (+" .. total_reward .. " " .. I18n.t("gold") .. ")"
         end
     elseif battle.player.hp <= 0 then
         battle.phase = "result"
+        -- 播放失败音效
+        Sound.play("defeat")
         battle.message = I18n.t("defeated") .. " " .. I18n.t("retry_level")
     else
         -- 下一回合：Blood +1（有上限）

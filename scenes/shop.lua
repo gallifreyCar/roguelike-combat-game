@@ -10,31 +10,48 @@ local I18n = require("core.i18n")
 local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
+local Save = require("systems.save")
+local Sound = require("systems.sound")
 
 local selected_tab = "deck"  -- "deck" 或 "shop"
 local scroll_offset = 0
+local purchase_message = ""
+local message_timer = 0
 
 -- 商店卡牌
 local SHOP_CARDS = {
-    {id = "stoat", price = 1},
-    {id = "rat", price = 1},
-    {id = "wolf", price = 2},
-    {id = "adder", price = 2},
-    {id = "raven", price = 2},
-    {id = "grizzly", price = 3},
-    {id = "mantis", price = 3},
-    {id = "cat", price = 4},
+    {id = "stoat", price = 10},
+    {id = "rat", price = 10},
+    {id = "wolf", price = 15},
+    {id = "adder", price = 15},
+    {id = "raven", price = 20},
+    {id = "grizzly", price = 25},
+    {id = "mantis", price = 25},
+    {id = "cat", price = 30},
 }
+
+-- 记录商店卡牌位置（用于点击检测）
+local shop_card_positions = {}
 
 function Shop.enter()
     selected_tab = "deck"
     scroll_offset = 0
+    purchase_message = ""
+    message_timer = 0
+    shop_card_positions = {}
 end
 
 function Shop.exit()
 end
 
 function Shop.update(dt)
+    -- 消息计时器
+    if message_timer > 0 then
+        message_timer = message_timer - dt
+        if message_timer <= 0 then
+            purchase_message = ""
+        end
+    end
 end
 
 function Shop.draw()
@@ -50,6 +67,13 @@ function Shop.draw()
         align = "center",
     })
 
+    -- 金币显示
+    local coins = Save.get_coins()
+    Components.text(I18n.t("gold") .. ": " .. coins, win_w - 100, 20, {
+        color = "accent_gold",
+        size = 18,
+    })
+
     -- 标签切换
     Shop.draw_tabs(win_w)
 
@@ -57,6 +81,19 @@ function Shop.draw()
         Shop.draw_deck_view(win_w, win_h)
     else
         Shop.draw_shop_view(win_w, win_h)
+    end
+
+    -- 购买消息提示
+    if purchase_message ~= "" then
+        local alpha = message_timer > 1.5 and 1 or (message_timer / 1.5)
+        Theme.setColor("bg_panel", alpha * 0.9)
+        love.graphics.rectangle("fill", win_w / 2 - 150, win_h / 2 - 30, 300, 60, 8, 8)
+        Theme.setColor("text_primary", alpha)
+        Components.text(purchase_message, win_w / 2, win_h / 2 - 10, {
+            color = "text_primary",
+            align = "center",
+            size = 16,
+        })
     end
 
     -- 返回提示
@@ -162,20 +199,35 @@ function Shop.draw_deck_view(win_w, win_h)
 end
 
 function Shop.draw_shop_view(win_w, win_h)
-    Components.text("Click to buy cards (not implemented yet)", win_w / 2, 130, {
-        color = "text_hint",
-        align = "center",
-    })
+    -- 清空并重新记录卡牌位置
+    shop_card_positions = {}
 
     local y = 180
     local card_width = 200
     local cards_per_row = math.floor((win_w - 100) / (card_width + 15))
     local col = 0
 
-    for _, item in ipairs(SHOP_CARDS) do
+    for i, item in ipairs(SHOP_CARDS) do
         local template = CardData.cards[item.id]
         if template then
             local x = 50 + col * (card_width + 15)
+
+            -- 记录卡牌位置和购买信息（用于点击检测）
+            shop_card_positions[#shop_card_positions + 1] = {
+                index = i,
+                item = item,
+                template = template,
+                x = x,
+                y = y,
+                width = card_width,
+                height = 90,
+                buy_btn = {
+                    x = x + card_width - 60,
+                    y = y + 55,
+                    width = 50,
+                    height = 25,
+                },
+            }
 
             -- 卡牌背景
             Theme.setColor("bg_slot")
@@ -202,11 +254,13 @@ function Shop.draw_shop_view(win_w, win_h)
                 size = 12,
             })
 
-            -- 购买按钮
-            Theme.setColor("accent_green", 0.3)
+            -- 购买按钮（根据金币状态变色）
+            local coins = Save.get_coins()
+            local can_afford = coins >= item.price
+            Theme.setColor(can_afford and "accent_green" or "bg_slot", can_afford and 0.4 or 0.5)
             love.graphics.rectangle("fill", x + card_width - 60, y + 55, 50, 25, 4, 4)
             Components.text("BUY", x + card_width - 45, y + 60, {
-                color = "text_value",
+                color = can_afford and "text_value" or "text_hint",
                 size = 12,
             })
 
@@ -240,14 +294,51 @@ function Shop.mousepressed(x, y, button)
     if y >= 60 and y <= 95 then
         if x >= start_x and x <= start_x + tab_width then
             selected_tab = "deck"
+            Sound.play("click")
             return
         elseif x >= start_x + tab_width + tab_gap and x <= start_x + 2 * tab_width + tab_gap then
             selected_tab = "shop"
+            Sound.play("click")
             return
         end
     end
 
-    -- TODO: 商店购买功能
+    -- 商店购买功能
+    if selected_tab == "shop" then
+        for _, pos in ipairs(shop_card_positions) do
+            -- 检测点击 BUY 按钮
+            if x >= pos.buy_btn.x and x <= pos.buy_btn.x + pos.buy_btn.width and
+               y >= pos.buy_btn.y and y <= pos.buy_btn.y + pos.buy_btn.height then
+
+                local item = pos.item
+                local coins = Save.get_coins()
+
+                if coins >= item.price then
+                    -- 金币足够，执行购买
+                    local success = Save.spend_coins(item.price)
+                    if success then
+                        -- 添加卡牌到牌组
+                        Deck.add_to_deck(item.id)
+                        -- 播放购买音效
+                        Sound.play("reward")
+                        -- 显示购买成功消息
+                        purchase_message = I18n.t("purchase_success") .. ": " .. pos.template.name .. " (-" .. item.price .. ")"
+                        message_timer = 2.0
+                    else
+                        Sound.play("click")
+                        purchase_message = I18n.t("purchase_failed")
+                        message_timer = 2.0
+                    end
+                else
+                    -- 金币不足
+                    Sound.play("click")
+                    purchase_message = I18n.t("not_enough_gold") .. " (need " .. item.price .. ", have " .. coins .. ")"
+                    message_timer = 2.0
+                end
+                return
+            end
+        end
+    end
 end
 
 return Shop

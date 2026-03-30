@@ -16,6 +16,7 @@ local default_save_data = {
         hp = 20,
         max_hp = 20,
         level = 1,
+        coins = 50,  -- 初始金币
     },
 
     -- 牌组
@@ -165,6 +166,42 @@ end
 -- 获取存档数据
 function Save.get_data()
     return save_data
+end
+
+-- ==================== 金币系统 ====================
+
+-- 获取当前金币
+function Save.get_coins()
+    return save_data.player and save_data.player.coins or 0
+end
+
+-- 增加金币
+function Save.add_coins(amount)
+    if save_data.player then
+        save_data.player.coins = (save_data.player.coins or 0) + amount
+        -- 同步保存
+        Save.save(save_data.player, save_data.deck, save_data.map)
+    end
+    return Save.get_coins()
+end
+
+-- 消费金币（返回是否成功）
+function Save.spend_coins(amount)
+    local current = Save.get_coins()
+    if current >= amount then
+        save_data.player.coins = current - amount
+        -- 同步保存
+        Save.save(save_data.player, save_data.deck, save_data.map)
+        return true
+    end
+    return false
+end
+
+-- 设置金币（用于初始化或重置）
+function Save.set_coins(amount)
+    if save_data.player then
+        save_data.player.coins = amount
+    end
 end
 
 return Save

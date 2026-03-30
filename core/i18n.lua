@@ -98,6 +98,11 @@ local translations = {
         select_reward = "SELECT REWARD",
         gold = "Gold",
 
+        -- 商店
+        purchase_success = "Purchased",
+        purchase_failed = "Purchase failed",
+        not_enough_gold = "Not enough Gold",
+
         -- 胜利
         victory_title = "VICTORY!",
         all_levels = "All levels cleared!",
@@ -206,6 +211,11 @@ local translations = {
         select_reward = "选择奖励",
         gold = "金币",
 
+        -- 商店
+        purchase_success = "购买成功",
+        purchase_failed = "购买失败",
+        not_enough_gold = "金币不足",
+
         -- 胜利
         victory_title = "胜利！",
         all_levels = "全部通关！",
@@ -294,6 +304,11 @@ local translations = {
         select_reward = "報酬を選択",
         gold = "ゴールド",
 
+        -- 商店
+        purchase_success = "購入成功",
+        purchase_failed = "購入失敗",
+        not_enough_gold = "ゴールド不足",
+
         -- 胜利
         victory_title = "勝利！",
         all_levels = "全レベルクリア！",
@@ -362,6 +377,11 @@ local translations = {
         -- 보상
         select_reward = "보상 선택",
         gold = "골드",
+
+        -- 상점
+        purchase_success = "구매 성공",
+        purchase_failed = "구매 실패",
+        not_enough_gold = "골드 부족",
 
         -- 승리
         victory_title = "승리!",

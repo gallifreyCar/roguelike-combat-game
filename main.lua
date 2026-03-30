@@ -9,6 +9,7 @@ local SettingsManager = require("systems.settings_manager")
 local Debug = require("core.debug")
 local Events = require("core.events")
 local Hotload = require("core.hotload")
+local Sound = require("systems.sound")
 
 -- 配置
 local DEBUG_MODE = false  -- 设置为 true 开启调试
@@ -27,6 +28,9 @@ function love.load()
 
     -- 初始化字体（支持中文）
     Fonts.init()
+
+    -- 初始化音效系统（动态波形生成）
+    Sound.init()
 
     -- 加载设置并应用
     local settings = SettingsManager.load()
@@ -104,7 +108,7 @@ function love.mousemoved(x, y, dx, dy)
 end
 
 function love.mousereleased(x, y, button)
-    Input.on_mouse_press(x, y, button)
+    Input.on_mouse_release(x, y, button)
     State.mousereleased(x, y, button)
 end
 
