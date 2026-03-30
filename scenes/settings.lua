@@ -38,13 +38,20 @@ end
 function SettingsScene.draw()
     love.graphics.clear(0.06, 0.08, 0.1)
 
-    -- 标题
-    love.graphics.setColor(0.3, 0.35, 0.4)
-    love.graphics.rectangle("fill", 450, 30, 280, 50, 8, 8)
-    love.graphics.setColor(1, 0.95, 0.9)
-    Fonts.print("⚙ SETTINGS ⚙", 510, 40, 20)
+    -- 获取动态窗口尺寸
+    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
 
-    -- 设置选项
+    -- 标题（居中）
+    local title_w = 280
+    love.graphics.setColor(0.3, 0.35, 0.4)
+    love.graphics.rectangle("fill", (win_w - title_w) / 2, 30, title_w, 50, 8, 8)
+    love.graphics.setColor(1, 0.95, 0.9)
+    Fonts.print("SETTINGS", (win_w - title_w) / 2 + 100, 40, 20)
+
+    -- 设置选项（居中）
+    local opt_w = 400
+    local start_x = (win_w - opt_w) / 2
+
     for i, opt in ipairs(options) do
         local y = 120 + (i - 1) * 70
         local value = settings[opt.key]
@@ -55,57 +62,58 @@ function SettingsScene.draw()
         else
             love.graphics.setColor(0.15, 0.18, 0.22)
         end
-        love.graphics.rectangle("fill", 350, y, 400, 55, 6, 6)
+        love.graphics.rectangle("fill", start_x, y, opt_w, 55, 6, 6)
 
         -- 选项名称
         love.graphics.setColor(0.9, 0.85, 0.8)
-        Fonts.print(opt.name, 370, y + 10, 16)
+        Fonts.print(opt.name, start_x + 20, y + 10, 16)
 
         -- 值显示
+        local value_x = start_x + opt_w - 150
         if opt.type == "slider" then
             -- 滑块
-            local slider_w = 200
-            local slider_x = 500
+            local slider_w = 100
             local fill_w = value * slider_w
 
             love.graphics.setColor(0.2, 0.2, 0.25)
-            love.graphics.rectangle("fill", slider_x, y + 30, slider_w, 15, 4, 4)
+            love.graphics.rectangle("fill", value_x, y + 30, slider_w, 15, 4, 4)
             love.graphics.setColor(0.4, 0.6, 0.8)
-            love.graphics.rectangle("fill", slider_x, y + 30, fill_w, 15, 4, 4)
+            love.graphics.rectangle("fill", value_x, y + 30, fill_w, 15, 4, 4)
 
             love.graphics.setColor(1, 1, 1)
-            Fonts.print(math.floor(value * 100) .. "%", slider_x + slider_w + 15, y + 28, 14)
+            Fonts.print(math.floor(value * 100) .. "%", value_x + slider_w + 15, y + 28, 14)
 
         elseif opt.type == "toggle" then
             local toggle_text = value and "ON" or "OFF"
             local toggle_color = value and {0.3, 0.7, 0.4} or {0.6, 0.3, 0.3}
             love.graphics.setColor(toggle_color[1], toggle_color[2], toggle_color[3])
-            love.graphics.rectangle("fill", 550, y + 20, 60, 25, 4, 4)
+            love.graphics.rectangle("fill", value_x, y + 20, 60, 25, 4, 4)
             love.graphics.setColor(1, 1, 1)
-            Fonts.print(toggle_text, 560, y + 24, 14)
+            Fonts.print(toggle_text, value_x + 10, y + 24, 14)
 
         elseif opt.type == "select" then
             love.graphics.setColor(0.4, 0.4, 0.5)
-            love.graphics.rectangle("fill", 550, y + 20, 80, 25, 4, 4)
+            love.graphics.rectangle("fill", value_x, y + 20, 80, 25, 4, 4)
             love.graphics.setColor(1, 1, 1)
-            Fonts.print(value:upper(), 570, y + 24, 14)
+            Fonts.print(value:upper(), value_x + 10, y + 24, 14)
         end
     end
 
-    -- 底部按钮
+    -- 底部按钮（居中）
+    local btn_w = 150
     love.graphics.setColor(0.3, 0.35, 0.4)
-    love.graphics.rectangle("fill", 350, 550, 150, 40, 6, 6)
+    love.graphics.rectangle("fill", (win_w - btn_w * 2 - 50) / 2, 550, btn_w, 40, 6, 6)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("Reset", 395, 560, 14)
+    Fonts.print("Reset", (win_w - btn_w * 2 - 50) / 2 + 50, 560, 14)
 
     love.graphics.setColor(0.4, 0.3, 0.35)
-    love.graphics.rectangle("fill", 550, 550, 150, 40, 6, 6)
+    love.graphics.rectangle("fill", (win_w - btn_w * 2 - 50) / 2 + btn_w + 50, 550, btn_w, 40, 6, 6)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("[ESC] Back", 575, 560, 14)
+    Fonts.print("[ESC] Back", (win_w - btn_w * 2 - 50) / 2 + btn_w + 70, 560, 14)
 
-    -- 操作提示
+    -- 操作提示（居中）
     love.graphics.setColor(0.5, 0.5, 0.5)
-    Fonts.print("UP/DOWN Select  |  LEFT/RIGHT Change  |  Enter Toggle", 380, 620, 12)
+    Fonts.print("UP/DOWN Select  |  LEFT/RIGHT Change  |  Enter Toggle", win_w / 2 - 120, 620, 12)
 end
 
 function SettingsScene.keypressed(key)
@@ -161,14 +169,20 @@ end
 function SettingsScene.mousepressed(x, y, button)
     if button ~= 1 then return end
 
-    -- 重置按钮
-    if x >= 350 and x <= 500 and y >= 550 and y <= 590 then
+    -- 获取动态窗口尺寸
+    local win_w = love.graphics.getWidth()
+    local btn_w = 150
+
+    -- 重置按钮（居中）
+    local reset_x = (win_w - btn_w * 2 - 50) / 2
+    if x >= reset_x and x <= reset_x + btn_w and y >= 550 and y <= 590 then
         SettingsManager.reset()
         settings = SettingsManager.get_all()
     end
 
-    -- 返回按钮
-    if x >= 550 and x <= 700 and y >= 550 and y <= 590 then
+    -- 返回按钮（居中）
+    local back_x = reset_x + btn_w + 50
+    if x >= back_x and x <= back_x + btn_w and y >= 550 and y <= 590 then
         SettingsManager.save()
         State.pop()
     end

@@ -8,6 +8,12 @@ local Fonts = require("core.fonts")
 
 local hovered_node = nil
 
+-- 节点尺寸配置
+local NODE_WIDTH = 100
+local NODE_HEIGHT = 50
+local NODE_SPACING = 150  -- 列间距
+local ROW_SPACING = 70    -- 行间距
+
 function MapScene.enter()
     -- 如果地图为空，生成新地图
     local map_data = Map.get_map()
@@ -25,19 +31,30 @@ function MapScene.update(dt)
     local mx, my = love.mouse.getPosition()
     hovered_node = nil
 
+    -- 获取动态窗口尺寸
+    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
+
     local map_data = Map.get_map()
     local current_row = Map.get_current_row()
     local next_row = current_row + 1
     local next_nodes = Map.get_next_nodes()
 
-    -- 计算下一层节点的 Y 坐标（与 draw 函数一致）
-    local node_y = 500 - (next_row - 1) * 70
+    if #next_nodes == 0 then return end
+
+    -- 计算节点居中偏移
+    local node_count = #next_nodes
+    local total_width = node_count * NODE_WIDTH + (node_count - 1) * (NODE_SPACING - NODE_WIDTH)
+    local center_x = (win_w - total_width) / 2
+
+    -- 计算下一层节点的 Y 坐标（基于窗口高度）
+    local base_y = win_h - 100  -- 底部基准位置
+    local node_y = base_y - (next_row - 1) * ROW_SPACING
 
     -- 检测悬停
     for col, node in ipairs(next_nodes) do
-        local x = 400 + (col - 1) * 150
+        local x = center_x + (col - 1) * NODE_SPACING
         local y = node_y
-        if mx >= x and mx <= x + 100 and my >= y and my <= y + 50 then
+        if mx >= x and mx <= x + NODE_WIDTH and my >= y and my <= y + NODE_HEIGHT then
             hovered_node = node
         end
     end
@@ -46,29 +63,41 @@ end
 function MapScene.draw()
     love.graphics.clear(0.05, 0.08, 0.12)
 
-    -- 标题
+    -- 获取动态窗口尺寸
+    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
+
+    -- 标题（居中）
+    local title_w = 250
     love.graphics.setColor(0.3, 0.4, 0.5)
-    love.graphics.rectangle("fill", 450, 20, 250, 40, 6, 6)
+    love.graphics.rectangle("fill", (win_w - title_w) / 2, 20, title_w, 40, 6, 6)
     love.graphics.setColor(1, 0.9, 0.8)
-    Fonts.print("[ MAP ]", 530, 28, 18)
+    Fonts.print("[ MAP ]", (win_w - title_w) / 2 + 80, 28, 18)
 
     local map_data = Map.get_map()
     local current_row = Map.get_current_row()
 
+    -- 基准 Y 位置（与 update 函数一致）
+    local base_y = win_h - 100
+
     -- 绘制所有层
     for row, nodes in ipairs(map_data.nodes) do
-        local y = 500 - (row - 1) * 70
+        local y = base_y - (row - 1) * ROW_SPACING
+
+        -- 计算该层节点居中偏移
+        local node_count = #nodes
+        local total_width = node_count * NODE_WIDTH + (node_count - 1) * (NODE_SPACING - NODE_WIDTH)
+        local center_x = (win_w - total_width) / 2
 
         -- 层标签
         love.graphics.setColor(0.4, 0.4, 0.45)
         if row == #map_data.nodes then
-            Fonts.print("BOSS", 100, y + 30, 12)
+            Fonts.print("BOSS", center_x - 80, y + 30, 12)
         else
-            Fonts.print("Floor " .. row, 100, y + 30, 12)
+            Fonts.print("Floor " .. row, center_x - 80, y + 30, 12)
         end
 
         for col, node in ipairs(nodes) do
-            local x = 400 + (col - 1) * 150
+            local x = center_x + (col - 1) * NODE_SPACING
             local node_type = Map.get_node_type(node.type)
 
             -- 节点背景
@@ -80,7 +109,7 @@ function MapScene.draw()
                 love.graphics.setColor(node_type.color[1] * 0.7, node_type.color[2] * 0.7, node_type.color[3] * 0.7)
             end
 
-            love.graphics.rectangle("fill", x, y, 100, 50, 6, 6)
+            love.graphics.rectangle("fill", x, y, NODE_WIDTH, NODE_HEIGHT, 6, 6)
 
             -- 节点边框
             if node == hovered_node then
@@ -88,7 +117,7 @@ function MapScene.draw()
             else
                 love.graphics.setColor(0.5, 0.5, 0.5)
             end
-            love.graphics.rectangle("line", x, y, 100, 50, 6, 6)
+            love.graphics.rectangle("line", x, y, NODE_WIDTH, NODE_HEIGHT, 6, 6)
 
             -- 节点图标和名称
             love.graphics.setColor(1, 1, 1)
@@ -103,16 +132,16 @@ function MapScene.draw()
         end
     end
 
-    -- 当前位置指示
+    -- 当前位置指示（居中）
     love.graphics.setColor(1, 1, 0.5)
-    Fonts.print("▼ You are here", 500, 550, 14)
+    Fonts.print("▼ You are here", win_w / 2 - 60, win_h - 40, 14)
 
-    -- 悬停提示
+    -- 悬停提示（居中）
     if hovered_node then
         love.graphics.setColor(0.2, 0.25, 0.3)
-        love.graphics.rectangle("fill", 450, 580, 250, 40, 4, 4)
+        love.graphics.rectangle("fill", (win_w - 250) / 2, win_h - 80, 250, 40, 4, 4)
         love.graphics.setColor(1, 1, 1)
-        Fonts.print("Click to select this node", 470, 590, 14)
+        Fonts.print("Click to select this node", (win_w - 230) / 2, win_h - 70, 14)
     end
 end
 
