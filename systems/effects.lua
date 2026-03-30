@@ -38,7 +38,7 @@ local EFFECT_TYPES = {
         duration = 0.2,
         update = function(effect, dt)
             effect.timer = effect.timer + dt
-            effect.alpha = 1 - (effect.timer / effect.duration)
+            effect.alpha = 1 - (effect.timer / 0.2)
         end,
         draw = function(effect)
             if effect.alpha <= 0 then return end
@@ -50,7 +50,7 @@ local EFFECT_TYPES = {
         duration = 0.15,
         update = function(effect, dt)
             effect.timer = effect.timer + dt
-            effect.alpha = 1 - (effect.timer / effect.duration)
+            effect.alpha = 1 - (effect.timer / 0.15)
         end,
         draw = function(effect)
             if effect.alpha <= 0 then return end
@@ -62,7 +62,7 @@ local EFFECT_TYPES = {
         duration = 0.3,
         update = function(effect, dt)
             effect.timer = effect.timer + dt
-            local progress = effect.timer / effect.duration
+            local progress = effect.timer / 0.3
             local intensity = (1 - progress) * 5
             effect.offset_x = (love.math.random() - 0.5) * intensity * 2
             effect.offset_y = (love.math.random() - 0.5) * intensity * 2
