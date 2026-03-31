@@ -459,6 +459,101 @@ function Fusion.can_dice_fuse(card1, card2)
     return #recipes > 0
 end
 
+-- ==================== 自由融合系统（新功能） ====================
+
+-- 检查两张卡是否可以自由融合（任意两张不同卡）
+function Fusion.can_free_fuse(card1, card2)
+    if not card1 or not card2 then return false end
+    if card1.fused or card2.fused then return false end
+    return true  -- 任意两张卡都可以自由融合
+end
+
+-- 执行自由融合（随机结果）
+function Fusion.free_fuse(card1, card2)
+    if not Fusion.can_free_fuse(card1, card2) then
+        return nil
+    end
+
+    -- 基础属性：取两张卡的平均值
+    local base_atk = math.floor((card1.attack + card2.attack) / 2)
+    local base_hp = math.floor((card1.hp + card2.hp) / 2)
+    local base_cost = math.floor((card1.cost + card2.cost) / 2)
+
+    -- 随机变异：属性可能有 +/- 1 的变化
+    local atk_variation = love.math.random(-1, 1)
+    local hp_variation = love.math.random(-1, 1)
+
+    local final_atk = math.max(0, base_atk + atk_variation)
+    local final_hp = math.max(1, base_hp + hp_variation)
+
+    -- 合并印记
+    local merged_sigils = {}
+    local sigil_set = {}
+    for _, sigil in ipairs(card1.sigils or {}) do
+        if not sigil_set[sigil] then
+            table.insert(merged_sigils, sigil)
+            sigil_set[sigil] = true
+        end
+    end
+    for _, sigil in ipairs(card2.sigils or {}) do
+        if not sigil_set[sigil] then
+            table.insert(merged_sigils, sigil)
+            sigil_set[sigil] = true
+        end
+    end
+
+    -- 随机获得新印记（20%几率）
+    if love.math.random() < 0.2 then
+        local all_sigils = {"tough", "double_strike", "poison", "air_strike", "undead", "stinky"}
+        local new_sigil = all_sigils[love.math.random(#all_sigils)]
+        if not sigil_set[new_sigil] then
+            table.insert(merged_sigils, new_sigil)
+        end
+    end
+
+    -- 计算稀有度
+    local rarity = "common"
+    if #merged_sigils >= 3 then
+        rarity = "rare"
+    elseif #merged_sigils >= 2 or final_atk >= 4 or final_hp >= 6 then
+        rarity = "uncommon"
+    end
+
+    -- 生成融合卡牌
+    local fused_id = "free_" .. card1.id .. "_" .. card2.id
+    local fused_card = {
+        id = fused_id,
+        name = "Hybrid " .. (card1.name:sub(1, 4)) .. "-" .. (card2.name:sub(1, 4)),
+        cost = base_cost,
+        attack = final_atk,
+        hp = final_hp,
+        max_hp = final_hp,
+        sigils = merged_sigils,
+        rarity = rarity,
+        fused = true,
+        free_fused = true,
+    }
+
+    return fused_card
+end
+
+-- 获取自由融合预览
+function Fusion.free_fuse_preview(card1, card2)
+    if not card1 or not card2 then return nil end
+
+    local base_atk = math.floor((card1.attack + card2.attack) / 2)
+    local base_hp = math.floor((card1.hp + card2.hp) / 2)
+
+    return {
+        name = "Hybrid",
+        attack_min = math.max(0, base_atk - 1),
+        attack_max = base_atk + 1,
+        hp_min = math.max(1, base_hp - 1),
+        hp_max = base_hp + 1,
+        possible_sigils = {"tough", "double_strike", "poison", "air_strike", "undead", "stinky"},
+    }
+end
+
 -- 获取所有配方（供UI显示）
 function Fusion.get_all_dice_recipes()
     return DICE_FUSION_RECIPES
