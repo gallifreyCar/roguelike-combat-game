@@ -157,10 +157,10 @@ function Layout.separator()
     }
 end
 
--- 提示文本位置
+-- 提示文本位置（移到底部，避免遮挡）
 function Layout.hint_position()
     local w, h = Layout.get_size()
-    return w * 0.04, h * 0.77
+    return w * 0.04, h * 0.94  -- 移到底部 94%
 end
 
 -- 战斗日志位置

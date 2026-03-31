@@ -82,6 +82,8 @@ end
 function Reward.draw()
     love.graphics.clear(0.08, 0.1, 0.08)
 
+    local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
+
     -- 标题
     love.graphics.setColor(0.2, 0.4, 0.2)
     love.graphics.rectangle("fill", 420, 40, 280, 60, 8, 8)
@@ -160,8 +162,24 @@ function Reward.draw()
     -- 已选择提示
     if selected > 0 and choices[selected] then
         Theme.setColor("text_primary")
-        Fonts.print("Selected: " .. I18n.card_name(choices[selected].card_id), 480, 520, 16)
+        Fonts.print("Selected: " .. I18n.card_name(choices[selected].card_id), 480, 460, 16)
+
+        -- 确认按钮
+        love.graphics.setColor(0.2, 0.5, 0.2)
+        love.graphics.rectangle("fill", 520, 490, 140, 40, 6, 6)
+        love.graphics.setColor(1, 1, 1)
+        Fonts.print(">> CONFIRM <<", 545, 500, 14)
     end
+
+    -- 跳过按钮
+    love.graphics.setColor(0.3, 0.3, 0.3)
+    love.graphics.rectangle("fill", 30, win_h - 50, 100, 35, 5, 5)
+    love.graphics.setColor(0.7, 0.7, 0.7)
+    Fonts.print("[SKIP]", 55, win_h - 42, 14)
+
+    -- 操作提示（移到底部，不遮挡）
+    love.graphics.setColor(0.4, 0.4, 0.4)
+    Fonts.print("Click card to select, click again or button to confirm", 400, win_h - 25, 12)
 end
 
 function Reward.keypressed(key)
@@ -187,6 +205,24 @@ end
 function Reward.mousepressed(x, y, button)
     if button ~= 1 then return end
 
+    -- 跳过按钮
+    local win_h = love.graphics.getHeight()
+    if x >= 30 and x <= 130 and y >= win_h - 50 and y <= win_h - 15 then
+        State.switch("map")
+        return
+    end
+
+    -- 确认按钮
+    if selected > 0 then
+        if x >= 520 and x <= 660 and y >= 490 and y <= 530 then
+            if choices[selected] then
+                Deck.add_to_deck(choices[selected].card_id)
+            end
+            State.switch("map")
+            return
+        end
+    end
+
     -- 检测点击卡牌
     for i, choice in ipairs(choices) do
         local cx = 200 + (i - 1) * 300
@@ -195,7 +231,15 @@ function Reward.mousepressed(x, y, button)
         local ch = 240
 
         if x >= cx and x <= cx + cw and y >= cy and y <= cy + ch then
-            selected = i
+            if selected == i then
+                -- 双击确认
+                if choices[i] then
+                    Deck.add_to_deck(choices[i].card_id)
+                end
+                State.switch("map")
+            else
+                selected = i
+            end
             return
         end
     end

@@ -21,7 +21,7 @@ local translations = {
         instruction6 = "Cards attack automatically each turn.",
         start_game = ">> START GAME <<",
         settings = "[ SETTINGS ]",
-        press_hint = "Press SPACE to start, S for settings",
+        press_hint = "Click buttons or press SPACE to start",
 
         -- 战斗界面
         your_board = "YOUR BOARD",
