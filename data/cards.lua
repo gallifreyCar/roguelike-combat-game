@@ -166,6 +166,17 @@ local Cards = {
         sigils = {"hydra"},  -- 死亡时分裂成两个小蛇
         rarity = "legendary",
     },
+
+    -- ========== 解锁卡牌 ==========
+    guardian_dog = {
+        id = "guardian_dog",
+        name = "Guardian Dog",
+        cost = 2,
+        attack = 2,
+        hp = 3,
+        sigils = {"guardian", "tough"},  -- 保护+坚韧
+        rarity = "uncommon",
+    },
 }
 
 -- 印记效果说明

@@ -170,6 +170,7 @@ local translations = {
         card_ox = "Ox",
         card_eagle = "Eagle",
         card_hydra = "Hydra",
+        card_guardian_dog = "Guardian Dog",
     },
     zh = {
         -- 主菜单
@@ -327,6 +328,7 @@ local translations = {
         card_ox = "公牛",
         card_eagle = "老鹰",
         card_hydra = "九头蛇",
+        card_guardian_dog = "守卫犬",
     },
     ja = {
         -- メインメニュー

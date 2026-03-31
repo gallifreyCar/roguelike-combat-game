@@ -8,7 +8,7 @@ local SAVE_FILE = "game_save.lua"
 
 -- 存档数据结构（默认值）
 local default_save_data = {
-    version = 1,
+    version = 2,  -- 版本升级
     timestamp = 0,
 
     -- 玩家数据
@@ -33,6 +33,16 @@ local default_save_data = {
         battles_won = 0,
         cards_played = 0,
         enemies_defeated = 0,
+        total_runs = 0,  -- 总游戏次数
+    },
+
+    -- 局外成长（新增）
+    progress = {
+        total_runs = 0,      -- 总通关次数
+        total_exp = 0,       -- 累计经验
+        level = 1,           -- 玩家等级
+        unlock_points = 0,   -- 解锁点数
+        unlocks = {},        -- 已解锁内容
     },
 }
 
