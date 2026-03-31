@@ -1,5 +1,6 @@
 -- data/cards.lua - 卡牌定义
--- 每张卡有：攻击力、血量、消耗、印记
+-- 每张卡有：攻击力、血量、消耗、印记、体系(family)
+-- 体系按4张一组设计：flying/beast/insect/reptile/ocean/mythic
 
 local Cards = {
     -- ========== 免费/献祭材料 ==========
@@ -11,6 +12,7 @@ local Cards = {
         hp = 1,
         sigils = {},
         rarity = "common",
+        family = nil,  -- 松鼠不属于任何体系
     },
 
     -- ========== 1费卡 ==========
@@ -22,6 +24,7 @@ local Cards = {
         hp = 2,
         sigils = {},
         rarity = "common",
+        family = "beast",
     },
     bullfrog = {
         id = "bullfrog",
@@ -31,6 +34,7 @@ local Cards = {
         hp = 4,
         sigils = {"tough"},
         rarity = "common",
+        family = "reptile",
     },
     rat = {
         id = "rat",
@@ -40,6 +44,7 @@ local Cards = {
         hp = 1,
         sigils = {},
         rarity = "common",
+        family = "beast",
     },
     turtle = {
         id = "turtle",
@@ -47,18 +52,19 @@ local Cards = {
         cost = 1,
         attack = 0,
         hp = 6,
-        sigils = {"guardian"},  -- 保护相邻卡牌
+        sigils = {"guardian"},
         rarity = "uncommon",
+        family = "reptile",
     },
-    -- 【新】过牌卡
     insight = {
         id = "insight",
         name = "Insight",
         cost = 1,
         attack = 0,
         hp = 1,
-        sigils = {"draw"},  -- 放置时抽2张牌
+        sigils = {"draw"},
         rarity = "uncommon",
+        family = nil,  -- 概念卡
     },
 
     -- ========== 2费卡 ==========
@@ -70,6 +76,7 @@ local Cards = {
         hp = 2,
         sigils = {},
         rarity = "common",
+        family = "beast",
     },
     raven = {
         id = "raven",
@@ -79,6 +86,7 @@ local Cards = {
         hp = 3,
         sigils = {"air_strike"},
         rarity = "uncommon",
+        family = "flying",
     },
     adder = {
         id = "adder",
@@ -86,8 +94,9 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 2,
-        sigils = {"poison"},  -- 毒：命中后每回合-1hp
+        sigils = {"poison"},
         rarity = "uncommon",
+        family = "reptile",
     },
     skunk = {
         id = "skunk",
@@ -95,8 +104,9 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 3,
-        sigils = {"stinky"},  -- 降低对面敌人攻击力
+        sigils = {"stinky"},
         rarity = "uncommon",
+        family = "beast",
     },
     cat = {
         id = "cat",
@@ -104,8 +114,9 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 1,
-        sigils = {"undead"},  -- 死后复活一次
+        sigils = {"undead"},
         rarity = "rare",
+        family = "beast",
     },
 
     -- ========== 3费卡 ==========
@@ -117,6 +128,7 @@ local Cards = {
         hp = 6,
         sigils = {},
         rarity = "rare",
+        family = "beast",
     },
     moose = {
         id = "moose",
@@ -124,8 +136,9 @@ local Cards = {
         cost = 3,
         attack = 2,
         hp = 4,
-        sigils = {"charge"},  -- 冲锋：同时攻击相邻两列
+        sigils = {"charge"},
         rarity = "rare",
+        family = "beast",
     },
     mantis = {
         id = "mantis",
@@ -133,8 +146,9 @@ local Cards = {
         cost = 3,
         attack = 3,
         hp = 2,
-        sigils = {"double_strike"},  -- 攻击两次
+        sigils = {"double_strike"},
         rarity = "rare",
+        family = "insect",
     },
 
     -- ========== 4费卡 ==========
@@ -144,8 +158,9 @@ local Cards = {
         cost = 4,
         attack = 4,
         hp = 6,
-        sigils = {"trample"},  -- 践踏：溢出伤害打到玩家
+        sigils = {"trample"},
         rarity = "rare",
+        family = "beast",
     },
     eagle = {
         id = "eagle",
@@ -153,50 +168,51 @@ local Cards = {
         cost = 4,
         attack = 3,
         hp = 4,
-        sigils = {"air_strike", "sharp_quills"},  -- 飞行+刺
+        sigils = {"air_strike", "sharp_quills"},
         rarity = "rare",
+        family = "flying",
     },
 
-    -- ========== 【新】词条牌（触发效果） ==========
-    -- 连击狼：打出后下张牌-1费用
+    -- ========== 词条牌 ==========
     combo_wolf = {
         id = "combo_wolf",
         name = "Combo Wolf",
         cost = 2,
         attack = 2,
         hp = 2,
-        sigils = {"combo"},  -- 连击：打出后下张牌费用-1
+        sigils = {"combo"},
         rarity = "uncommon",
+        family = "beast",
     },
-    -- 亡语蝙蝠：死亡时抽2张牌
     death_raven = {
         id = "death_raven",
         name = "Death Raven",
         cost = 2,
         attack = 1,
         hp = 2,
-        sigils = {"death_draw"},  -- 亡语：死亡时抽2张牌
+        sigils = {"death_draw"},
         rarity = "uncommon",
+        family = "flying",
     },
-    -- 猎杀者：击杀敌人时+1攻击
     hunter = {
         id = "hunter",
         name = "Hunter",
         cost = 2,
         attack = 1,
         hp = 3,
-        sigils = {"kill_bonus"},  -- 击杀时+1攻击
+        sigils = {"kill_bonus"},
         rarity = "rare",
+        family = "beast",
     },
-    -- 爆发猫：回合开始时+1Blood
     burst_cat = {
         id = "burst_cat",
         name = "Burst Cat",
         cost = 1,
         attack = 0,
         hp = 2,
-        sigils = {"turn_blood"},  -- 回合开始+1Blood
+        sigils = {"turn_blood"},
         rarity = "rare",
+        family = "beast",
     },
 
     -- ========== 传说卡 ==========
@@ -206,8 +222,9 @@ local Cards = {
         cost = 3,
         attack = 3,
         hp = 3,
-        sigils = {"undead", "bone_snake"},  -- 复活+骷髅蛇
+        sigils = {"undead", "bone_snake"},
         rarity = "legendary",
+        family = "mythic",
     },
     hydra = {
         id = "hydra",
@@ -215,8 +232,9 @@ local Cards = {
         cost = 5,
         attack = 3,
         hp = 4,
-        sigils = {"hydra"},  -- 死亡时分裂成两个小蛇
+        sigils = {"hydra"},
         rarity = "legendary",
+        family = "reptile",
     },
 
     -- ========== 解锁卡牌 ==========
@@ -226,20 +244,21 @@ local Cards = {
         cost = 2,
         attack = 2,
         hp = 3,
-        sigils = {"guardian", "tough"},  -- 保护+坚韧
+        sigils = {"guardian", "tough"},
         rarity = "uncommon",
+        family = "beast",
     },
 
-    -- ========== 【扩展】更多卡牌 ==========
-    -- 1费扩展
+    -- ========== 扩展卡牌 ==========
     bat = {
         id = "bat",
         name = "Bat",
         cost = 1,
         attack = 1,
         hp = 1,
-        sigils = {"air_strike"},  -- 飞行
+        sigils = {"air_strike"},
         rarity = "common",
+        family = "flying",
     },
     snail = {
         id = "snail",
@@ -247,8 +266,9 @@ local Cards = {
         cost = 1,
         attack = 0,
         hp = 3,
-        sigils = {"tough"},  -- 坚韧
+        sigils = {"tough"},
         rarity = "common",
+        family = "insect",
     },
     bee = {
         id = "bee",
@@ -256,11 +276,11 @@ local Cards = {
         cost = 1,
         attack = 2,
         hp = 1,
-        sigils = {"poison"},  -- 毒
+        sigils = {"poison"},
         rarity = "uncommon",
+        family = "insect",
     },
 
-    -- 2费扩展
     fox = {
         id = "fox",
         name = "Fox",
@@ -269,6 +289,7 @@ local Cards = {
         hp = 2,
         sigils = {},
         rarity = "common",
+        family = "beast",
     },
     owl = {
         id = "owl",
@@ -276,8 +297,9 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 3,
-        sigils = {"air_strike", "tough"},  -- 飞行+坚韧
+        sigils = {"air_strike", "tough"},
         rarity = "rare",
+        family = "flying",
     },
     snake = {
         id = "snake",
@@ -285,8 +307,9 @@ local Cards = {
         cost = 2,
         attack = 2,
         hp = 2,
-        sigils = {"poison"},  -- 毒
+        sigils = {"poison"},
         rarity = "uncommon",
+        family = "reptile",
     },
     spider = {
         id = "spider",
@@ -294,8 +317,9 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 4,
-        sigils = {"stinky"},  -- 臭气
+        sigils = {"stinky"},
         rarity = "uncommon",
+        family = "insect",
     },
     crow = {
         id = "crow",
@@ -303,8 +327,9 @@ local Cards = {
         cost = 2,
         attack = 2,
         hp = 2,
-        sigils = {"death_draw"},  -- 亡语抽牌
+        sigils = {"death_draw"},
         rarity = "uncommon",
+        family = "flying",
     },
     rabbit = {
         id = "rabbit",
@@ -312,11 +337,11 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 3,
-        sigils = {"undead"},  -- 复活
+        sigils = {"undead"},
         rarity = "uncommon",
+        family = "beast",
     },
 
-    -- 3费扩展
     lion = {
         id = "lion",
         name = "Lion",
@@ -325,6 +350,7 @@ local Cards = {
         hp = 4,
         sigils = {},
         rarity = "rare",
+        family = "beast",
     },
     shark = {
         id = "shark",
@@ -332,8 +358,9 @@ local Cards = {
         cost = 3,
         attack = 5,
         hp = 2,
-        sigils = {"trample"},  -- 践踏
+        sigils = {"trample"},
         rarity = "rare",
+        family = "ocean",
     },
     scorpion = {
         id = "scorpion",
@@ -341,8 +368,9 @@ local Cards = {
         cost = 3,
         attack = 2,
         hp = 3,
-        sigils = {"poison", "sharp_quills"},  -- 毒+刺
+        sigils = {"poison", "sharp_quills"},
         rarity = "rare",
+        family = "insect",
     },
     boar = {
         id = "boar",
@@ -350,8 +378,9 @@ local Cards = {
         cost = 3,
         attack = 3,
         hp = 5,
-        sigils = {"charge"},  -- 冲锋
+        sigils = {"charge"},
         rarity = "uncommon",
+        family = "beast",
     },
     frog_king = {
         id = "frog_king",
@@ -359,19 +388,20 @@ local Cards = {
         cost = 3,
         attack = 2,
         hp = 5,
-        sigils = {"tough", "guardian"},  -- 坚韧+守护
+        sigils = {"tough", "guardian"},
         rarity = "rare",
+        family = "reptile",
     },
 
-    -- 4费扩展
     dragon = {
         id = "dragon",
         name = "Dragon",
         cost = 4,
         attack = 5,
         hp = 5,
-        sigils = {"air_strike", "trample"},  -- 飞行+践踏
+        sigils = {"air_strike", "trample"},
         rarity = "legendary",
+        family = "mythic",
     },
     bear = {
         id = "bear",
@@ -381,6 +411,7 @@ local Cards = {
         hp = 7,
         sigils = {"tough"},
         rarity = "rare",
+        family = "beast",
     },
     kraken = {
         id = "kraken",
@@ -388,19 +419,20 @@ local Cards = {
         cost = 4,
         attack = 3,
         hp = 8,
-        sigils = {"bifurcated"},  -- 双击
+        sigils = {"bifurcated"},
         rarity = "rare",
+        family = "ocean",
     },
 
-    -- 5费扩展
     phoenix = {
         id = "phoenix",
         name = "Phoenix",
         cost = 5,
         attack = 4,
         hp = 4,
-        sigils = {"undead", "air_strike"},  -- 复活+飞行
+        sigils = {"undead", "air_strike"},
         rarity = "legendary",
+        family = "mythic",
     },
     titan = {
         id = "titan",
@@ -410,17 +442,18 @@ local Cards = {
         hp = 10,
         sigils = {"trample", "tough"},
         rarity = "legendary",
+        family = "mythic",
     },
 
-    -- 特殊功能卡
     blood_worm = {
         id = "blood_worm",
         name = "Blood Worm",
         cost = 0,
         attack = 0,
         hp = 2,
-        sigils = {"turn_blood"},  -- 回合开始+1Blood
+        sigils = {"turn_blood"},
         rarity = "rare",
+        family = "ocean",
     },
     mirror_cat = {
         id = "mirror_cat",
@@ -428,8 +461,9 @@ local Cards = {
         cost = 1,
         attack = 1,
         hp = 1,
-        sigils = {"undead", "undead"},  -- 双重复活
+        sigils = {"undead", "undead"},
         rarity = "legendary",
+        family = "mythic",
     },
     gem_crab = {
         id = "gem_crab",
@@ -439,6 +473,7 @@ local Cards = {
         hp = 5,
         sigils = {"tough", "guardian"},
         rarity = "rare",
+        family = "ocean",
     },
     assassin_bug = {
         id = "assassin_bug",
@@ -446,8 +481,9 @@ local Cards = {
         cost = 2,
         attack = 1,
         hp = 2,
-        sigils = {"poison", "double_strike"},  -- 毒+双击
+        sigils = {"poison", "double_strike"},
         rarity = "rare",
+        family = "insect",
     },
     ghost_wolf = {
         id = "ghost_wolf",
@@ -455,8 +491,9 @@ local Cards = {
         cost = 2,
         attack = 3,
         hp = 1,
-        sigils = {"air_strike", "undead"},  -- 飞行+复活
+        sigils = {"air_strike", "undead"},
         rarity = "rare",
+        family = "mythic",
     },
     queen_bee = {
         id = "queen_bee",
@@ -464,8 +501,9 @@ local Cards = {
         cost = 3,
         attack = 2,
         hp = 4,
-        sigils = {"hydra", "poison"},  -- 分裂+毒
+        sigils = {"hydra", "poison"},
         rarity = "legendary",
+        family = "insect",
     },
 }
 

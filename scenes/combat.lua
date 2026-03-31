@@ -1,5 +1,5 @@
 -- scenes/combat.lua - 战斗场景
--- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统 + 特效系统 + 敌人意图
+-- 卡牌放置 + 自动攻击 + 拖拽 + 献祭系统 + 关卡系统 + 牌组系统 + 印记系统 + 特效系统 + 敌人意图 + 体系联动
 
 local Combat = {}
 local CardData = require("data.cards")
@@ -22,8 +22,8 @@ local Sound = require("systems.sound")
 local Animation = require("systems.animation")
 local MetaProgression = require("systems.meta_progression")
 local Assets = require("core.assets")
--- 【性能优化】缓存 require 结果，避免每帧查找
 local CardUI = require("ui.card")
+local Family = require("systems.family")  -- 体系联动系统
 
 -- 【性能优化】鼠标位置缓存（避免多次调用 getPosition）
 local cached_mouse_x = 0
@@ -901,6 +901,8 @@ function Combat.place_card(hand_index, slot)
     battle.player.blood = battle.player.blood - actual_cost
     battle.cost_reduction = 0  -- 连击只影响下一张牌
 
+    -- 获取卡牌模板（包含family字段）
+    local template = CardData.cards[placed_card.id]
     local board_card = {
         id = placed_card.id,
         name = placed_card.name,
@@ -908,12 +910,19 @@ function Combat.place_card(hand_index, slot)
         hp = placed_card.hp,
         max_hp = placed_card.max_hp or placed_card.hp,
         sigils = placed_card.sigils or {},
+        family = template and template.family,  -- 添加体系字段
     }
 
     -- 触发印记生成效果
     Sigils.apply_spawn_effects(board_card)
 
     battle.player.board[slot] = board_card
+
+    -- 【体系联动】应用体系加成
+    board_card = Family.apply_bonuses(board_card, battle.player.board)
+    if board_card.family_bonus then
+        add_log(board_card.name .. " [" .. (Family.FAMILIES[board_card.family] and Family.FAMILIES[board_card.family].name_cn or board_card.family) .. "] " .. board_card.family_bonus)
+    end
 
     -- 触发放置时的印记效果（过牌、连击等）
     local place_results = Sigils.process_place(board_card)
