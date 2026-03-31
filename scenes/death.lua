@@ -1,17 +1,22 @@
 -- scenes/death.lua - 死亡场景
--- 使用 Theme 和 Components 重构
+-- 玩家失败后的结算界面
+-- 使用 Theme 和 Components 重构，支持局外成长记录
 
 local Death = {}
 local State = require("core.state")
 local Map = require("systems.map")
-local Deck = require("systems.deck")  -- [BUG FIX] 添加 Deck 模块导入
+local Deck = require("systems.deck")
 local Fonts = require("core.fonts")
 local I18n = require("core.i18n")
 local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
+local MetaProgression = require("systems.meta_progression")
+local Sound = require("systems.sound")
 
+-- 模块私有状态
 local buttons = {}
+local death_stats = { losses = 0, total_runs = 0 }
 
 function Death.enter()
     -- 计算按钮位置
@@ -20,6 +25,17 @@ function Death.enter()
     buttons = {
         retry = {x = btn_x, y = 340, width = btn_w, height = btn_h},
         menu = {x = btn_x, y = 400, width = btn_w, height = btn_h},
+    }
+
+    -- 处理失败，记录进度
+    MetaProgression.init()
+    MetaProgression.process_loss()
+
+    -- 获取统计
+    local stats = MetaProgression.get_stats()
+    death_stats = {
+        losses = stats.losses,
+        total_runs = stats.total_runs,
     }
 end
 
@@ -73,13 +89,20 @@ end
 
 function Death.keypressed(key)
     if key == "space" then
+        Sound.play("click")
         Map.reset()
         Map.generate()
         Deck.reset()  -- [BUG FIX] 重试时重置牌组
+        -- 重置融合计数
+        local FusionSystem = require("systems.fusion")
+        FusionSystem.reset_fusion_count()
         State.switch("map")
     elseif key == "escape" then
+        Sound.play("click")
         Map.reset()
         Deck.reset()  -- [BUG FIX] 返回菜单时重置牌组
+        local FusionSystem = require("systems.fusion")
+        FusionSystem.reset_fusion_count()
         State.switch("menu")
     end
 end
@@ -88,13 +111,19 @@ function Death.mousepressed(x, y, button)
     if button ~= 1 then return end
 
     if Layout.mouse_in_button(buttons.retry) then
+        Sound.play("click")
         Map.reset()
         Map.generate()
         Deck.reset()  -- [BUG FIX] 重试时重置牌组
+        local FusionSystem = require("systems.fusion")
+        FusionSystem.reset_fusion_count()
         State.switch("map")
     elseif Layout.mouse_in_button(buttons.menu) then
+        Sound.play("click")
         Map.reset()
         Deck.reset()  -- [BUG FIX] 返回菜单时重置牌组
+        local FusionSystem = require("systems.fusion")
+        FusionSystem.reset_fusion_count()
         State.switch("menu")
     end
 end

@@ -1,5 +1,5 @@
 -- config/colors.lua - 游戏颜色配置
--- 统一管理所有颜色，便于主题切换
+-- 统一管理所有颜色，便于主题切换和动画效果
 
 local Colors = {
     -- 背景
@@ -58,6 +58,20 @@ local Colors = {
     -- 分隔线
     separator_bg = {0.25, 0.2, 0.15},
     separator_text = {0.6, 0.5, 0.3},
+
+    -- 动画发光颜色
+    glow_white = {1, 1, 1},
+    glow_gold = {1, 0.9, 0.6},
+    glow_green = {0.5, 1, 0.5},
+    glow_red = {1, 0.4, 0.4},
+    glow_blue = {0.6, 0.8, 1},
+
+    -- 粒子颜色
+    particle_attack = {1, 0.9, 0.6},
+    particle_heal = {0.3, 1, 0.5},
+    particle_death = {0.8, 0.3, 0.3},
+    particle_victory = {1, 0.85, 0.2},
+    particle_place = {1, 0.9, 0.5},
 }
 
 return Colors

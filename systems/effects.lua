@@ -1,5 +1,6 @@
 -- systems/effects.lua - 特效系统
 -- 管理战斗特效：伤害数字、闪光、动画
+-- 支持多种特效类型和自动过期清理
 
 local Effects = {}
 local Fonts = require("core.fonts")
@@ -7,7 +8,8 @@ local Fonts = require("core.fonts")
 -- 活跃特效列表
 local active_effects = {}
 
--- 特效类型
+-- 特效类型定义
+-- 每种特效包含 duration, update, draw 函数
 local EFFECT_TYPES = {
     damage_number = {
         duration = 1.2,

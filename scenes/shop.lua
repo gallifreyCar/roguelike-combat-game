@@ -1,5 +1,6 @@
 -- scenes/shop.lua - 商店/牌库查看场景
 -- 可以查看牌库、购买卡牌
+-- 支持牌库管理和商店购买两个标签页切换
 
 local Shop = {}
 local Deck = require("systems.deck")
@@ -13,12 +14,13 @@ local Components = require("ui.components")
 local Save = require("systems.save")
 local Sound = require("systems.sound")
 
+-- 模块私有状态
 local selected_tab = "deck"  -- "deck" 或 "shop"
 local scroll_offset = 0
 local purchase_message = ""
 local message_timer = 0
 
--- 商店卡牌
+-- 商店卡牌配置（静态数据）
 local SHOP_CARDS = {
     {id = "stoat", price = 10},
     {id = "rat", price = 10},
@@ -128,20 +130,25 @@ function Shop.draw_tabs(win_w)
 end
 
 function Shop.draw_deck_view(win_w, win_h)
-    local deck = Deck.get_deck()
-    local info = Deck.get_info()
+    local deck = Deck.get_deck() or {}
+    local info = Deck.get_info() or {deck_size = 0, draw_pile_size = 0, discard_pile_size = 0, hand_size = 0}
 
-    -- 牌库统计
+    -- 牌库统计（响应式）
+    local stats_w = win_w - 100
+    local stats_x = 50
     Theme.setColor("bg_panel")
-    love.graphics.rectangle("fill", 50, 110, win_w - 100, 50, 6, 6)
-    Components.text(I18n.tf("shop_deck_info", info.deck_size), 70, 120, {color = "text_primary"})
-    Components.text(I18n.tf("shop_draw_pile", info.draw_pile_size), 250, 120, {color = "text_secondary"})
-    Components.text(I18n.tf("shop_discard", info.discard_pile_size), 400, 120, {color = "text_secondary"})
-    Components.text(I18n.tf("shop_hand", info.hand_size), 550, 120, {color = "text_secondary"})
+    love.graphics.rectangle("fill", stats_x, 110, stats_w, 50, 6, 6)
+
+    -- 统计文字按百分比分布
+    local stat_width = stats_w / 4
+    Components.text(I18n.tf("shop_deck_info", info.deck_size), stats_x + 20, 120, {color = "text_primary"})
+    Components.text(I18n.tf("shop_draw_pile", info.draw_pile_size), stats_x + stat_width, 120, {color = "text_secondary"})
+    Components.text(I18n.tf("shop_discard", info.discard_pile_size), stats_x + stat_width * 2, 120, {color = "text_secondary"})
+    Components.text(I18n.tf("shop_hand", info.hand_size), stats_x + stat_width * 3, 120, {color = "text_secondary"})
 
     -- 显示牌库中的卡牌
     if #deck == 0 then
-        Components.text(I18n.t("shop_empty"), win_w / 2, 300, {
+        Components.text(I18n.t("shop_empty"), win_w / 2, win_h / 2, {
             color = "text_hint",
             align = "center",
         })
@@ -157,14 +164,19 @@ function Shop.draw_deck_view(win_w, win_h)
         card_counts[card.id].count = card_counts[card.id].count + 1
     end
 
-    -- 显示卡牌列表
-    local y = 180
+    -- 显示卡牌列表（响应式）
     local card_width = 180
-    local cards_per_row = math.floor((win_w - 100) / (card_width + 15))
+    local card_gap = 15
+    local margin = 50
+    local cards_per_row = math.max(1, math.floor((win_w - margin * 2 + card_gap) / (card_width + card_gap)))
+    local total_width = cards_per_row * card_width + (cards_per_row - 1) * card_gap
+    local start_x = (win_w - total_width) / 2
+
     local col = 0
+    local y = 180
 
     for card_id, data in pairs(card_counts) do
-        local x = 50 + col * (card_width + 15)
+        local x = start_x + col * (card_width + card_gap)
 
         -- 卡牌背景
         Theme.setColor("bg_slot")
@@ -172,23 +184,12 @@ function Shop.draw_deck_view(win_w, win_h)
         Theme.setColor("border_gold", 0.3)
         love.graphics.rectangle("line", x, y, card_width, 80, 6, 6)
 
-        -- 卡牌信息（使用翻译）
+        -- 卡牌信息
         Components.text(I18n.card_name(data.template.id), x + 10, y + 8, {color = "text_primary"})
-        Components.text("x" .. data.count, x + card_width - 30, y + 8, {
-            color = "accent_gold",
-        })
-        Components.text(I18n.t("shop_cost") .. ": " .. (data.template.cost or 0), x + 10, y + 30, {
-            color = "accent_red",
-            size = 12,
-        })
-        Components.text(I18n.t("shop_atk") .. ": " .. (data.template.attack or 0), x + 10, y + 50, {
-            color = "accent_gold",
-            size = 12,
-        })
-        Components.text(I18n.t("shop_hp") .. ": " .. (data.template.hp or 0), x + 80, y + 50, {
-            color = "accent_green",
-            size = 12,
-        })
+        Components.text("x" .. data.count, x + card_width - 30, y + 8, {color = "accent_gold"})
+        Components.text(I18n.t("shop_cost") .. ": " .. (data.template.cost or 0), x + 10, y + 30, {color = "accent_red", size = 12})
+        Components.text(I18n.t("shop_atk") .. ": " .. (data.template.attack or 0), x + 10, y + 50, {color = "accent_gold", size = 12})
+        Components.text(I18n.t("shop_hp") .. ": " .. (data.template.hp or 0), x + 80, y + 50, {color = "accent_green", size = 12})
 
         col = col + 1
         if col >= cards_per_row then
@@ -199,20 +200,24 @@ function Shop.draw_deck_view(win_w, win_h)
 end
 
 function Shop.draw_shop_view(win_w, win_h)
-    -- 清空并重新记录卡牌位置
     shop_card_positions = {}
 
-    local y = 180
     local card_width = 200
-    local cards_per_row = math.floor((win_w - 100) / (card_width + 15))
+    local card_gap = 15
+    local margin = 50
+    local cards_per_row = math.max(1, math.floor((win_w - margin * 2 + card_gap) / (card_width + card_gap)))
+    local total_width = cards_per_row * card_width + (cards_per_row - 1) * card_gap
+    local start_x = (win_w - total_width) / 2
+
     local col = 0
+    local y = 180
 
     for i, item in ipairs(SHOP_CARDS) do
         local template = CardData.cards[item.id]
         if template then
-            local x = 50 + col * (card_width + 15)
+            local x = start_x + col * (card_width + card_gap)
 
-            -- 记录卡牌位置和购买信息（用于点击检测）
+            -- 记录位置
             shop_card_positions[#shop_card_positions + 1] = {
                 index = i,
                 item = item,
@@ -235,26 +240,14 @@ function Shop.draw_shop_view(win_w, win_h)
             Theme.setColor("accent_blue", 0.3)
             love.graphics.rectangle("line", x, y, card_width, 90, 6, 6)
 
-            -- 卡牌信息（使用翻译）
+            -- 卡牌信息
             Components.text(I18n.card_name(template.id), x + 10, y + 8, {color = "text_primary"})
-            Components.text(I18n.t("shop_price") .. ": " .. item.price, x + card_width - 60, y + 8, {
-                color = "accent_gold",
-                size = 12,
-            })
-            Components.text(I18n.t("shop_cost") .. ": " .. (template.cost or 0), x + 10, y + 35, {
-                color = "accent_red",
-                size = 12,
-            })
-            Components.text(I18n.t("shop_atk") .. ": " .. (template.attack or 0), x + 10, y + 55, {
-                color = "accent_gold",
-                size = 12,
-            })
-            Components.text(I18n.t("shop_hp") .. ": " .. (template.hp or 0), x + 80, y + 55, {
-                color = "accent_green",
-                size = 12,
-            })
+            Components.text(I18n.t("shop_price") .. ": " .. item.price, x + card_width - 60, y + 8, {color = "accent_gold", size = 12})
+            Components.text(I18n.t("shop_cost") .. ": " .. (template.cost or 0), x + 10, y + 35, {color = "accent_red", size = 12})
+            Components.text(I18n.t("shop_atk") .. ": " .. (template.attack or 0), x + 10, y + 55, {color = "accent_gold", size = 12})
+            Components.text(I18n.t("shop_hp") .. ": " .. (template.hp or 0), x + 80, y + 55, {color = "accent_green", size = 12})
 
-            -- 购买按钮（根据金币状态变色）
+            -- 购买按钮
             local coins = Save.get_coins()
             local can_afford = coins >= item.price
             Theme.setColor(can_afford and "accent_green" or "bg_slot", can_afford and 0.4 or 0.5)
@@ -275,8 +268,10 @@ end
 
 function Shop.keypressed(key)
     if key == "escape" then
+        Sound.play("click")
         State.pop()
     elseif key == "tab" or key == "left" or key == "right" then
+        Sound.play("click")
         selected_tab = selected_tab == "deck" and "shop" or "deck"
     end
 end

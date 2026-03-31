@@ -11,6 +11,18 @@ local max_logs = 20
 local fps_history = {}
 local frame_time = 0
 
+-- 【性能优化】增强帧率统计
+local fps_stats = {
+    min_fps = 999,
+    max_fps = 0,
+    avg_fps = 0,
+    sample_count = 0,
+    last_reset_time = 0,
+}
+
+-- FPS 历史 Max samples
+local MAX_FPS_SAMPLES = 60
+
 -- 初始化
 function Debug.init(options)
     options = options or {}
@@ -50,13 +62,31 @@ end
 
 -- 更新
 function Debug.update(dt)
-    if not enabled then return end
+    if not enabled and not show_fps then return end
 
     -- FPS 计算
     frame_time = dt
-    table.insert(fps_history, 1, 1 / dt)
-    if #fps_history > 60 then
-        table.remove(fps_history)
+    local current_fps = dt > 0 and math.floor(1 / dt) or 0
+
+    -- 【性能优化】使用固定长度数组（避免 table.remove 开销）
+    table.insert(fps_history, 1, current_fps)
+    if #fps_history > MAX_FPS_SAMPLES then
+        fps_history[MAX_FPS_SAMPLES + 1] = nil  -- 直接删除最后一个
+    end
+
+    -- 【性能优化】更新帧率统计
+    fps_stats.sample_count = fps_stats.sample_count + 1
+    if current_fps > 0 then
+        fps_stats.min_fps = math.min(fps_stats.min_fps, current_fps)
+        fps_stats.max_fps = math.max(fps_stats.max_fps, current_fps)
+    end
+
+    -- 每5秒重置 min/max（避免极端值持续影响）
+    local now = love.timer.getTime()
+    if now - fps_stats.last_reset_time > 5 then
+        fps_stats.min_fps = current_fps
+        fps_stats.max_fps = current_fps
+        fps_stats.last_reset_time = now
     end
 end
 
@@ -66,9 +96,8 @@ function Debug.draw()
 
     local y = 10
 
-    -- FPS 显示
+    -- FPS 显示（增强版）
     if show_fps or enabled then
-        -- [BUG FIX] 防止 frame_time 为 0 导致除零错误
         local fps = frame_time > 0 and math.floor(1 / frame_time) or 0
         local avg_fps = 0
         if #fps_history > 0 then
@@ -76,10 +105,19 @@ function Debug.draw()
                 avg_fps = avg_fps + f
             end
             avg_fps = math.floor(avg_fps / #fps_history)
+            fps_stats.avg_fps = avg_fps
         end
 
+        -- 【性能优化】显示帧率范围
         love.graphics.setColor(1, 1, 0)
-        love.graphics.print(string.format("FPS: %d (avg: %d)", fps, avg_fps), 10, y)
+        love.graphics.print(string.format("FPS: %d | Avg: %d | Min: %d | Max: %d",
+            fps, avg_fps, fps_stats.min_fps, fps_stats.max_fps), 10, y)
+        y = y + 20
+
+        -- 【性能优化】帧时间显示（微秒）
+        local frame_us = math.floor(frame_time * 1000000)
+        love.graphics.setColor(0.8, 0.8, 1)
+        love.graphics.print(string.format("Frame: %d us (%.2f ms)", frame_us, frame_time * 1000), 10, y)
         y = y + 20
     end
 

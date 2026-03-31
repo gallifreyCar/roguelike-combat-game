@@ -1,5 +1,7 @@
--- systems/deck.lua - 牌组系统（Blood Cards风格）
--- 管理：牌组、抽牌堆、手牌、弃牌堆 + 兜底机制
+-- systems/deck.lua - 牌组系统
+-- 管理：牌组、抽牌堆、手牌、弃牌堆
+-- 【重构】移除兜底机制，依靠牌组自循环
+-- 【扩展】支持局外成长系统加成
 
 local CardData = require("data.cards")
 local TableUtils = require("utils.table")
@@ -12,50 +14,74 @@ local deck_state = {
     draw_pile = {},      -- 抽牌堆
     hand = {},           -- 当前手牌
     discard_pile = {},   -- 弃牌堆
-    desperation_mode = false,  -- 绝望模式标记
-    free_squirrels = 0,        -- 已获得的免费松鼠数量
 }
 
--- ==================== 兜底机制配置 ====================
-local FALLBACK_CONFIG = {
-    -- 每回合自动获得免费松鼠的手牌阈值
-    hand_threshold = 2,
+-- 局外成长加成缓存
+local meta_bonuses = nil
 
-    -- 绝望模式阈值（抽牌堆+弃牌堆都空时）
-    activate_desperation = true,
+--- 设置局外成长加成（由 MetaProgression 调用）
+-- @param bonuses table: 包含 hp_bonus, gold_bonus, blood_bonus 等字段
+function Deck.set_meta_bonuses(bonuses)
+    meta_bonuses = bonuses
+end
 
-    -- 免费松鼠上限（防止无限刷）
-    max_free_squirrels = 3,
-
-    -- 绝望时刻：空手时可获得特殊"末日牌"
-    doom_card_enabled = true,
-}
-
--- 初始化牌组（开局默认牌组）
+--- 初始化牌组（开局默认牌组）
+-- 【重构】扩充到15张，确保第一轮战斗有足够战力
+-- 【扩展】应用局外成长加成
 function Deck.init()
     deck_state.deck = {}
     deck_state.draw_pile = {}
     deck_state.hand = {}
     deck_state.discard_pile = {}
-    deck_state.desperation_mode = false
-    deck_state.free_squirrels = 0
 
-    -- 默认初始牌组
+    -- 扩大的初始牌组（15张基础牌）
+    -- 确保低费牌充足，第一轮能稳定战斗
     local starter_cards = {
-        "squirrel", "squirrel", "squirrel",  -- 3张免费献祭材料
-        "stoat", "stoat",                     -- 2张基础攻击
-        "wolf",                               -- 1张中坚
-        "bullfrog",                           -- 1张肉盾
+        -- 0费献祭材料（3张）
+        "squirrel", "squirrel", "squirrel",
+        -- 1费基础攻击（6张）- 核心战力
+        "stoat", "stoat",           -- 2张基础1/2
+        "rat", "rat",               -- 2张高攻2/1
+        "bullfrog", "bullfrog",     -- 2张肉盾1/4
+        -- 2费中坚（4张）
+        "wolf", "wolf",             -- 2张狼 2/2
+        "raven", "raven",           -- 2张渡鸦（飞行）
+        -- 功能牌（2张）
+        "turtle",                   -- 守护者
+        "insight",                  -- 过牌
     }
 
     for _, card_id in ipairs(starter_cards) do
         Deck.add_to_deck(card_id)
     end
 
+    -- 应用局外成长加成
+    if meta_bonuses then
+        -- 更好的松鼠：给松鼠+1 HP
+        if meta_bonuses.better_squirrel then
+            for _, card in ipairs(deck_state.deck) do
+                if card.id == "squirrel" then
+                    card.hp = card.hp + 1
+                    card.max_hp = card.max_hp + 1
+                end
+            end
+        end
+
+        -- 起始稀有牌：添加一张随机稀有牌
+        if meta_bonuses.starting_rare then
+            local MetaProgression = require("systems.meta_progression")
+            local rare_card_id = MetaProgression.get_random_rare_card()
+            if rare_card_id then
+                Deck.add_to_deck(rare_card_id)
+            end
+        end
+    end
+
     Deck.shuffle_draw_pile()
 end
 
--- 添加卡牌到牌组
+--- 添加卡牌到牌组
+-- @param card_id string: 卡牌模板ID
 function Deck.add_to_deck(card_id)
     local template = CardData.cards[card_id]
     if template then
@@ -64,12 +90,14 @@ function Deck.add_to_deck(card_id)
     end
 end
 
--- 洗抽牌堆
+--- 洗抽牌堆
 function Deck.shuffle_draw_pile()
     TableUtils.shuffle(deck_state.draw_pile)
 end
 
--- 抽牌到手牌
+--- 抽牌到手牌
+-- @param n number: 抽牌数量
+-- 手牌上限由 Settings.max_hand_size 控制
 function Deck.draw_cards(n)
     local Settings = require("config.settings")
     local max_hand = Settings.max_hand_size or 8
@@ -83,10 +111,10 @@ function Deck.draw_cards(n)
         -- 抽牌堆空了，洗弃牌堆
         if #deck_state.draw_pile == 0 then
             if #deck_state.discard_pile == 0 then
-                -- 没牌可抽了
+                -- 没牌可抽了，回合结束等待弃牌堆回收
                 break
             end
-            -- 弃牌堆进入抽牌堆（直接移动引用，无需深拷贝）
+            -- 弃牌堆进入抽牌堆
             for _, card in ipairs(deck_state.discard_pile) do
                 deck_state.draw_pile[#deck_state.draw_pile + 1] = card
             end
@@ -98,30 +126,30 @@ function Deck.draw_cards(n)
             local card = deck_state.draw_pile[#deck_state.draw_pile]
             deck_state.draw_pile[#deck_state.draw_pile] = nil
 
-            -- 添加到手牌（带当前状态）
+            -- 添加到手牌
             deck_state.hand[#deck_state.hand + 1] = {
                 id = card.id,
                 name = card.name,
                 cost = card.cost,
                 attack = card.attack,
                 hp = card.hp,
-                max_hp = card.max_hp or card.hp,  -- 确保 max_hp 有值
+                max_hp = card.max_hp or card.hp,
                 sigils = card.sigils or {},
             }
         end
     end
 end
 
--- 从手牌打出一张牌（返回卡牌数据）
+--- 从手牌打出一张牌（返回卡牌数据）
+-- @param index number: 手牌索引
+-- @return table|nil: 打出的卡牌数据，索引无效返回nil
 function Deck.play_card(index)
     if index < 1 or index > #deck_state.hand then return nil end
 
     local card = deck_state.hand[index]
     table.remove(deck_state.hand, index)
 
-    -- 加入弃牌堆
     deck_state.discard_pile[#deck_state.discard_pile + 1] = card
-
     return card
 end
 
@@ -131,19 +159,15 @@ function Deck.sacrifice_card(index)
 
     local card = deck_state.hand[index]
     table.remove(deck_state.hand, index)
-
-    -- 不加入弃牌堆（献祭销毁）
     return card
 end
 
--- 放置卡牌（从手牌移到棋盘，不进入弃牌堆）
+-- 放置卡牌（从手牌移到棋盘）
 function Deck.place_card(index)
     if index < 1 or index > #deck_state.hand then return nil end
 
     local card = deck_state.hand[index]
     table.remove(deck_state.hand, index)
-
-    -- 返回卡牌供战斗场景使用
     return card
 end
 
@@ -163,7 +187,7 @@ function Deck.recycle_card(card)
             name = card.name,
             cost = card.cost,
             attack = card.attack,
-            hp = card.hp,  -- 重置为模板HP
+            hp = card.hp,
             max_hp = card.max_hp,
             sigils = card.sigils or {},
         }
@@ -190,12 +214,9 @@ function Deck.get_discard_pile()
     return deck_state.discard_pile
 end
 
--- 获取所有卡牌（手牌+牌库中，用于融合选择）
--- [BUG FIX] 返回完整列表（不去重），这样才能正确选择两张相同卡牌进行融合
+-- 获取所有卡牌（用于融合选择）
 function Deck.get_all_cards_for_fusion()
     local all_cards = {}
-
-    -- 添加牌库中的所有卡牌（不去重！）
     for _, card in ipairs(deck_state.deck) do
         table.insert(all_cards, {
             id = card.id,
@@ -208,7 +229,6 @@ function Deck.get_all_cards_for_fusion()
             fused = card.fused,
         })
     end
-
     return all_cards
 end
 
@@ -224,8 +244,6 @@ function Deck.get_info()
         draw_pile_size = #deck_state.draw_pile,
         hand_size = #deck_state.hand,
         discard_pile_size = #deck_state.discard_pile,
-        desperation_mode = deck_state.desperation_mode,
-        free_squirrels = deck_state.free_squirrels,
     }
 end
 
@@ -234,133 +252,34 @@ function Deck.reset()
     Deck.init()
 end
 
--- ==================== 兜底机制 ====================
+-- 重置抽牌堆（每场战斗开始时调用）
+-- 将所有牌放入抽牌堆并洗牌，清空手牌和弃牌堆
+function Deck.reset_for_battle()
+    -- 清空手牌和弃牌堆
+    deck_state.hand = {}
+    deck_state.discard_pile = {}
 
--- 检查是否处于绝望状态（牌堆都空）
-function Deck.is_desperate()
-    return #deck_state.draw_pile == 0 and #deck_state.discard_pile == 0
+    -- 从牌组重新填充抽牌堆
+    deck_state.draw_pile = {}
+    for _, card in ipairs(deck_state.deck) do
+        deck_state.draw_pile[#deck_state.draw_pile + 1] = {
+            id = card.id,
+            name = card.name,
+            cost = card.cost,
+            attack = card.attack,
+            hp = card.hp,
+            max_hp = card.max_hp or card.hp,
+            sigils = card.sigils or {},
+            fused = card.fused,
+            rarity = card.rarity,
+        }
+    end
+
+    -- 洗牌
+    Deck.shuffle_draw_pile()
 end
 
--- 获得一张免费松鼠（不消耗牌组）
--- 注意：改为"战斗松鼠"，有1攻，可以实际战斗
-function Deck.grant_free_squirrel()
-    if deck_state.free_squirrels >= FALLBACK_CONFIG.max_free_squirrels then
-        return false, "Maximum free squirrels reached"
-    end
-
-    local Settings = require("config.settings")
-    local max_hand = Settings.max_hand_size or 8
-
-    if #deck_state.hand >= max_hand then
-        return false, "Hand is full"
-    end
-
-    -- 创建一张"战斗松鼠"（有攻击力！）
-    local squirrel = {
-        id = "battle_squirrel",
-        name = "Battle Squirrel",
-        cost = 0,
-        attack = 1,       -- 有攻击力！
-        hp = 2,           -- 稍微增加血量
-        max_hp = 2,
-        sigils = {},
-        free = true,      -- 标记为免费获得
-    }
-
-    deck_state.hand[#deck_state.hand + 1] = squirrel
-    deck_state.free_squirrels = deck_state.free_squirrels + 1
-
-    return true, "Granted a Battle Squirrel! (1 ATK, 2 HP)"
-end
-
--- 回合开始时的兜底检查
--- 返回：是否触发了兜底，消息
-function Deck.turn_start_fallback()
-    local messages = {}
-    local triggered = false
-
-    -- 检查1：手牌过少，自动补充战斗松鼠
-    if #deck_state.hand < FALLBACK_CONFIG.hand_threshold then
-        if deck_state.free_squirrels < FALLBACK_CONFIG.max_free_squirrels then
-            local success, msg = Deck.grant_free_squirrel()
-            if success then
-                triggered = true
-                messages[#messages + 1] = msg
-            end
-        end
-    end
-
-    -- 检查2：牌堆全空（绝望模式）
-    if Deck.is_desperate() then
-        deck_state.desperation_mode = true
-
-        -- 确保至少有一张可用卡
-        if #deck_state.hand == 0 then
-            -- 优先给末日牌（更强）
-            if FALLBACK_CONFIG.doom_card_enabled then
-                local doom_card = Deck.grant_doom_card()
-                if doom_card then
-                    triggered = true
-                    messages[#messages + 1] = "DOOM CARD! 3 ATK, can revive once!"
-                end
-            end
-
-            -- 末日牌失败时，给战斗松鼠
-            if not triggered and deck_state.free_squirrels < FALLBACK_CONFIG.max_free_squirrels then
-                local success, msg = Deck.grant_free_squirrel()
-                if success then
-                    triggered = true
-                    messages[#messages + 1] = "DESPERATION! " .. msg
-                end
-            end
-        end
-    else
-        deck_state.desperation_mode = false
-    end
-
-    return triggered, messages
-end
-
--- 获得末日牌（终极兜底）
-function Deck.grant_doom_card()
-    local Settings = require("config.settings")
-    local max_hand = Settings.max_hand_size or 8
-
-    if #deck_state.hand >= max_hand then
-        return nil
-    end
-
-    -- 末日牌：一次性强力效果
-    local doom_card = {
-        id = "doom_card",
-        name = "Doom Card",
-        cost = 0,
-        attack = 3,
-        hp = 1,
-        max_hp = 1,
-        sigils = {"undead"},  -- 可以复活一次
-        rarity = "legendary",
-        doom = true,  -- 特殊标记
-        one_time = true,  -- 使用后销毁
-    }
-
-    deck_state.hand[#deck_state.hand + 1] = doom_card
-
-    return doom_card
-end
-
--- 检查并移除末日牌（使用后销毁，不进入弃牌堆）
-function Deck.consume_doom_card(card)
-    if card and card.doom then
-        -- 末日牌使用后完全销毁，不回收
-        return true
-    end
-    return false
-end
-
--- 强制抽牌（无视牌堆状态）
--- 用于特殊效果或奖励
--- card_id_or_data: 可以是卡牌ID字符串，或者完整的卡牌数据表
+-- 强制抽牌（用于特殊效果或奖励）
 function Deck.force_draw_card(card_id_or_data)
     local Settings = require("config.settings")
     local max_hand = Settings.max_hand_size or 8
@@ -369,9 +288,7 @@ function Deck.force_draw_card(card_id_or_data)
         return false, "Hand is full"
     end
 
-    -- 判断是ID还是卡牌数据
     if type(card_id_or_data) == "string" then
-        -- 字符串ID：从卡牌数据模板创建
         local template = CardData.cards[card_id_or_data]
         if template then
             deck_state.hand[#deck_state.hand + 1] = {
@@ -386,7 +303,6 @@ function Deck.force_draw_card(card_id_or_data)
             return true, "Added " .. template.name
         end
     elseif type(card_id_or_data) == "table" then
-        -- 直接是卡牌数据（融合卡牌等特殊卡）
         deck_state.hand[#deck_state.hand + 1] = {
             id = card_id_or_data.id,
             name = card_id_or_data.name,
@@ -403,26 +319,7 @@ function Deck.force_draw_card(card_id_or_data)
     return false, "Invalid card data"
 end
 
--- 获取绝望模式状态
-function Deck.get_desperation_mode()
-    return deck_state.desperation_mode
-end
-
--- 获取已使用免费松鼠数量
-function Deck.get_free_squirrels_used()
-    return deck_state.free_squirrels
-end
-
--- 重置回合计数（新回合开始时）
-function Deck.new_turn_reset()
-    -- 每回合可以重置免费松鼠计数（可选）
-    -- 当前设计：整个游戏最多3张免费松鼠
-    -- 如果需要每回合重置，取消下面注释：
-    -- deck_state.free_squirrels = 0
-end
-
 -- 挖掘弃牌堆（特殊技能）
--- 允许从弃牌堆选择一张牌返回手牌
 function Deck.dig_discard_pile(index)
     if index < 1 or index > #deck_state.discard_pile then
         return nil, "Invalid index"
@@ -463,7 +360,6 @@ function Deck.remove_from_deck_by_id(card_id, count)
     count = count or 1
     local removed = 0
 
-    -- 从牌库中移除
     for i = #deck_state.deck, 1, -1 do
         if deck_state.deck[i] and deck_state.deck[i].id == card_id and removed < count then
             table.remove(deck_state.deck, i)

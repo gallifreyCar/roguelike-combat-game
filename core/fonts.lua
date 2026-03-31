@@ -18,11 +18,6 @@ function Fonts.init()
     local use_chinese_font = false
     if love.filesystem.getInfo(font_path) then
         use_chinese_font = true
-        print("Found Chinese font: " .. font_path)
-    else
-        print("Chinese font not found at " .. font_path)
-        print("Please download Noto Sans SC (free, open source):")
-        print("  https://fonts.google.com/noto/specimen/Noto+Sans+SC")
     end
 
     for _, size in ipairs(sizes) do
@@ -32,7 +27,6 @@ function Fonts.init()
                 font_cache[size] = font
             else
                 font_cache[size] = love.graphics.newFont(size)
-                print("Failed to load font at size " .. size)
             end
         else
             font_cache[size] = love.graphics.newFont(size)
@@ -43,8 +37,6 @@ function Fonts.init()
     if font_cache[DEFAULT_SIZE] then
         love.graphics.setFont(font_cache[DEFAULT_SIZE])
     end
-
-    print("Fonts initialized: " .. #sizes .. " sizes")
 end
 
 function Fonts.get(size)

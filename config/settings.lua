@@ -11,20 +11,20 @@ local Settings = {
     -- ==================== 战斗配置 ====================
     board_slots = 4,
     player_max_hp = 20,
-    max_blood = 6,
-    starting_blood = 1,
+    max_blood = 3,        -- 血量上限改为3
+    starting_blood = 1,   -- 起始1血
 
     -- ==================== 卡牌尺寸 ====================
-    card_width = 100,
-    card_height = 130,
-    card_small_width = 100,
-    card_small_height = 80,
-    card_radius = 5,
+    card_width = 120,     -- 增大卡牌宽度
+    card_height = 160,    -- 增大卡牌高度
+    card_small_width = 120,
+    card_small_height = 90,
+    card_radius = 6,
 
     -- ==================== 手牌配置 ====================
     hand_x = 1100,
     hand_y = 100,
-    hand_card_gap = 90,
+    hand_card_gap = 105,  -- 调整间距
     max_hand_size = 8,
 
     -- ==================== UI 布局 ====================

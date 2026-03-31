@@ -128,6 +128,8 @@ local SOUND_DEFINITIONS = {
     -- 其他
     blood_gain = { generator = "sine", freq = 700, duration = 0.15, volume = 0.5 },
     reward = { generator = "chord", frequencies = {440, 550, 660}, duration = 0.25, volume = 0.7 },
+    purchase = { generator = "chord", frequencies = {600, 800}, duration = 0.2, volume = 0.6 },
+    error = { generator = "noise", duration = 0.15, volume = 0.5 },
 }
 
 -- 初始化音效系统
@@ -156,7 +158,10 @@ function Sound.init()
         end
     end
 
-    print("Sound system initialized with " .. #sounds .. " generated effects")
+    -- 计算音效数量（使用 table 格式）
+    local count = 0
+    for _ in pairs(sounds) do count = count + 1 end
+    -- 音效系统已初始化（静默模式）
 end
 
 -- 播放音效

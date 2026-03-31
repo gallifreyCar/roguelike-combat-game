@@ -21,6 +21,11 @@ function State.init()
     State.register("map", require("scenes.map"))
     State.register("settings", require("scenes.settings"))
     State.register("story", require("scenes.story"))
+    State.register("progression", require("scenes.progression"))
+    State.register("achievements", require("scenes.achievements"))
+    State.register("tutorial", require("scenes.tutorial"))
+    State.register("save_select", require("scenes.save_select"))
+    State.register("story_event", require("scenes.story_event"))
 end
 
 function State.switch(name)

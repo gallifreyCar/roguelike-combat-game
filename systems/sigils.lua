@@ -1,9 +1,11 @@
 -- systems/sigils.lua - 印记系统
 -- 处理卡牌印记的各种效果
+-- 支持生成效果、攻击效果、死亡效果、回合效果等
 
 local Sigils = {}
 
 -- 印记效果定义
+-- 每个印记可包含: name, desc, on_spawn, on_attack, on_death, on_hit, on_hit_received, get_attack_count
 local SIGIL_EFFECTS = {
     -- 飞行：空列直接攻击玩家
     air_strike = {
@@ -144,6 +146,51 @@ local SIGIL_EFFECTS = {
             return {bifurcated = true, slot = slot}
         end,
     },
+
+    -- 【新】过牌：放置时抽2张牌
+    draw = {
+        name = "Draw",
+        desc = "Draw 2 cards when placed",
+        on_place = function(card)
+            return {draw_cards = 2}
+        end,
+    },
+
+    -- 【新】连击：打出后下张牌费用-1
+    combo = {
+        name = "Combo",
+        desc = "Next card costs -1",
+        on_place = function(card)
+            return {cost_reduction = 1}
+        end,
+    },
+
+    -- 【新】亡语抽牌：死亡时抽2张牌
+    death_draw = {
+        name = "Death Draw",
+        desc = "Draw 2 cards on death",
+        on_death = function(card, battle_state, board, slot)
+            return {draw_cards = 2}
+        end,
+    },
+
+    -- 【新】击杀加攻：击杀敌人时+1攻击
+    kill_bonus = {
+        name = "Kill Bonus",
+        desc = "+1 ATK when killing enemy",
+        on_kill = function(card, target)
+            return {atk_bonus = 1}
+        end,
+    },
+
+    -- 【新】回合加血：回合开始+1Blood
+    turn_blood = {
+        name = "Turn Blood",
+        desc = "+1 Blood each turn",
+        on_turn_start = function(card)
+            return {blood_bonus = 1}
+        end,
+    },
 }
 
 -- 检查卡牌是否有某个印记
@@ -166,6 +213,21 @@ function Sigils.apply_spawn_effects(card)
             effect.on_spawn(card)
         end
     end
+end
+
+-- 【新】处理放置时的印记效果（如过牌）
+function Sigils.process_place(card)
+    local results = {}
+    for _, sigil_name in ipairs(card.sigils or {}) do
+        local effect = SIGIL_EFFECTS[sigil_name]
+        if effect and effect.on_place then
+            local result = effect.on_place(card)
+            if result then
+                table.insert(results, {sigil = sigil_name, result = result})
+            end
+        end
+    end
+    return results
 end
 
 -- 处理攻击时的印记效果

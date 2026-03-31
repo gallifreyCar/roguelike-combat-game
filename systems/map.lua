@@ -1,9 +1,10 @@
 -- systems/map.lua - 关卡地图系统
 -- 肉鸽风格的地图选择，分支路线，不同事件类型
+-- 支持8层地图，每层随机生成节点
 
 local Map = {}
 
--- 地图配置
+-- 地图配置常量
 local MAP_CONFIG = {
     rows = 8,          -- 地图层数
     min_nodes = 3,     -- 每层最少节点

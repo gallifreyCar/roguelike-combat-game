@@ -1,44 +1,51 @@
 -- systems/tutorial.lua - 教程系统
--- 新手引导和操作提示
+-- 新手引导和操作提示（增强版）
 
 local Tutorial = {}
+local I18n = require("core.i18n")
 
--- 教程步骤
+-- 教程步骤（简化且更实用）
 local TUTORIAL_STEPS = {
     {
         id = "welcome",
-        title = "Welcome to Blood Cards!",
-        text = "A roguelike auto-battler card game.\nLet's learn the basics!",
+        title_key = "tutorial_welcome",
+        text_key = "tutorial_welcome_desc",
+        highlight = nil,
+    },
+    {
+        id = "goal",
+        title_key = "tutorial_goal",
+        text_key = "tutorial_goal_desc",
         highlight = nil,
     },
     {
         id = "hand",
-        title = "Your Hand",
-        text = "Cards on the right panel are your hand.\nDrag them to the board to play.",
+        title_key = "tutorial_hand_title",
+        text_key = "tutorial_hand_desc",
         highlight = {x = 1070, y = 50, w = 180, h = 500},
     },
     {
         id = "blood",
-        title = "Blood System",
-        text = "Each card has a cost in Blood.\nYou start with 1 Blood per turn.",
+        title_key = "tutorial_blood_title",
+        text_key = "tutorial_blood_desc",
         highlight = {x = 220, y = 510, w = 140, h = 30},
     },
     {
         id = "sacrifice",
-        title = "Sacrifice",
-        text = "Right-click a card on the board\nto sacrifice it for +1 Blood!",
+        title_key = "tutorial_sacrifice_title",
+        text_key = "tutorial_sacrifice_desc",
         highlight = {x = 150, y = 270, w = 520, h = 140},
     },
     {
         id = "battle",
-        title = "Battle!",
-        text = "Click the BATTLE button\nwhen you're ready to fight!",
+        title_key = "tutorial_battle_title",
+        text_key = "tutorial_battle_desc",
         highlight = {x = 600, y = 440, w = 160, h = 55},
     },
     {
-        id = "auto_attack",
-        title = "Auto Battle",
-        text = "Cards attack automatically each turn.\nReduce enemy HP to 0 to win!",
+        id = "tips",
+        title_key = "tutorial_tips_title",
+        text_lines = {"tutorial_tips_1", "tutorial_tips_2", "tutorial_tips_3", "tutorial_tips_4"},
         highlight = nil,
     },
 }
@@ -108,16 +115,19 @@ function Tutorial.get_total_steps()
     return #TUTORIAL_STEPS
 end
 
--- 绘制教程覆盖层
+-- 绘制教程覆盖层（使用i18n）
 function Tutorial.draw_overlay()
     if not Tutorial.should_show() then return end
 
     local step = TUTORIAL_STEPS[tutorial_state.current_step]
     if not step then return end
 
+    local Layout = require("config.layout")
+    local win_w, win_h = Layout.get_size()
+
     -- 半透明背景
     love.graphics.setColor(0, 0, 0, 0.7)
-    love.graphics.rectangle("fill", 0, 0, 1280, 720)
+    love.graphics.rectangle("fill", 0, 0, win_w, win_h)
 
     -- 高亮区域
     if step.highlight then
@@ -128,46 +138,56 @@ function Tutorial.draw_overlay()
         love.graphics.rectangle("line", h.x, h.y, h.w, h.h)
     end
 
-    -- 教程框
-    local box_w, box_h = 400, 180
-    local box_x = (1280 - box_w) / 2
-    local box_y = 250
+    -- 教程框（响应式）
+    local box_w, box_h = 380, 160
+    local box_x = (win_w - box_w) / 2
+    local box_y = win_h * 0.35
 
     love.graphics.setColor(0.15, 0.18, 0.22)
     love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 10, 10)
     love.graphics.setColor(0.5, 0.6, 0.7)
     love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 10, 10)
 
-    -- 标题
+    -- 标题（使用i18n）
     local Fonts = require("core.fonts")
+    local title = step.title_key and I18n.t(step.title_key) or step.title or "Tutorial"
     love.graphics.setColor(1, 0.9, 0.7)
-    Fonts.print(step.title, box_x + 20, box_y + 15, 18)
+    Fonts.print(title, box_x + 20, box_y + 15, 18)
 
-    -- 内容
+    -- 内容（使用i18n）
     love.graphics.setColor(0.9, 0.85, 0.8)
     local lines = {}
-    for line in step.text:gmatch("[^\n]+") do
-        table.insert(lines, line)
+    if step.text_key then
+        lines = {I18n.t(step.text_key)}
+    elseif step.text_lines then
+        for _, key in ipairs(step.text_lines) do
+            table.insert(lines, I18n.t(key))
+        end
+    elseif step.text then
+        for line in step.text:gmatch("[^\n]+") do
+            table.insert(lines, line)
+        end
     end
     for i, line in ipairs(lines) do
-        Fonts.print(line, box_x + 20, box_y + 50 + (i - 1) * 22, 14)
+        Fonts.print(line, box_x + 20, box_y + 45 + (i - 1) * 20, 14)
     end
 
-    -- 进度
+    -- 进度（使用i18n）
     love.graphics.setColor(0.6, 0.6, 0.6)
-    Fonts.print("Step " .. tutorial_state.current_step .. "/" .. #TUTORIAL_STEPS,
-                box_x + 150, box_y + box_h - 35, 12)
+    Fonts.print(I18n.tf("tutorial_step", tutorial_state.current_step, #TUTORIAL_STEPS),
+                box_x + 140, box_y + box_h - 35, 12)
 
-    -- 按钮
+    -- Skip按钮
     love.graphics.setColor(0.3, 0.5, 0.4)
     love.graphics.rectangle("fill", box_x + 30, box_y + box_h - 45, 100, 30, 5, 5)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("Skip", box_x + 60, box_y + box_h - 37, 14)
+    Fonts.print(I18n.t("tutorial_skip"), box_x + 60, box_y + box_h - 37, 14)
 
+    -- Next按钮
     love.graphics.setColor(0.4, 0.5, 0.6)
     love.graphics.rectangle("fill", box_x + box_w - 130, box_y + box_h - 45, 100, 30, 5, 5)
     love.graphics.setColor(1, 1, 1)
-    Fonts.print("Next", box_x + box_w - 100, box_y + box_h - 37, 14)
+    Fonts.print(I18n.t("tutorial_next"), box_x + box_w - 100, box_y + box_h - 37, 14)
 end
 
 -- 处理教程点击

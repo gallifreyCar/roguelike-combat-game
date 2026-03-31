@@ -1,9 +1,34 @@
 -- systems/fusion.lua - 卡牌融合系统
--- 支持：同卡融合（固定加成）+ 骰子融合（异卡随机融合）
+-- 支持：同卡融合（固定加成）+ 骰子融合（异卡随机融合）+ 自由融合（任意卡组合）
+-- 融合后卡牌获得属性提升、新印记和可能的变异效果
 
 local Fusion = {}
 local CardData = require("data.cards")
 local TableUtils = require("utils.table")
+
+-- 融合次数限制：每局最多5次融合
+Fusion.MAX_FUSIONS = 5
+Fusion.fusion_count = 0
+
+-- 检查是否还能融合
+function Fusion.can_fuse_more()
+    return Fusion.fusion_count < Fusion.MAX_FUSIONS
+end
+
+-- 获取剩余融合次数
+function Fusion.get_remaining_fusions()
+    return Fusion.MAX_FUSIONS - Fusion.fusion_count
+end
+
+-- 增加融合计数
+function Fusion.increment_fusion_count()
+    Fusion.fusion_count = Fusion.fusion_count + 1
+end
+
+-- 重置融合计数（新游戏开始时）
+function Fusion.reset_fusion_count()
+    Fusion.fusion_count = 0
+end
 
 -- 融合规则：升级后的卡牌属性
 local FUSION_RULES = {
@@ -24,24 +49,26 @@ local FUSION_RULES = {
 -- ==================== 骰子融合系统 ====================
 
 -- 融合配方定义：两张不同卡牌融合成强力新卡
--- 每个配方包含：原料、结果、成功率、失败后果
+-- Round 5 平衡调整：成功率根据风险收益重新设计
+-- 原则：高收益低成功率，低收益高成功率
 local DICE_FUSION_RECIPES = {
-    -- 低级融合：废牌利用
+    -- 低级融合：废牌利用（高成功率，低收益）
     {
         id = "squirrel_boost",
         ingredients = {"squirrel", "*"},  -- * 表示任意卡
         result = {
             attack_bonus = 0,
             hp_bonus = 1,
-            sigil_chance = 0.2,
+            sigil_chance = 0.25,  -- 提高印记概率
             sigil_pool = {"tough"},
         },
-        success_rate = 0.9,  -- 高成功率
+        success_rate = 0.95,  -- 提高成功率：松鼠是免费牌，失败代价低
         fail_result = "squirrel",  -- 失败返还松鼠
         description = "Squirrel sacrifice enhances any card",
+        risk_level = "low",
     },
 
-    -- 毒攻融合：剧毒+攻击
+    -- 毒攻融合：剧毒+攻击（中等成功率，中等收益）
     {
         id = "poison_attacker",
         ingredients = {"adder", "wolf"},  -- 毒蛇 + 狼
@@ -51,12 +78,13 @@ local DICE_FUSION_RECIPES = {
             hp_bonus = 1,
             sigils = {"poison", "double_strike"},
         },
-        success_rate = 0.6,
+        success_rate = 0.70,  -- 提高：两张普通牌融合
         fail_result = "partial",  -- 返还一张
         description = "Poison Wolf: High attack with poison",
+        risk_level = "medium",
     },
 
-    -- 飞行突击：飞行+攻击
+    -- 飞行突击：飞行+攻击（中等成功率，高风险）
     {
         id = "air_assassin",
         ingredients = {"raven", "wolf"},
@@ -66,12 +94,13 @@ local DICE_FUSION_RECIPES = {
             hp_bonus = 0,
             sigils = {"air_strike", "charge"},
         },
-        success_rate = 0.5,
+        success_rate = 0.60,  -- 提高收益很高，失败全部丢失
         fail_result = "none",  -- 全部丢失
         description = "Sky Hunter: Flying charge attack",
+        risk_level = "high",
     },
 
-    -- 坦克融合：高血量组合
+    -- 坦克融合：高血量组合（高成功率，稳定收益）
     {
         id = "fortress",
         ingredients = {"turtle", "bullfrog"},
@@ -80,27 +109,29 @@ local DICE_FUSION_RECIPES = {
             hp_bonus = 4,
             sigils = {"tough", "guardian"},
         },
-        success_rate = 0.7,
+        success_rate = 0.85,  -- 提高：防御牌融合风险低
         fail_result = "turtle",  -- 返还乌龟
         description = "Fortress: Ultimate tank with guardian",
+        risk_level = "low",
     },
 
-    -- 复活融合：不死组合
+    -- 复活融合：不死组合（中等成功率，独特收益）
     {
         id = "undead_army",
         ingredients = {"cat", "*"},  -- 猫 + 任意卡
         result = {
             attack_bonus = 1,
             hp_bonus = 2,
-            sigil_chance = 0.8,
+            sigil_chance = 0.85,  -- 高印记概率
             sigil_pool = {"undead", "tough"},
         },
-        success_rate = 0.5,
+        success_rate = 0.65,  -- 提高：猫本身是稀有牌
         fail_result = "partial",
         description = "Undead fusion: Grant second life",
+        risk_level = "medium",
     },
 
-    -- 毒雾组合：范围毒
+    -- 毒雾组合：范围毒（中等成功率）
     {
         id = "toxic_cloud",
         ingredients = {"adder", "skunk"},
@@ -110,12 +141,13 @@ local DICE_FUSION_RECIPES = {
             hp_bonus = 2,
             sigils = {"poison", "stinky"},
         },
-        success_rate = 0.55,
+        success_rate = 0.65,  -- 提高
         fail_result = "adder",
         description = "Toxic Beast: Poison + debuff combo",
+        risk_level = "medium",
     },
 
-    -- 暴击融合：双击+高攻
+    -- 暴击融合：双击+高攻（高风险高收益）
     {
         id = "berserker",
         ingredients = {"mantis", "wolf"},
@@ -124,12 +156,13 @@ local DICE_FUSION_RECIPES = {
             hp_bonus = 0,
             sigils = {"double_strike", "trample"},
         },
-        success_rate = 0.45,
+        success_rate = 0.55,  -- 保持较低：两张稀有牌，收益极高
         fail_result = "none",
         description = "Berserker: Double strike + trample",
+        risk_level = "high",
     },
 
-    -- 传说融合：终极组合
+    -- 传说融合：终极组合（极高风险，最高收益）
     {
         id = "legendary",
         ingredients = {"grizzly", "eagle"},
@@ -139,9 +172,10 @@ local DICE_FUSION_RECIPES = {
             hp_bonus = 4,
             sigils = {"air_strike", "trample", "sharp_quills"},
         },
-        success_rate = 0.3,
-        fail_result = "partial",
+        success_rate = 0.40,  -- 提高：两张稀有牌，但收益最高
+        fail_result = "partial",  -- 至少返还一张
         description = "Legendary Beast: Ultimate power!",
+        risk_level = "extreme",
     },
 }
 
@@ -226,8 +260,8 @@ function Fusion.fuse(card1, card2)
         table.insert(fused_card.sigils, sigil)
     end
 
-    -- 有几率获得新印记
-    if love.math.random() < 0.3 then
+    -- 有几率获得新印记（Round 5 平衡：提高到35%）
+    if love.math.random() < 0.35 then
         local new_sigil = FUSION_RULES.possible_sigils[
             love.math.random(#FUSION_RULES.possible_sigils)
         ]
@@ -461,6 +495,60 @@ end
 
 -- ==================== 自由融合系统（新功能） ====================
 
+-- 变异效果池：融合时可能获得的额外效果
+local MUTATION_POOL = {
+    -- 正向变异（增益）
+    {name = "power_boost", type = "positive", weight = 0.15,
+     effect = function(card) card.attack = card.attack + 2 end,
+     desc = "+2 Attack"},
+    {name = "vitality", type = "positive", weight = 0.15,
+     effect = function(card) card.hp = card.hp + 2; card.max_hp = card.max_hp + 2 end,
+     desc = "+2 Max HP"},
+    {name = "cost_reduce", type = "positive", weight = 0.10,
+     effect = function(card) card.cost = math.max(0, card.cost - 1) end,
+     desc = "Cost -1"},
+    {name = "regeneration", type = "positive", weight = 0.08,
+     effect = function(card) table.insert(card.sigils, "regen") end,
+     desc = "Regen sigil"},
+    {name = "vampire", type = "positive", weight = 0.05,
+     effect = function(card) table.insert(card.sigils, "vampire") end,
+     desc = "Vampire sigil (heal on hit)"},
+
+    -- 中性变异（特殊效果）
+    {name = "swap_stats", type = "neutral", weight = 0.10,
+     effect = function(card)
+         local old_atk = card.attack
+         card.attack = math.floor(card.hp * 0.8)
+         card.hp = math.floor(old_atk * 1.5)
+         card.max_hp = card.hp
+     end,
+     desc = "Stats swapped (ATK=HP*0.8, HP=ATK*1.5)"},
+    {name = "glass_cannon", type = "neutral", weight = 0.08,
+     effect = function(card)
+         card.attack = card.attack * 2
+         card.hp = math.max(1, math.floor(card.hp * 0.5))
+         card.max_hp = card.hp
+     end,
+     desc = "Double ATK, half HP"},
+    {name = "blood_cost", type = "neutral", weight = 0.10,
+     effect = function(card)
+         card.cost = card.cost + 2
+         card.attack = card.attack + 3
+     end,
+     desc = "+3 ATK but +2 cost"},
+
+    -- 负向变异（风险）
+    {name = "weaken", type = "negative", weight = 0.08,
+     effect = function(card) card.attack = math.max(0, card.attack - 1) end,
+     desc = "-1 Attack"},
+    {name = "fragile", type = "negative", weight = 0.06,
+     effect = function(card) card.hp = math.max(1, card.hp - 1); card.max_hp = card.max_hp - 1 end,
+     desc = "-1 Max HP"},
+    {name = "expensive", type = "negative", weight = 0.05,
+     effect = function(card) card.cost = card.cost + 1 end,
+     desc = "Cost +1"},
+}
+
 -- 检查两张卡是否可以自由融合（任意两张不同卡）
 function Fusion.can_free_fuse(card1, card2)
     if not card1 or not card2 then return false end
@@ -468,7 +556,30 @@ function Fusion.can_free_fuse(card1, card2)
     return true  -- 任意两张卡都可以自由融合
 end
 
--- 执行自由融合（随机结果）
+-- 应用随机变异
+local function apply_mutation(card)
+    -- 45% 概率发生变异（Round 5 平衡：提高到45%）
+    if love.math.random() > 0.45 then return nil end
+
+    -- 根据权重选择变异
+    local total_weight = 0
+    for _, mutation in ipairs(MUTATION_POOL) do
+        total_weight = total_weight + mutation.weight
+    end
+
+    local roll = love.math.random() * total_weight
+    for _, mutation in ipairs(MUTATION_POOL) do
+        roll = roll - mutation.weight
+        if roll <= 0 then
+            mutation.effect(card)
+            return mutation
+        end
+    end
+
+    return nil
+end
+
+-- 执行自由融合（随机结果 + 可能变异）
 function Fusion.free_fuse(card1, card2)
     if not Fusion.can_free_fuse(card1, card2) then
         return nil
@@ -502,12 +613,13 @@ function Fusion.free_fuse(card1, card2)
         end
     end
 
-    -- 随机获得新印记（20%几率）
-    if love.math.random() < 0.2 then
-        local all_sigils = {"tough", "double_strike", "poison", "air_strike", "undead", "stinky"}
+    -- 随机获得新印记（25%几率，提高到25%）
+    if love.math.random() < 0.25 then
+        local all_sigils = {"tough", "double_strike", "poison", "air_strike", "undead", "stinky", "regen", "vampire"}
         local new_sigil = all_sigils[love.math.random(#all_sigils)]
         if not sigil_set[new_sigil] then
             table.insert(merged_sigils, new_sigil)
+            sigil_set[new_sigil] = true
         end
     end
 
@@ -519,11 +631,16 @@ function Fusion.free_fuse(card1, card2)
         rarity = "uncommon"
     end
 
+    -- 生成融合卡牌名称
+    local name_prefix = card1.name:sub(1, 4)
+    local name_suffix = card2.name:sub(1, 4)
+    local fused_name = name_prefix .. "-" .. name_suffix .. " Hybrid"
+
     -- 生成融合卡牌
     local fused_id = "free_" .. card1.id .. "_" .. card2.id
     local fused_card = {
         id = fused_id,
-        name = "Hybrid " .. (card1.name:sub(1, 4)) .. "-" .. (card2.name:sub(1, 4)),
+        name = fused_name,
         cost = base_cost,
         attack = final_atk,
         hp = final_hp,
@@ -533,6 +650,20 @@ function Fusion.free_fuse(card1, card2)
         fused = true,
         free_fused = true,
     }
+
+    -- 应用随机变异
+    local mutation = apply_mutation(fused_card)
+    if mutation then
+        fused_card.mutation = mutation.name
+        fused_card.mutation_desc = mutation.desc
+        fused_card.mutation_type = mutation.type
+        -- 变异后的稀有度调整
+        if mutation.type == "positive" and rarity == "common" then
+            fused_card.rarity = "uncommon"
+        elseif mutation.type == "negative" and rarity == "rare" then
+            fused_card.rarity = "uncommon"
+        end
+    end
 
     return fused_card
 end

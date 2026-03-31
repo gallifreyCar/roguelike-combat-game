@@ -74,6 +74,15 @@ Events.DAMAGE_TAKEN = "damage_taken"
 Events.BLOOD_CHANGED = "blood_changed"
 Events.HP_CHANGED = "hp_changed"
 
+-- 成就追踪事件
+Events.ENEMY_KILLED = "enemy_killed"
+Events.SACRIFICE = "sacrifice"
+Events.FUSION_COMPLETE = "fusion_complete"
+Events.RUN_COMPLETE = "run_complete"
+Events.FLOOR_COMPLETE = "floor_complete"
+Events.DECK_SIZE_CHANGED = "deck_size_changed"
+Events.CARD_ADDED = "card_added"
+
 -- 地图事件
 Events.MAP_NODE_SELECTED = "map_node_selected"
 Events.MAP_GENERATED = "map_generated"

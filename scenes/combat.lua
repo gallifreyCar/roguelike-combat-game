@@ -20,6 +20,14 @@ local Events = require("core.events")
 local Save = require("systems.save")
 local Sound = require("systems.sound")
 local Animation = require("systems.animation")
+local MetaProgression = require("systems.meta_progression")
+local Assets = require("core.assets")
+-- 【性能优化】缓存 require 结果，避免每帧查找
+local CardUI = require("ui.card")
+
+-- 【性能优化】鼠标位置缓存（避免多次调用 getPosition）
+local cached_mouse_x = 0
+local cached_mouse_y = 0
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -63,6 +71,12 @@ local battle = {
     drag_y = 0,
     drag_offset_x = 0,
     drag_offset_y = 0,
+
+    -- 【新】连击系统：记录费用减免
+    cost_reduction = 0,
+
+    -- 【新】UI状态
+    show_deck = false,  -- 是否显示牌库
 }
 
 local function init_board(board)
@@ -83,6 +97,9 @@ local function add_log(msg)
 end
 
 function Combat.enter()
+    -- 场景过渡动画
+    Animation.fade_in(0.3)
+
     -- 从地图系统获取当前层数（同步状态）
     local current_row = Map.get_current_row()
     if current_row and current_row > 1 then
@@ -93,17 +110,28 @@ function Combat.enter()
 
     battle.turn = 1
     battle.phase = "play"
-    battle.player.hp = PLAYER_MAX_HP
-    battle.player.max_hp = PLAYER_MAX_HP
-    battle.player.blood = 1
-    battle.player.max_blood = 1
+
+    -- 【性能优化】清理上一局的状态标记
+    battle.victory_particles = nil
+    battle.cost_reduction = 0
+
+    -- 应用局外成长加成
+    local bonuses = MetaProgression.get_starting_bonuses()
+    local actual_max_hp = PLAYER_MAX_HP + bonuses.hp_bonus
+    local actual_starting_blood = Settings.starting_blood + bonuses.blood_bonus
+
+    battle.player.hp = actual_max_hp
+    battle.player.max_hp = actual_max_hp
+    battle.player.blood = actual_starting_blood
+    battle.player.max_blood = MAX_BLOOD
 
     init_board(battle.player.board)
     init_board(battle.enemy.board)
 
-    -- 注意：牌组在菜单进入地图时已初始化，这里不再重置
+    -- 重置牌库（每场战斗重新洗牌）
+    Deck.reset_for_battle()
 
-    -- 第一回合抽3张牌
+    -- 第一回合抽牌（稳定抽3张）
     Deck.draw_cards(3)
 
     -- 根据关卡生成敌人
@@ -112,9 +140,15 @@ function Combat.enter()
     battle.dragging = false
     battle.dragging_index = nil
 
+    -- 清除之前的动画和粒子
+    Animation.clear()
+
+    -- 【性能优化】清理 UI 组件动画缓存（防止内存泄漏）
+    Components.clear_all()
+
     local level_info = LevelData.get_level(battle.level)
     local level_name = level_info and level_info.name or "Level " .. battle.level
-    battle.message = level_name .. " - Blood: 1/" .. MAX_BLOOD
+    battle.message = level_name .. " - Blood: " .. battle.player.blood .. "/" .. MAX_BLOOD
 end
 
 function Combat.exit()
@@ -190,6 +224,9 @@ function Combat.spawn_enemy_cards()
 end
 
 function Combat.update(dt)
+    -- 【性能优化】在 update 中缓存鼠标位置（避免 draw 中多次调用）
+    cached_mouse_x, cached_mouse_y = love.mouse.getPosition()
+
     -- 更新战斗日志计时
     for i = #battle.combat_log, 1, -1 do
         battle.combat_log[i].time = battle.combat_log[i].time - dt
@@ -200,6 +237,8 @@ function Combat.update(dt)
 
     -- 更新特效
     Effects.update(dt)
+
+    -- 注意：Animation系统在main.lua中全局更新，这里不需要重复调用
 end
 
 function Combat.draw()
@@ -252,6 +291,17 @@ function Combat.draw()
 
     -- 绘制特效
     Effects.draw()
+
+    -- 【新】绘制UI按钮
+    Combat.draw_ui_buttons()
+
+    -- 【新】绘制牌库面板
+    if battle.show_deck then
+        Combat.draw_deck_panel()
+    end
+
+    -- 【新】悬停显示卡牌详情
+    Combat.draw_hover_tooltip()
 end
 
 function Combat.draw_enemy_area()
@@ -340,62 +390,74 @@ function Combat.draw_hand_panel()
     local hand = Deck.get_hand()
     for i, card in ipairs(hand) do
         local x = panel.x + 30
-        local y = panel.y + 55 + (i - 1) * 90  -- 相对于 panel.y
+        local y = panel.y + 55 + (i - 1) * Settings.card_small_height  -- 与 Settings 同步
 
         if not (battle.dragging and battle.dragging_index == i) then
             local mx, my = love.mouse.getPosition()
-            local hover = mx >= x and mx <= x + CARD_WIDTH and my >= y and my <= y + 80
+            local hover = mx >= x and mx <= x + Settings.card_small_width and my >= y and my <= y + Settings.card_small_height
             Combat.draw_card_small(card, x, y, hover)
         end
     end
 end
 
 function Combat.draw_card(card, x, y, is_player)
-    -- 卡牌阴影
-    Theme.setColor("bg_primary", 0.3)
-    love.graphics.rectangle("fill", x + 3, y + 3, CARD_WIDTH, CARD_HEIGHT, 5, 5)
+    -- 尝试使用图片渲染
+    local cardImage = Assets.getCard(card.id)
 
-    -- 背景
-    Theme.setColor(is_player and "bg_card" or "bg_card_enemy")
-    love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
+    if CardUI.USE_IMAGES and cardImage then
+        -- 使用 CardUI 的图片渲染
+        CardUI.draw_full(card, x, y, is_player, {
+            hover = false,
+            animate = false,
+        })
+    else
+        -- 回退到纯文字渲染
+        -- 卡牌阴影
+        Theme.setColor("bg_primary", 0.3)
+        love.graphics.rectangle("fill", x + 3, y + 3, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
-    -- 金色边框
-    Theme.setColor("border_gold")
-    love.graphics.rectangle("line", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
+        -- 背景
+        Theme.setColor(is_player and "bg_card" or "bg_card_enemy")
+        love.graphics.rectangle("fill", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
-    -- 卡牌头部区域
-    Theme.setColor("bg_slot")
-    love.graphics.rectangle("fill", x + 2, y + 2, CARD_WIDTH - 4, 25, 3, 3)
+        -- 金色边框
+        Theme.setColor("border_gold")
+        love.graphics.rectangle("line", x, y, CARD_WIDTH, CARD_HEIGHT, 5, 5)
 
-    -- 名称（使用翻译）
-    Components.text(I18n.card_name(card.id), x + 8, y + 6, {color = "text_primary", size = 14})
+        -- 卡牌头部区域
+        Theme.setColor("bg_slot")
+        love.graphics.rectangle("fill", x + 2, y + 2, CARD_WIDTH - 4, 25, 3, 3)
 
-    -- Cost（红圈白字）
-    Theme.setColor("accent_red")
-    love.graphics.circle("fill", x + 15, y + 45, 14)
-    Components.text(tostring(card.cost), x + 11, y + 38, {color = "text_value", size = 14})
+        -- 名称（使用翻译）
+        Components.text(I18n.card_name(card.id), x + 8, y + 6, {color = "text_primary", size = 14})
 
-    -- 属性
-    Components.text("ATK:", x + 8, y + 50, {color = "accent_gold", size = 11})
-    Components.text(tostring(card.attack), x + 40, y + 50, {color = "text_value", size = 14})
+        -- Cost（红圈白字）
+        Theme.setColor("accent_red")
+        love.graphics.circle("fill", x + 15, y + 45, 14)
+        Components.text(tostring(card.cost), x + 11, y + 38, {color = "text_value", size = 14})
 
-    Components.text("HP:", x + 55, y + 50, {color = "accent_red", size = 11})
-    Components.text(tostring(card.hp), x + 78, y + 50, {color = "text_value", size = 14})
+        -- 属性
+        Components.text("ATK:", x + 8, y + 50, {color = "accent_gold", size = 11})
+        Components.text(tostring(card.attack), x + 40, y + 50, {color = "text_value", size = 14})
 
-    -- 血量条
-    local max_hp = math.max(1, card.max_hp or card.hp or 1)
-    local hp_ratio = card.hp / max_hp
-    local hp_color = hp_ratio > 0.5 and "hp_high" or (hp_ratio > 0.25 and "hp_mid" or "hp_low")
-    Components.progress_bar(x + 8, y + 95, 84, 10, card.hp, max_hp, {
-        fill = hp_color,
-        bg = "bg_slot",
-        radius = 2,
-    })
+        Components.text("HP:", x + 55, y + 50, {color = "accent_red", size = 11})
+        Components.text(tostring(card.hp), x + 78, y + 50, {color = "text_value", size = 14})
 
-    -- 印记指示
-    if card.sigils and #card.sigils > 0 then
-        love.graphics.setColor(0.8, 0.6, 0.4)
-        Fonts.print("*" .. #card.sigils, x + 75, y + 110, 12)
+        -- 血量条
+        local max_hp = math.max(1, card.max_hp or card.hp or 1)
+        local hp_ratio = card.hp / max_hp
+        local hp_color = hp_ratio > 0.5 and "hp_high" or (hp_ratio > 0.25 and "hp_mid" or "hp_low")
+        Components.progress_bar(x + 8, y + 95, 84, 10, card.hp, max_hp, {
+            fill = hp_color,
+            bg = "bg_slot",
+            radius = 2,
+        })
+
+        -- 印记指示
+        if card.sigils and #card.sigils > 0 then
+            love.graphics.setColor(0.8, 0.6, 0.4)
+            Fonts.print("*" .. #card.sigils, x + 75, y + 110, 12)
+        end
     end
 
     -- 敌人意图显示（敌方卡牌）
@@ -426,27 +488,36 @@ function Combat.draw_card(card, x, y, is_player)
 end
 
 function Combat.draw_card_small(card, x, y, hover)
-    if hover then
-        Theme.setColor("bg_slot_hover")
+    -- 尝试使用图片渲染
+    local cardImage = Assets.getCard(card.id)
+
+    if CardUI.USE_IMAGES and cardImage then
+        -- 使用 CardUI 的小型渲染
+        CardUI.draw_small(card, x, y, hover)
     else
-        Theme.setColor("bg_slot")
-    end
-    love.graphics.rectangle("fill", x, y, CARD_WIDTH, 80, 4, 4)
+        -- 回退到纯文字渲染
+        if hover then
+            Theme.setColor("bg_slot_hover")
+        else
+            Theme.setColor("bg_slot")
+        end
+        love.graphics.rectangle("fill", x, y, CARD_WIDTH, 80, 4, 4)
 
-    Theme.setColor("border_gold", 0.5)
-    love.graphics.rectangle("line", x, y, CARD_WIDTH, 80, 4, 4)
+        Theme.setColor("border_gold", 0.5)
+        love.graphics.rectangle("line", x, y, CARD_WIDTH, 80, 4, 4)
 
-    -- 名称（使用翻译）
-    Components.text(I18n.card_name(card.id), x + 5, y + 5, {color = "text_primary"})
+        -- 名称（使用翻译）
+        Components.text(I18n.card_name(card.id), x + 5, y + 5, {color = "text_primary"})
 
-    -- Cost
-    Components.text("$" .. card.cost, x + 5, y + 25, {color = "accent_red"})
+        -- Cost
+        Components.text("$" .. card.cost, x + 5, y + 25, {color = "accent_red"})
 
-    Components.text("A:" .. card.attack, x + 5, y + 45, {color = "accent_gold"})
-    Components.text("H:" .. card.hp, x + 45, y + 45, {color = "accent_green"})
+        Components.text("A:" .. card.attack, x + 5, y + 45, {color = "accent_gold"})
+        Components.text("H:" .. card.hp, x + 45, y + 45, {color = "accent_green"})
 
-    if hover then
-        Components.text("[drag]", x + 55, y + 60, {color = "text_hint"})
+        if hover then
+            Components.text("[drag]", x + 55, y + 60, {color = "text_hint"})
+        end
     end
 end
 
@@ -521,20 +592,27 @@ function Combat.draw_battle_button()
     local btn = Layout.battle_button()
     local btn_x, btn_y, btn_w, btn_h = btn.x, btn.y, btn.width, btn.height
 
-    if battle.phase == "play" then
-        -- 检测鼠标悬停
-        local hover = Layout.mouse_in_button(btn)
+    -- 检测鼠标悬停
+    local hover = Layout.mouse_in_button(btn)
 
-        -- 按钮背景（悬停时高亮）
+    if battle.phase == "play" then
+        -- 按钮背景（悬停时发光）
         if hover then
-            love.graphics.setColor(0.3, 0.5, 0.3)
+            -- 发光效果
+            love.graphics.setColor(1, 1, 0.9, 0.15)
+            love.graphics.rectangle("fill", btn_x - 4, btn_y - 4, btn_w + 8, btn_h + 8, 10, 10)
+            love.graphics.setColor(0.35, 0.55, 0.35)
         else
             love.graphics.setColor(0.2, 0.35, 0.2)
         end
         love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
 
-        -- 边框
-        love.graphics.setColor(0.5, 0.7, 0.5)
+        -- 边框（悬停时高亮）
+        if hover then
+            love.graphics.setColor(1, 1, 0.8)
+        else
+            love.graphics.setColor(0.5, 0.7, 0.5)
+        end
         love.graphics.rectangle("line", btn_x, btn_y, btn_w, btn_h, 8, 8)
 
         -- 文字
@@ -546,7 +624,9 @@ function Combat.draw_battle_button()
         Fonts.print("[Space]", btn_x + btn_w * 0.3, btn_y + 40, 12)
 
     elseif battle.phase == "battle" then
-        love.graphics.setColor(0.4, 0.35, 0.25)
+        -- 战斗进行中（带脉冲效果）
+        local pulse = math.sin(love.timer.getTime() * 4) * 0.1 + 0.9
+        love.graphics.setColor(0.4 * pulse, 0.35 * pulse, 0.25 * pulse)
         love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
         love.graphics.setColor(0.8, 0.7, 0.5)
         Fonts.print(I18n.t("battle_progress"), btn_x + btn_w * 0.12, btn_y + 20, 14)
@@ -554,16 +634,27 @@ function Combat.draw_battle_button()
     elseif battle.phase == "result" then
         local max_levels = LevelData.get_max_levels()
         if battle.enemy.hp <= 0 and battle.level < max_levels then
+            -- 胜利可继续（带发光效果）
+            local glow_pulse = math.sin(love.timer.getTime() * 3) * 0.2 + 0.3
+            love.graphics.setColor(1, 1, 0.8, glow_pulse)
+            love.graphics.rectangle("fill", btn_x - 5, btn_y - 5, btn_w + 10, btn_h + 10, 10, 10)
             love.graphics.setColor(0.3, 0.5, 0.3)
             love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
             love.graphics.setColor(1, 0.9, 0.6)
             Fonts.print("→ " .. I18n.t("next_level"), btn_x + btn_w * 0.2, btn_y + 20, 16)
         elseif battle.enemy.hp <= 0 then
+            -- 全部通关（庆祝效果）
+            -- 发射胜利粒子
+            if not battle.victory_particles then
+                Animation.spawn_victory_particles(btn_x + btn_w / 2, btn_y)
+                battle.victory_particles = true
+            end
             love.graphics.setColor(0.4, 0.6, 0.4)
             love.graphics.rectangle("fill", btn_x - 20, btn_y, btn_w + 40, btn_h, 8, 8)
             love.graphics.setColor(1, 1, 0.8)
             Fonts.print(I18n.t("victory"), btn_x + btn_w * 0.2, btn_y + 18, 18)
         else
+            -- 失败（暗红色）
             love.graphics.setColor(0.5, 0.3, 0.3)
             love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
             love.graphics.setColor(1, 0.6, 0.6)
@@ -572,23 +663,110 @@ function Combat.draw_battle_button()
     end
 end
 
+function Combat.draw_hover_tooltip()
+    -- 【性能优化】使用缓存的鼠标位置和 CardUI
+    local mx, my = cached_mouse_x, cached_mouse_y
+
+    -- 检查手牌悬停
+    local hand = Deck.get_hand()
+    local panel = Layout.hand_panel()
+    local hand_start_y = panel.y + 55  -- 与 draw_hand_panel 同步
+
+    for i, card in ipairs(hand) do
+        local y = hand_start_y + (i - 1) * Settings.card_small_height
+        local x = panel.x + 30  -- 与 draw_hand_panel 同步
+
+        if mx >= x and mx <= x + Settings.card_small_width and my >= y and my <= y + Settings.card_small_height then
+            -- 显示卡牌详情
+            CardUI.draw_tooltip(card, mx, my)
+            return
+        end
+    end
+
+    -- 检查玩家棋盘上的卡牌悬停
+    local player_board = Layout.player_board()
+    for i = 1, BOARD_SLOTS do
+        local x = Layout.card_slot(i, BOARD_SLOTS)
+        local card = battle.player.board[i]
+
+        if card and mx >= x and mx <= x + CARD_WIDTH and
+           my >= player_board.y and my <= player_board.y + CARD_HEIGHT then
+            -- 显示卡牌详情
+            CardUI.draw_tooltip(card, mx, my)
+            return
+        end
+    end
+
+    -- 检查敌方卡牌悬停
+    for i = 1, BOARD_SLOTS do
+        local x = Layout.card_slot(i, BOARD_SLOTS)
+        local card = battle.enemy.board[i]
+        local enemy_area = Layout.enemy_area()
+
+        if card and mx >= x and mx <= x + CARD_WIDTH and
+           my >= enemy_area.y and my <= enemy_area.y + CARD_HEIGHT then
+            -- 显示卡牌详情（敌方）
+            CardUI.draw_tooltip(card, mx, my)
+            return
+        end
+    end
+end
+
 function Combat.keypressed(key)
     if key == "space" and battle.phase == "play" then
         Combat.start_battle()
+    end
+    if key == "tab" then
+        -- 【新】Tab键切换牌库显示
+        battle.show_deck = not battle.show_deck
     end
     if key == "r" and battle.phase == "result" then
         Combat.enter()
     end
     if key == "escape" then
-        -- ESC 返回主菜单
-        Map.reset()
-        State.switch("menu")
+        if battle.show_deck then
+            -- 牌库打开时，ESC关闭牌库
+            battle.show_deck = false
+        else
+            -- ESC 返回主菜单
+            Map.reset()
+            State.switch("menu")
+        end
     end
 end
 
 function Combat.mousepressed(x, y, button)
+    local win_w, win_h = Layout.get_size()
     local player_board = Layout.player_board()
     local enemy_area = Layout.enemy_area()
+
+    -- 【新】牌库面板打开时，点击任意位置关闭
+    if battle.show_deck then
+        battle.show_deck = false
+        return
+    end
+
+    -- 【新】左键检测UI按钮
+    if button == 1 then
+        -- 牌库按钮（右上角）
+        local deck_btn_x = win_w - 90
+        local deck_btn_y = 10
+        if x >= deck_btn_x and x <= deck_btn_x + 80 and y >= deck_btn_y and y <= deck_btn_y + 30 then
+            battle.show_deck = true
+            Sound.play("click")
+            return
+        end
+
+        -- 返回按钮（左上角）
+        local back_btn_x = 10
+        local back_btn_y = 10
+        if x >= back_btn_x and x <= back_btn_x + 70 and y >= back_btn_y and y <= back_btn_y + 30 then
+            Sound.play("click")
+            Map.reset()
+            State.switch("menu")
+            return
+        end
+    end
 
     -- 右键献祭场上的牌
     if button == 2 and battle.phase == "play" then
@@ -627,9 +805,9 @@ function Combat.mousepressed(x, y, button)
         local panel = Layout.hand_panel()
         for i = 1, #hand do
             local card_x = panel.x + 30
-            local card_y = panel.y + 55 + (i - 1) * 90  -- 与 draw_hand_panel 同步
+            local card_y = panel.y + 55 + (i - 1) * Settings.card_small_height  -- 与 Settings 同步
 
-            if x >= card_x and x <= card_x + CARD_WIDTH and y >= card_y and y <= card_y + 80 then
+            if x >= card_x and x <= card_x + Settings.card_small_width and y >= card_y and y <= card_y + Settings.card_small_height then
                 battle.dragging = true
                 battle.dragging_index = i
                 battle.drag_x = x
@@ -643,6 +821,7 @@ function Combat.mousepressed(x, y, button)
 
         -- 检测点击战斗按钮
         if Layout.mouse_in_button(btn) then
+            Sound.play("click")
             Combat.start_battle()
             return
         end
@@ -650,6 +829,7 @@ function Combat.mousepressed(x, y, button)
     elseif battle.phase == "result" then
         -- 检测点击结果按钮
         if Layout.mouse_in_button(btn) then
+            Sound.play("click")
             local max_levels = LevelData.get_max_levels()
             if battle.enemy.hp <= 0 and battle.level < max_levels then
                 -- 胜利：进入奖励场景
@@ -704,9 +884,12 @@ function Combat.place_card(hand_index, slot)
     local card = hand[hand_index]
     if not card then return end
 
-    -- 先检查费用，不够的话不放牌
-    if card.cost > battle.player.blood then
-        battle.message = I18n.tf("need_blood", card.cost)
+    -- 【连击】应用费用减免
+    local actual_cost = math.max(0, card.cost - battle.cost_reduction)
+
+    -- 先检查费用
+    if actual_cost > battle.player.blood then
+        battle.message = I18n.tf("need_blood", actual_cost)
         return
     end
 
@@ -714,21 +897,36 @@ function Combat.place_card(hand_index, slot)
     local placed_card = Deck.place_card(hand_index)
     if not placed_card then return end
 
-    battle.player.blood = battle.player.blood - placed_card.cost
+    -- 扣除费用（扣除实际费用），然后重置连击
+    battle.player.blood = battle.player.blood - actual_cost
+    battle.cost_reduction = 0  -- 连击只影响下一张牌
 
     local board_card = {
         id = placed_card.id,
         name = placed_card.name,
         attack = placed_card.attack,
         hp = placed_card.hp,
-        max_hp = placed_card.max_hp or placed_card.hp,  -- [BUG FIX] 确保 max_hp 有值
-        sigils = placed_card.sigils or {},  -- [BUG FIX] 确保 sigils 不为 nil
+        max_hp = placed_card.max_hp or placed_card.hp,
+        sigils = placed_card.sigils or {},
     }
 
-    -- 触发印记生成效果（如 tough +2HP, stinky 减攻）
+    -- 触发印记生成效果
     Sigils.apply_spawn_effects(board_card)
 
     battle.player.board[slot] = board_card
+
+    -- 触发放置时的印记效果（过牌、连击等）
+    local place_results = Sigils.process_place(board_card)
+    for _, result in ipairs(place_results) do
+        if result.result.draw_cards then
+            Deck.draw_cards(result.result.draw_cards)
+            add_log(board_card.name .. " [DRAW] +" .. result.result.draw_cards .. " cards!")
+        end
+        if result.result.cost_reduction then
+            battle.cost_reduction = result.result.cost_reduction
+            add_log(board_card.name .. " [COMBO] Next card -" .. result.result.cost_reduction .. " cost!")
+        end
+    end
 
     -- 播放放置卡牌音效和动画
     Sound.play("play_card")
@@ -772,6 +970,10 @@ function Combat.execute_battle()
                         local dmg = card.attack
                         battle.enemy.hp = battle.enemy.hp - dmg
                         add_log(card.name .. " [AIR] → Boss (-" .. dmg .. " HP)")
+
+                        -- 播放飞行攻击音效
+                        Sound.play("attack")
+
                         Effects.damage(dmg, enemy_hp_bar.x + enemy_hp_bar.width * 0.5, enemy_hp_bar.y + 16)
                         -- 攻击动画
                         Animation.card_attack(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT, -1)
@@ -781,6 +983,15 @@ function Combat.execute_battle()
                         local dmg = card.attack
                         enemy_card.hp = enemy_card.hp - dmg
                         add_log(card.name .. " → " .. enemy_card.name .. " (-" .. dmg .. " HP)")
+
+                        -- 播放攻击音效
+                        Sound.play("attack")
+
+                        -- 【击杀加攻】如果击杀敌人，+1攻击
+                        if enemy_card.hp <= 0 and Sigils.has(card, "kill_bonus") then
+                            card.attack = card.attack + 1
+                            add_log(card.name .. " [KILL BONUS] +1 ATK!")
+                        end
 
                         -- 攻击动画
                         Animation.card_attack(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT, -1)
@@ -865,7 +1076,7 @@ function Combat.execute_battle()
         end
     end
 
-    -- 清理死亡（处理不死印记）
+    -- 清理死亡（处理不死印记 + 亡语抽牌 + 击杀特效）
     for i = 1, BOARD_SLOTS do
         if battle.player.board[i] and battle.player.board[i].hp <= 0 then
             local card = battle.player.board[i]
@@ -874,7 +1085,20 @@ function Combat.execute_battle()
                 card.hp = 1
                 add_log(I18n.card_name(card.id) .. " revived!")
             else
+                -- 【亡语抽牌】死亡时抽牌
+                if Sigils.has(card, "death_draw") then
+                    Deck.draw_cards(2)
+                    add_log(card.name .. " [DEATH DRAW] +2 cards!")
+                end
                 add_log(I18n.tf("your_card_died", I18n.card_name(card.id)))
+
+                -- 播放死亡音效
+                Sound.play("death")
+
+                -- 【新增】卡牌死亡动画特效
+                local slot_x = Layout.card_slot(i, BOARD_SLOTS)
+                Animation.card_death(slot_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
+
                 battle.player.board[i] = nil
             end
         end
@@ -886,6 +1110,14 @@ function Combat.execute_battle()
                 add_log(I18n.tf("enemy_card_revived", I18n.card_name(card.id)))
             else
                 add_log(I18n.tf("enemy_card_died", I18n.card_name(card.id)))
+
+                -- 播放死亡音效
+                Sound.play("death")
+
+                -- 【新增】敌方卡牌死亡动画特效
+                local slot_x = Layout.card_slot(i, BOARD_SLOTS)
+                Animation.card_death(slot_x, enemy_area.y, CARD_WIDTH, CARD_HEIGHT)
+
                 battle.enemy.board[i] = nil
             end
         end
@@ -896,14 +1128,28 @@ function Combat.execute_battle()
         battle.phase = "result"
         -- 播放胜利音效
         Sound.play("victory")
-        -- 金币奖励：基础奖励 + 关卡加成
-        local base_reward = 5
-        local level_bonus = battle.level * 2
-        local total_reward = base_reward + level_bonus
+
+        -- 【改进】使用关卡定义的金币奖励
+        local level_info = LevelData.get_level(battle.level)
+        local base_reward = (level_info and level_info.gold_reward) or 5
+        local level_bonus = battle.level * 2  -- 额外关卡加成
+
+        -- 应用局外成长金币加成
+        local gold_multiplier = MetaProgression.get_gold_multiplier()
+        local total_reward = math.floor((base_reward + level_bonus) * gold_multiplier)
+
         Save.add_coins(total_reward)
         add_log(I18n.t("gold") .. " +" .. total_reward .. "!")
+
+        -- 播放奖励音效
+        Sound.play("reward")
+
         -- 金币弹出动画
         Animation.gold_popup(total_reward, status_bar.x + status_bar.width * 0.5, status_bar.y - 20)
+
+        -- 胜利粒子特效
+        Animation.spawn_victory_particles(status_bar.x + status_bar.width * 0.5, status_bar.y - 10)
+
         local max_levels = LevelData.get_max_levels()
         if battle.level >= max_levels then
             battle.message = I18n.t("victory") .. " " .. I18n.t("all_levels") .. " (+" .. total_reward .. " " .. I18n.t("gold") .. ")"
@@ -916,39 +1162,30 @@ function Combat.execute_battle()
         Sound.play("defeat")
         battle.message = I18n.t("defeated") .. " " .. I18n.t("retry_level")
     else
-        -- 下一回合：Blood +1（有上限）
+        -- 下一回合：Blood 按回合数增长（上限3）
         battle.turn = battle.turn + 1
         battle.phase = "play"
 
-        -- 每回合+1 blood，最多MAX_BLOOD
-        battle.player.blood = math.min(battle.player.blood + 1, MAX_BLOOD)
+        -- 每回合Blood = min(回合数, 3)
+        -- 第1回合1血，第2回合2血，第3回合及以后3血
+        battle.player.blood = math.min(battle.turn, MAX_BLOOD)
 
-        if Deck.hand_size() < 3 then
-            Combat.draw_cards(1)
-        end
-
-        -- ==================== 兜底机制检查 ====================
-        local fallback_triggered, fallback_msgs = Deck.turn_start_fallback()
-        if fallback_triggered and #fallback_msgs > 0 then
-            for _, msg in ipairs(fallback_msgs) do
-                add_log(msg)
+        -- 【回合加血】检查场上卡牌的回合加血印记
+        for i = 1, BOARD_SLOTS do
+            local card = battle.player.board[i]
+            if card and card.hp > 0 and Sigils.has(card, "turn_blood") then
+                battle.player.blood = math.min(battle.player.blood + 1, MAX_BLOOD)
+                add_log(card.name .. " [TURN BLOOD] +1 Blood!")
             end
-            battle.message = fallback_msgs[#fallback_msgs]
         end
 
-        -- 显示绝望模式警告
-        if Deck.get_desperation_mode() then
-            add_log("WARNING: No cards left in deck!")
-        end
+        -- 【重构】每回合固定抽2张牌（稳定过牌机制）
+        Deck.draw_cards(2)
 
         Combat.enemy_play_card()
 
         -- 更新回合消息
-        if not fallback_triggered then
-            battle.message = string.format(I18n.t("turn_blood"), battle.turn, battle.player.blood, MAX_BLOOD)
-        else
-            battle.message = I18n.t("turn") .. " " .. battle.turn .. " - " .. battle.message
-        end
+        battle.message = string.format(I18n.t("turn_blood"), battle.turn, battle.player.blood, MAX_BLOOD)
     end
 end
 
@@ -993,6 +1230,150 @@ function Combat.enemy_play_card()
             battle.enemy.board[slot] = enemy_card
         end
     end
+end
+
+-- ==================== 【新】UI按钮函数 ====================
+
+-- 绘制UI按钮（牌库查看、返回）- 增强动画效果
+function Combat.draw_ui_buttons()
+    local win_w, win_h = Layout.get_size()
+
+    -- 牌库按钮（右上角）
+    local deck_btn_x = win_w - 90
+    local deck_btn_y = 10
+    local deck_btn_w = 80
+    local deck_btn_h = 30
+
+    local deck_hover = love.mouse.getX() >= deck_btn_x and love.mouse.getX() <= deck_btn_x + deck_btn_w and
+                       love.mouse.getY() >= deck_btn_y and love.mouse.getY() <= deck_btn_y + deck_btn_h
+
+    -- 悬停时发光效果
+    if deck_hover then
+        love.graphics.setColor(1, 1, 0.9, 0.2)
+        love.graphics.rectangle("fill", deck_btn_x - 3, deck_btn_y - 3, deck_btn_w + 6, deck_btn_h + 6, 6, 6)
+    end
+
+    Theme.setColor(deck_hover and "bg_slot_hover" or "bg_panel")
+    love.graphics.rectangle("fill", deck_btn_x, deck_btn_y, deck_btn_w, deck_btn_h, 4, 4)
+    Theme.setColor(deck_hover and "border_highlight" or "border_gold", 0.5)
+    love.graphics.rectangle("line", deck_btn_x, deck_btn_y, deck_btn_w, deck_btn_h, 4, 4)
+    Theme.setColor("text_primary")
+    Fonts.print("DECK", deck_btn_x + 22, deck_btn_y + 7, 14)
+
+    -- 返回按钮（左上角）
+    local back_btn_x = 10
+    local back_btn_y = 10
+    local back_btn_w = 70
+    local back_btn_h = 30
+
+    local back_hover = love.mouse.getX() >= back_btn_x and love.mouse.getX() <= back_btn_x + back_btn_w and
+                       love.mouse.getY() >= back_btn_y and love.mouse.getY() <= back_btn_y + back_btn_h
+
+    -- 悬停时发光效果（红色警告）
+    if back_hover then
+        love.graphics.setColor(1, 0.4, 0.4, 0.2)
+        love.graphics.rectangle("fill", back_btn_x - 3, back_btn_y - 3, back_btn_w + 6, back_btn_h + 6, 6, 6)
+    end
+
+    Theme.setColor(back_hover and "accent_red" or "bg_panel", back_hover and 0.5 or 1)
+    love.graphics.rectangle("fill", back_btn_x, back_btn_y, back_btn_w, back_btn_h, 4, 4)
+    Theme.setColor("text_primary")
+    Fonts.print("← ESC", back_btn_x + 12, back_btn_y + 7, 14)
+end
+
+-- 绘制牌库面板
+function Combat.draw_deck_panel()
+    local win_w, win_h = Layout.get_size()
+
+    -- 半透明背景
+    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.rectangle("fill", 0, 0, win_w, win_h)
+
+    -- 面板
+    local panel_w = win_w * 0.8
+    local panel_h = win_h * 0.8
+    local panel_x = (win_w - panel_w) / 2
+    local panel_y = (win_h - panel_h) / 2
+
+    Theme.setColor("bg_panel")
+    love.graphics.rectangle("fill", panel_x, panel_y, panel_w, panel_h, 8, 8)
+    Theme.setColor("border_gold")
+    love.graphics.rectangle("line", panel_x, panel_y, panel_w, panel_h, 8, 8)
+
+    -- 标题
+    Components.text("YOUR DECK", panel_x + panel_w / 2, panel_y + 15, {
+        color = "accent_gold",
+        size = 20,
+        align = "center",
+    })
+
+    -- 牌组信息
+    local deck_info = Deck.get_info()
+    Components.text("Draw Pile: " .. deck_info.draw_pile_size .. "  |  Discard: " .. deck_info.discard_pile_size .. "  |  Total: " .. deck_info.deck_size,
+                    panel_x + panel_w / 2, panel_y + 45, {
+        color = "text_secondary",
+        align = "center",
+    })
+
+    -- 显示牌组中的卡牌
+    local deck = Deck.get_deck()
+    if #deck == 0 then
+        Components.text("No cards in deck", panel_x + panel_w / 2, panel_y + panel_h / 2, {
+            color = "text_hint",
+            align = "center",
+        })
+    else
+        -- 按卡牌ID统计
+        local card_counts = {}
+        for _, card in ipairs(deck) do
+            if not card_counts[card.id] then
+                card_counts[card.id] = {count = 0, template = card}
+            end
+            card_counts[card.id].count = card_counts[card.id].count + 1
+        end
+
+        -- 显示卡牌
+        local card_width = 140
+        local card_height = 70
+        local cards_per_row = math.floor((panel_w - 40) / (card_width + 10))
+        local col = 0
+        local row = 0
+
+        for card_id, data in pairs(card_counts) do
+            local x = panel_x + 20 + col * (card_width + 10)
+            local y = panel_y + 80 + row * (card_height + 10)
+
+            -- 卡牌背景
+            Theme.setColor("bg_slot")
+            love.graphics.rectangle("fill", x, y, card_width, card_height, 4, 4)
+            Theme.setColor("border_gold", 0.3)
+            love.graphics.rectangle("line", x, y, card_width, card_height, 4, 4)
+
+            -- 卡牌信息
+            Components.text(I18n.card_name(data.template.id), x + 8, y + 8, {color = "text_primary", size = 12})
+            Components.text("x" .. data.count, x + card_width - 25, y + 8, {color = "accent_gold", size = 12})
+            Components.text("$" .. (data.template.cost or 0), x + 8, y + 28, {color = "accent_red", size = 11})
+            Components.text("A:" .. (data.template.attack or 0), x + 35, y + 28, {color = "accent_gold", size = 11})
+            Components.text("H:" .. (data.template.hp or 0), x + 70, y + 28, {color = "accent_green", size = 11})
+
+            -- 印记
+            if data.template.sigils and #data.template.sigils > 0 then
+                Components.text("*" .. #data.template.sigils, x + 100, y + 28, {color = "text_hint", size = 11})
+            end
+
+            col = col + 1
+            if col >= cards_per_row then
+                col = 0
+                row = row + 1
+            end
+        end
+    end
+
+    -- 关闭提示
+    Components.text("Click anywhere to close", panel_x + panel_w / 2, panel_y + panel_h - 30, {
+        color = "text_hint",
+        align = "center",
+    })
 end
 
 return Combat

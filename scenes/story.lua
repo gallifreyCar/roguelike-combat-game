@@ -1,5 +1,6 @@
 -- scenes/story.lua - 剧情/对话场景
 -- 显示故事文本、NPC对话
+-- 支持打字机效果的逐字显示
 
 local StoryScene = {}
 local State = require("core.state")
@@ -8,8 +9,8 @@ local I18n = require("core.i18n")
 local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
-local Sound = require("systems.sound")
 
+-- 模块私有状态
 local dialogue = {}
 local current_index = 1
 local on_complete = nil
@@ -117,6 +118,9 @@ function StoryScene.draw()
     })
 end
 
+--- 获取说话者名称
+-- @param speaker string: 说话者ID
+-- @return string: 显示名称
 function StoryScene.get_speaker_name(speaker)
     local names = {
         narrator = "",
@@ -128,6 +132,9 @@ function StoryScene.get_speaker_name(speaker)
     return names[speaker] or speaker
 end
 
+--- 推进对话
+-- 如果当前文本未完全显示，则显示完整文本
+-- 否则前进到下一条对话
 function StoryScene.advance()
     if #dialogue == 0 then
         StoryScene.complete()
@@ -155,6 +162,7 @@ function StoryScene.advance()
     end
 end
 
+--- 完成对话并执行回调
 function StoryScene.complete()
     local callback = on_complete
     dialogue = {}
@@ -168,6 +176,8 @@ function StoryScene.complete()
     end
 end
 
+--- 键盘事件处理
+-- @param key string: 按键名称
 function StoryScene.keypressed(key)
     if key == "space" or key == "return" then
         StoryScene.advance()

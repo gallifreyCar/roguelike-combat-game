@@ -1,9 +1,12 @@
 -- main.lua - 游戏入口
+-- Blood Cards v1.0.0 (Round 10 Release)
 -- 集成所有核心系统：Theme、Layout、Events、Debug、Hotload、Testing
 
+local Version = require("config.version")
 local State = require("core.state")
 local Input = require("core.input")
 local Fonts = require("core.fonts")
+local Assets = require("core.assets")
 local I18n = require("core.i18n")
 local SettingsManager = require("systems.settings_manager")
 local Debug = require("core.debug")
@@ -11,10 +14,11 @@ local Events = require("core.events")
 local Hotload = require("core.hotload")
 local Sound = require("systems.sound")
 local Animation = require("systems.animation")
+local Achievements = require("systems.achievements")
 
--- 配置
-local DEBUG_MODE = false  -- 设置为 true 开启调试
-local HOTLOAD_MODE = false  -- 设置为 true 开发热重载
+-- 发布模式配置（Round 10）
+local DEBUG_MODE = true  -- 开启调试以验证资源加载
+local HOTLOAD_MODE = false  -- 发布版本关闭热重载
 
 function love.load()
     -- 初始化调试系统
@@ -30,11 +34,17 @@ function love.load()
     -- 初始化字体（支持中文）
     Fonts.init()
 
+    -- 加载美术资源（卡牌图片、印记图标等）
+    Assets.load()
+
     -- 初始化音效系统（动态波形生成）
     Sound.init()
 
     -- 初始化动画系统
     Animation.init()
+
+    -- 初始化成就系统
+    Achievements.init()
 
     -- 加载设置并应用
     local settings = SettingsManager.load()
@@ -48,8 +58,8 @@ function love.load()
         Events.emit(Events.LANGUAGE_CHANGE, settings.language)
     end
 
-    -- 应用音量设置
-    SettingsManager.apply_volume()
+    -- 应用音量设置到音效系统
+    Sound.apply_settings(SettingsManager)
 
     -- 应用全屏设置
     if settings.fullscreen then
@@ -76,6 +86,9 @@ function love.update(dt)
     -- 动画更新
     Animation.update(dt)
 
+    -- 成就通知更新
+    Achievements.update_notification(dt)
+
     -- 状态更新
     State.update(dt)
     Input.update(dt)
@@ -87,6 +100,9 @@ function love.draw()
 
     -- 绘制动画（在所有内容之上）
     Animation.draw()
+
+    -- 绘制成就通知（在动画之上）
+    Achievements.draw_notification()
 
     -- 绘制调试信息（在所有内容之上）
     Debug.draw()

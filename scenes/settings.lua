@@ -1,4 +1,5 @@
 -- scenes/settings.lua - 设置场景
+-- 游戏设置界面：音量、全屏、语言、教程开关
 -- 使用 Theme 和 Components 重构
 
 local SettingsScene = {}
@@ -9,7 +10,9 @@ local I18n = require("core.i18n")
 local Theme = require("config.theme")
 local Layout = require("config.layout")
 local Components = require("ui.components")
+local Sound = require("systems.sound")
 
+-- 模块私有状态
 local settings = {}
 local selected_option = 1
 local buttons = {}
@@ -51,24 +54,27 @@ function SettingsScene.draw()
 
     local win_w, win_h = Layout.get_size()
 
-    -- 标题面板
+    -- 标题面板（响应式）
     local title_w = 280
-    Components.panel(Layout.center_x(title_w), 30, title_w, 50, {
+    local title_y = win_h * 0.05
+    Components.panel(Layout.center_x(title_w), title_y, title_w, 50, {
         bg = "bg_button",
     })
-    Components.text(I18n.t("settings_title"), win_w / 2, 40, {
+    Components.text(I18n.t("settings_title"), win_w / 2, title_y + 15, {
         color = "text_primary",
         size = 20,
         align = "center",
     })
 
-    -- 设置选项
+    -- 设置选项（响应式）
     local opt_w = 400
     local start_x = Layout.center_x(opt_w)
     local options = get_options()
+    local opt_start_y = win_h * 0.15
+    local opt_gap = math.min(70, win_h * 0.08)
 
     for i, opt in ipairs(options) do
-        local y = 120 + (i - 1) * 70
+        local y = opt_start_y + (i - 1) * opt_gap
         local value = settings[opt.key]
 
         -- 选项背景
@@ -118,8 +124,8 @@ function SettingsScene.draw()
     Components.button(I18n.t("back"), buttons[2].x, buttons[2].y,
                       buttons[2].width, buttons[2].height, {})
 
-    -- 操作提示
-    Components.text(I18n.t("settings_hint"), win_w / 2, 620, {
+    -- 操作提示（响应式）
+    Components.text(I18n.t("settings_hint"), win_w / 2, win_h * 0.88, {
         color = "text_hint",
         align = "center",
     })
@@ -143,6 +149,16 @@ function SettingsScene.keypressed(key)
                 local new_val = math.max(opt.min, math.min(opt.max, settings[opt.key] + delta))
                 settings[opt.key] = new_val
                 SettingsManager.set(opt.key, new_val)
+                -- 实时同步音量到音效系统
+                if opt.key == "master_volume" then
+                    Sound.set_master_volume(new_val)
+                elseif opt.key == "music_volume" then
+                    Sound.set_music_volume(new_val)
+                elseif opt.key == "sfx_volume" then
+                    Sound.set_sfx_volume(new_val)
+                end
+                -- 播放音效预览
+                Sound.play("click")
             elseif opt.type == "toggle" then
                 settings[opt.key] = not settings[opt.key]
                 SettingsManager.set(opt.key, settings[opt.key])

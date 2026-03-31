@@ -1,37 +1,47 @@
 -- systems/enemy.lua - 敌人系统
 -- 管理：敌人生成、AI 行动、意图显示、渲染
+-- 支持多种敌人类型和难度缩放
 
 local Enemy = {}
 
--- 敌人定义
+-- 敌人类型定义（平衡性调整：降低初始强度，提高成长性）
 local enemy_types = {
     slime_small = {
         name = "Slime",
-        hp = 18,
+        hp = 15,  -- 降低从18到15
         patterns = {
-            {intent = "attack", damage = 6, weight = 0.6},
-            {intent = "defend", block = 4, weight = 0.4},
+            {intent = "attack", damage = 5, weight = 0.6},  -- 降低从6到5
+            {intent = "defend", block = 3, weight = 0.4},  -- 降低从4到3
         },
     },
     cultist = {
         name = "Cultist",
-        hp = 30,
+        hp = 25,  -- 降低从30到25
         patterns = {
-            {intent = "attack", damage = 6, weight = 0.5},
+            {intent = "attack", damage = 5, weight = 0.5},  -- 降低从6到5
             {intent = "buff", effect = "strength", weight = 0.3},
-            {intent = "defend", block = 6, weight = 0.2},
+            {intent = "defend", block = 5, weight = 0.2},  -- 降低从6到5
         },
     },
     jaw_worm = {
         name = "Jaw Worm",
-        hp = 40,
+        hp = 35,  -- 降低从40到35
         patterns = {
-            {intent = "attack", damage = 11, weight = 0.4},
-            {intent = "defend", block = 6, weight = 0.3},
-            {intent = "attack", damage = 7, weight = 0.3},
+            {intent = "attack", damage = 9, weight = 0.4},  -- 降低从11到9
+            {intent = "defend", block = 5, weight = 0.3},  -- 降低从6到5
+            {intent = "attack", damage = 6, weight = 0.3},  -- 降低从7到6
         },
     },
 }
+
+-- 难度缩放函数：根据关卡调整敌人属性
+local function scale_for_level(base_hp, base_damage, level)
+    -- 缩放公式：每级增加约10%属性
+    local hp_scale = 1 + (level - 1) * 0.1
+    local damage_scale = 1 + (level - 1) * 0.08
+
+    return math.floor(base_hp * hp_scale), math.floor(base_damage * damage_scale)
+end
 
 function Enemy.spawn(type_id, enemies_list)
     local template = enemy_types[type_id]

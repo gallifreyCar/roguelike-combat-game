@@ -50,6 +50,16 @@ local Cards = {
         sigils = {"guardian"},  -- 保护相邻卡牌
         rarity = "uncommon",
     },
+    -- 【新】过牌卡
+    insight = {
+        id = "insight",
+        name = "Insight",
+        cost = 1,
+        attack = 0,
+        hp = 1,
+        sigils = {"draw"},  -- 放置时抽2张牌
+        rarity = "uncommon",
+    },
 
     -- ========== 2费卡 ==========
     wolf = {
@@ -147,6 +157,48 @@ local Cards = {
         rarity = "rare",
     },
 
+    -- ========== 【新】词条牌（触发效果） ==========
+    -- 连击狼：打出后下张牌-1费用
+    combo_wolf = {
+        id = "combo_wolf",
+        name = "Combo Wolf",
+        cost = 2,
+        attack = 2,
+        hp = 2,
+        sigils = {"combo"},  -- 连击：打出后下张牌费用-1
+        rarity = "uncommon",
+    },
+    -- 亡语蝙蝠：死亡时抽2张牌
+    death_raven = {
+        id = "death_raven",
+        name = "Death Raven",
+        cost = 2,
+        attack = 1,
+        hp = 2,
+        sigils = {"death_draw"},  -- 亡语：死亡时抽2张牌
+        rarity = "uncommon",
+    },
+    -- 猎杀者：击杀敌人时+1攻击
+    hunter = {
+        id = "hunter",
+        name = "Hunter",
+        cost = 2,
+        attack = 1,
+        hp = 3,
+        sigils = {"kill_bonus"},  -- 击杀时+1攻击
+        rarity = "rare",
+    },
+    -- 爆发猫：回合开始时+1Blood
+    burst_cat = {
+        id = "burst_cat",
+        name = "Burst Cat",
+        cost = 1,
+        attack = 0,
+        hp = 2,
+        sigils = {"turn_blood"},  -- 回合开始+1Blood
+        rarity = "rare",
+    },
+
     -- ========== 传说卡 ==========
     deathcard = {
         id = "deathcard",
@@ -176,6 +228,244 @@ local Cards = {
         hp = 3,
         sigils = {"guardian", "tough"},  -- 保护+坚韧
         rarity = "uncommon",
+    },
+
+    -- ========== 【扩展】更多卡牌 ==========
+    -- 1费扩展
+    bat = {
+        id = "bat",
+        name = "Bat",
+        cost = 1,
+        attack = 1,
+        hp = 1,
+        sigils = {"air_strike"},  -- 飞行
+        rarity = "common",
+    },
+    snail = {
+        id = "snail",
+        name = "Snail",
+        cost = 1,
+        attack = 0,
+        hp = 3,
+        sigils = {"tough"},  -- 坚韧
+        rarity = "common",
+    },
+    bee = {
+        id = "bee",
+        name = "Bee",
+        cost = 1,
+        attack = 2,
+        hp = 1,
+        sigils = {"poison"},  -- 毒
+        rarity = "uncommon",
+    },
+
+    -- 2费扩展
+    fox = {
+        id = "fox",
+        name = "Fox",
+        cost = 2,
+        attack = 3,
+        hp = 2,
+        sigils = {},
+        rarity = "common",
+    },
+    owl = {
+        id = "owl",
+        name = "Owl",
+        cost = 2,
+        attack = 1,
+        hp = 3,
+        sigils = {"air_strike", "tough"},  -- 飞行+坚韧
+        rarity = "rare",
+    },
+    snake = {
+        id = "snake",
+        name = "Snake",
+        cost = 2,
+        attack = 2,
+        hp = 2,
+        sigils = {"poison"},  -- 毒
+        rarity = "uncommon",
+    },
+    spider = {
+        id = "spider",
+        name = "Spider",
+        cost = 2,
+        attack = 1,
+        hp = 4,
+        sigils = {"stinky"},  -- 臭气
+        rarity = "uncommon",
+    },
+    crow = {
+        id = "crow",
+        name = "Crow",
+        cost = 2,
+        attack = 2,
+        hp = 2,
+        sigils = {"death_draw"},  -- 亡语抽牌
+        rarity = "uncommon",
+    },
+    rabbit = {
+        id = "rabbit",
+        name = "Rabbit",
+        cost = 2,
+        attack = 1,
+        hp = 3,
+        sigils = {"undead"},  -- 复活
+        rarity = "uncommon",
+    },
+
+    -- 3费扩展
+    lion = {
+        id = "lion",
+        name = "Lion",
+        cost = 3,
+        attack = 4,
+        hp = 4,
+        sigils = {},
+        rarity = "rare",
+    },
+    shark = {
+        id = "shark",
+        name = "Shark",
+        cost = 3,
+        attack = 5,
+        hp = 2,
+        sigils = {"trample"},  -- 践踏
+        rarity = "rare",
+    },
+    scorpion = {
+        id = "scorpion",
+        name = "Scorpion",
+        cost = 3,
+        attack = 2,
+        hp = 3,
+        sigils = {"poison", "sharp_quills"},  -- 毒+刺
+        rarity = "rare",
+    },
+    boar = {
+        id = "boar",
+        name = "Boar",
+        cost = 3,
+        attack = 3,
+        hp = 5,
+        sigils = {"charge"},  -- 冲锋
+        rarity = "uncommon",
+    },
+    frog_king = {
+        id = "frog_king",
+        name = "Frog King",
+        cost = 3,
+        attack = 2,
+        hp = 5,
+        sigils = {"tough", "guardian"},  -- 坚韧+守护
+        rarity = "rare",
+    },
+
+    -- 4费扩展
+    dragon = {
+        id = "dragon",
+        name = "Dragon",
+        cost = 4,
+        attack = 5,
+        hp = 5,
+        sigils = {"air_strike", "trample"},  -- 飞行+践踏
+        rarity = "legendary",
+    },
+    bear = {
+        id = "bear",
+        name = "Bear",
+        cost = 4,
+        attack = 4,
+        hp = 7,
+        sigils = {"tough"},
+        rarity = "rare",
+    },
+    kraken = {
+        id = "kraken",
+        name = "Kraken",
+        cost = 4,
+        attack = 3,
+        hp = 8,
+        sigils = {"bifurcated"},  -- 双击
+        rarity = "rare",
+    },
+
+    -- 5费扩展
+    phoenix = {
+        id = "phoenix",
+        name = "Phoenix",
+        cost = 5,
+        attack = 4,
+        hp = 4,
+        sigils = {"undead", "air_strike"},  -- 复活+飞行
+        rarity = "legendary",
+    },
+    titan = {
+        id = "titan",
+        name = "Titan",
+        cost = 5,
+        attack = 6,
+        hp = 10,
+        sigils = {"trample", "tough"},
+        rarity = "legendary",
+    },
+
+    -- 特殊功能卡
+    blood_worm = {
+        id = "blood_worm",
+        name = "Blood Worm",
+        cost = 0,
+        attack = 0,
+        hp = 2,
+        sigils = {"turn_blood"},  -- 回合开始+1Blood
+        rarity = "rare",
+    },
+    mirror_cat = {
+        id = "mirror_cat",
+        name = "Mirror Cat",
+        cost = 1,
+        attack = 1,
+        hp = 1,
+        sigils = {"undead", "undead"},  -- 双重复活
+        rarity = "legendary",
+    },
+    gem_crab = {
+        id = "gem_crab",
+        name = "Gem Crab",
+        cost = 1,
+        attack = 0,
+        hp = 5,
+        sigils = {"tough", "guardian"},
+        rarity = "rare",
+    },
+    assassin_bug = {
+        id = "assassin_bug",
+        name = "Assassin Bug",
+        cost = 2,
+        attack = 1,
+        hp = 2,
+        sigils = {"poison", "double_strike"},  -- 毒+双击
+        rarity = "rare",
+    },
+    ghost_wolf = {
+        id = "ghost_wolf",
+        name = "Ghost Wolf",
+        cost = 2,
+        attack = 3,
+        hp = 1,
+        sigils = {"air_strike", "undead"},  -- 飞行+复活
+        rarity = "rare",
+    },
+    queen_bee = {
+        id = "queen_bee",
+        name = "Queen Bee",
+        cost = 3,
+        attack = 2,
+        hp = 4,
+        sigils = {"hydra", "poison"},  -- 分裂+毒
+        rarity = "legendary",
     },
 }
 
@@ -233,15 +523,61 @@ local Sigils = {
         name = "Hydra",
         desc = "Split into 2 snakes on death",
     },
+    -- 【扩展】新印记
+    draw = {
+        name = "Draw",
+        desc = "Draw 2 cards when placed",
+    },
+    combo = {
+        name = "Combo",
+        desc = "Next card costs 1 less",
+    },
+    death_draw = {
+        name = "Death Draw",
+        desc = "Draw 2 cards when this card dies",
+    },
+    kill_bonus = {
+        name = "Hunter",
+        desc = "+1 ATK when killing enemy",
+    },
+    turn_blood = {
+        name = "Blood Maker",
+        desc = "+1 Blood at turn start",
+    },
 }
 
 -- 按稀有度分组
 local Rarities = {
-    common = {"squirrel", "stoat", "bullfrog", "rat", "wolf"},
-    uncommon = {"turtle", "raven", "adder", "skunk"},
-    rare = {"cat", "grizzly", "moose", "mantis", "ox", "eagle"},  -- [BUG FIX] "mant" 改为 "mantis"
-    legendary = {"deathcard", "hydra"},
+    common = {"squirrel", "stoat", "bullfrog", "rat", "wolf", "bat", "snail", "fox"},
+    uncommon = {"turtle", "raven", "adder", "skunk", "insight", "combo_wolf", "death_raven",
+                "bee", "snake", "spider", "crow", "rabbit", "boar", "guardian_dog"},
+    rare = {"cat", "grizzly", "moose", "mantis", "ox", "eagle", "hunter", "burst_cat",
+            "owl", "lion", "shark", "scorpion", "frog_king", "bear", "kraken",
+            "blood_worm", "gem_crab", "assassin_bug", "ghost_wolf"},
+    legendary = {"deathcard", "hydra", "dragon", "phoenix", "titan", "mirror_cat", "queen_bee"},
 }
+
+-- 获取随机卡牌（按稀有度）
+function Cards.getRandomCardByRarity(rarity)
+    local pool = Rarities[rarity] or Rarities.common
+    if #pool == 0 then return nil end
+
+    local card_id = pool[love and love.math and love.math.random(#pool) or math.random(#pool)]
+    local template = Cards[card_id]
+    if not template then return nil end
+
+    -- 返回完整复制的卡牌数据
+    return {
+        id = template.id,
+        name = template.name,
+        cost = template.cost,
+        attack = template.attack,
+        hp = template.hp,
+        max_hp = template.hp,
+        sigils = template.sigils or {},
+        rarity = template.rarity,
+    }
+end
 
 return {
     cards = Cards,
