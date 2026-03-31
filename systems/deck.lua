@@ -252,6 +252,46 @@ function Deck.reset()
     Deck.init()
 end
 
+-- 设置自定义牌组（由DeckBuilder调用）
+-- @param custom_deck table: 用户构建的牌组，每张卡包含id等信息
+function Deck.set_custom_deck(custom_deck)
+    deck_state.deck = {}
+    deck_state.draw_pile = {}
+    deck_state.hand = {}
+    deck_state.discard_pile = {}
+
+    for _, card in ipairs(custom_deck) do
+        -- 复制卡牌数据到牌组
+        local card_copy = {
+            id = card.id,
+            name = card.name,
+            cost = card.cost,
+            attack = card.attack,
+            hp = card.hp,
+            max_hp = card.max_hp or card.hp,
+            sigils = card.sigils or {},
+            family = card.family,
+            rarity = card.rarity,
+        }
+        deck_state.deck[#deck_state.deck + 1] = card_copy
+        deck_state.draw_pile[#deck_state.draw_pile + 1] = TableUtils.deep_copy(card_copy)
+    end
+
+    -- 应用局外成长加成
+    if meta_bonuses then
+        if meta_bonuses.better_squirrel then
+            for _, card in ipairs(deck_state.deck) do
+                if card.id == "squirrel" then
+                    card.hp = card.hp + 1
+                    card.max_hp = card.max_hp + 1
+                end
+            end
+        end
+    end
+
+    Deck.shuffle_draw_pile()
+end
+
 -- 重置抽牌堆（每场战斗开始时调用）
 -- 将所有牌放入抽牌堆并洗牌，清空手牌和弃牌堆
 function Deck.reset_for_battle()

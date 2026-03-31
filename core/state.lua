@@ -26,6 +26,8 @@ function State.init()
     State.register("tutorial", require("scenes.tutorial"))
     State.register("save_select", require("scenes.save_select"))
     State.register("story_event", require("scenes.story_event"))
+    State.register("deck_builder", require("scenes.deck_builder"))
+    State.register("card_collection", require("scenes.card_collection"))
 end
 
 function State.switch(name)

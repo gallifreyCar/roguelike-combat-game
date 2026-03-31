@@ -144,6 +144,29 @@ function Animation.update(dt)
 
     -- 更新场景过渡
     Animation.update_transition(dt)
+
+    -- 更新屏幕震动
+    Animation.update_screen_shake(dt)
+end
+
+-- 更新屏幕震动
+function Animation.update_screen_shake(dt)
+    if not screen_shake.active then return end
+
+    screen_shake.time = screen_shake.time + dt
+    local progress = screen_shake.time / screen_shake.duration
+
+    if progress >= 1 then
+        screen_shake.active = false
+        screen_shake.offset_x = 0
+        screen_shake.offset_y = 0
+    else
+        local intensity = screen_shake.intensity * (1 - progress)
+        -- 使用确定性震动
+        local phase = screen_shake.time * 50
+        screen_shake.offset_x = math.sin(phase) * intensity
+        screen_shake.offset_y = math.cos(phase * 1.3) * intensity * 0.7
+    end
 end
 
 -- 绘制所有动画
@@ -419,38 +442,69 @@ end
 
 -- ==================== 数字弹出动画 ====================
 
--- 伤害数字
+-- 伤害数字（增强版 - Balatro风格）
 function Animation.damage_number(value, x, y, is_heal)
     is_heal = is_heal or false
+
+    -- 先创建冲击粒子
+    if not is_heal then
+        for i = 1, 5 do
+            local angle = love.math.random() * math.pi * 2
+            local speed = love.math.random() * 30 + 10
+            local vx = math.cos(angle) * speed
+            local vy = math.sin(angle) * speed
+            local color = {1, 0.3, 0.3}
+            Animation.create_particle(x, y, vx, vy, 3, color, 0.3, "spark")
+        end
+    else
+        Animation.spawn_heal_particles(x, y)
+    end
+
     local anim = {
         type = "damage_number",
         value = value,
         x = x,
         y = y,
         start_y = y,
-        duration = 0.8,
+        duration = 1.0,  -- 增加持续时间
         time = 0,
         easing = "easeOutQuad",
         is_heal = is_heal,
+        shake_intensity = value > 10 and 5 or 2,  -- 大伤害更强震动
         draw = function(self)
             local progress = Animation.get_eased_progress(self)
-            local alpha = progress > 0.5 and 1 - (progress - 0.5) * 2 or 1
-            local scale = 1 + (1 - progress) * 0.3
-            local y_offset = -progress * 40
+            local alpha = progress > 0.6 and 1 - (progress - 0.6) / 0.4 or 1
+
+            -- 弹跳效果
+            local bounce = math.sin(progress * math.pi) * 10
+            local y_offset = -progress * 50 + bounce * (1 - progress)
+
+            -- 缩放效果（先放大再缩小）
+            local scale
+            if progress < 0.2 then
+                scale = 1.5 - progress * 2.5  -- 从1.5缩小到1
+            else
+                scale = 1 + (1 - progress) * 0.3
+            end
 
             love.graphics.push()
             love.graphics.translate(self.x, self.start_y + y_offset)
             love.graphics.scale(scale, scale)
 
+            -- 阴影效果
+            love.graphics.setColor(0, 0, 0, alpha * 0.5)
+            love.graphics.setFont(cached_fonts.medium)
+            local text = self.is_heal and ("+" .. self.value) or ("-" .. self.value)
+            love.graphics.print(text, -14, -8)
+
+            -- 主文字
             if self.is_heal then
                 love.graphics.setColor(0.3, 1, 0.3, alpha)
             else
-                love.graphics.setColor(1, 0.3, 0.3, alpha)
+                -- 大伤害用更亮的红色
+                local r = math.min(1, 0.5 + self.value / 30)
+                love.graphics.setColor(r, 0.2, 0.2, alpha)
             end
-
-            local text = self.is_heal and ("+" .. self.value) or ("-" .. self.value)
-            -- 【性能优化】使用缓存的字体
-            love.graphics.setFont(cached_fonts.medium)
             love.graphics.print(text, -15, -10)
 
             love.graphics.pop()
@@ -460,26 +514,59 @@ function Animation.damage_number(value, x, y, is_heal)
     return anim
 end
 
--- 金币弹出
+-- 金币弹出（增强版 - Balatro风格）
 function Animation.gold_popup(value, x, y)
+    -- 创建金币粒子
+    for i = 1, 8 do
+        local angle = love.math.random() * math.pi * 2
+        local speed = love.math.random() * 40 + 20
+        local vx = math.cos(angle) * speed
+        local vy = math.sin(angle) * speed - 30
+        local color = {1, 0.85, 0.2}
+        Animation.create_particle(x, y, vx, vy, 4, color, 0.5, "star")
+    end
+
     local anim = {
         type = "gold_popup",
         value = value,
         x = x,
         y = y,
         start_y = y,
-        duration = 1.0,
+        duration = 1.2,
         time = 0,
-        easing = "easeOutQuad",
+        easing = "easeOutBack",
         draw = function(self)
             local progress = Animation.get_eased_progress(self)
-            local alpha = progress > 0.6 and 1 - (progress - 0.6) / 0.4 or 1
-            local y_offset = -progress * 30
+            local alpha = progress > 0.7 and 1 - (progress - 0.7) / 0.3 or 1
 
+            -- 弹跳效果
+            local bounce = math.sin(progress * math.pi * 2) * (1 - progress) * 8
+            local y_offset = -progress * 40 + bounce
+
+            -- 缩放
+            local scale
+            if progress < 0.15 then
+                scale = 1.8 - progress * 5
+            else
+                scale = 1 + (1 - progress) * 0.4
+            end
+
+            love.graphics.push()
+            love.graphics.translate(self.x, self.start_y + y_offset)
+            love.graphics.scale(scale, scale)
+
+            -- 金币图标 + 数字
+            love.graphics.setFont(cached_fonts.medium)
+
+            -- 外发光
+            love.graphics.setColor(1, 0.9, 0.4, alpha * 0.4)
+            love.graphics.print("+" .. self.value .. " G", -22, -12)
+
+            -- 主文字
             love.graphics.setColor(1, 0.85, 0.2, alpha)
-            -- 【性能优化】使用缓存的字体
-            love.graphics.setFont(cached_fonts.small)
-            love.graphics.print("+" .. self.value .. " G", self.x - 20, self.start_y + y_offset)
+            love.graphics.print("+" .. self.value .. " G", -23, -13)
+
+            love.graphics.pop()
         end,
     }
     table.insert(animations, anim)
@@ -487,6 +574,34 @@ function Animation.gold_popup(value, x, y)
 end
 
 -- ==================== 便捷函数 ====================
+
+-- 屏幕震动状态
+local screen_shake = {
+    active = false,
+    intensity = 0,
+    duration = 0,
+    time = 0,
+    offset_x = 0,
+    offset_y = 0,
+}
+
+-- 触发屏幕震动
+function Animation.screen_shake(intensity, duration)
+    intensity = intensity or 5
+    duration = duration or 0.2
+    screen_shake.active = true
+    screen_shake.intensity = intensity
+    screen_shake.duration = duration
+    screen_shake.time = 0
+end
+
+-- 获取屏幕震动偏移
+function Animation.get_screen_shake()
+    if not screen_shake.active then
+        return 0, 0
+    end
+    return screen_shake.offset_x, screen_shake.offset_y
+end
 
 -- 清除所有动画
 function Animation.clear()
