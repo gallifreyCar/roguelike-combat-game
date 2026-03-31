@@ -165,7 +165,7 @@ def create_card_image(card_id, rarity="common", size="1x"):
     return img
 
 def draw_creature(draw, card_id, w, h, color, size):
-    """绘制生物图形"""
+    """绘制生物图形（增强版）"""
     scale = 1 if size == "1x" else 2
 
     # 计算中心区域
@@ -177,30 +177,49 @@ def draw_creature(draw, card_id, w, h, color, size):
 
     # 根据类型绘制不同形状
     if creature_type == "bird":
-        # 鸟类：三角形翅膀
-        draw_bird(draw, center_x, center_y, color, scale)
+        draw_bird(draw, center_x, center_y, color, scale, card_id)
     elif creature_type == "snake":
-        # 蛇类：S形
-        draw_snake(draw, center_x, center_y, color, scale)
+        draw_snake(draw, center_x, center_y, color, scale, card_id)
     elif creature_type == "bear":
-        # 熊类：大圆形
         draw_bear(draw, center_x, center_y, color, scale)
+    elif creature_type == "wolf":
+        draw_wolf(draw, center_x, center_y, color, scale, card_id)
+    elif creature_type == "cat":
+        draw_cat(draw, center_x, center_y, color, scale, card_id)
     elif creature_type == "small":
-        # 小动物：小圆
-        draw_small_creature(draw, center_x, center_y, color, scale)
+        draw_small_creature(draw, center_x, center_y, color, scale, card_id)
+    elif creature_type == "amphibian":
+        draw_amphibian(draw, center_x, center_y, color, scale, card_id)
+    elif creature_type == "large":
+        draw_large_creature(draw, center_x, center_y, color, scale, card_id)
+    elif creature_type == "bug":
+        draw_bug(draw, center_x, center_y, color, scale, card_id)
     elif creature_type == "concept":
-        # 概念卡：抽象形状
         draw_concept(draw, center_x, center_y, color, scale)
     else:
-        # 默认：中等圆形
         draw_medium_creature(draw, center_x, center_y, color, scale)
 
 def get_creature_type(card_id):
-    """获取生物类型分类"""
-    birds = ["raven", "eagle", "death_raven"]
-    snakes = ["adder", "hydra", "bone_snake"]
-    bears = ["grizzly"]
-    small = ["squirrel", "rat", "skunk", "cat", "burst_cat", "insight"]
+    """获取生物类型分类（细化）"""
+    # 鸟类：翅膀展开、尖嘴
+    birds = ["raven", "eagle", "death_raven", "crow", "owl", "phoenix", "bat"]
+    # 蛇类：S形身体
+    snakes = ["adder", "hydra", "snake", "blood_worm", "bone_snake"]
+    # 熊类：大圆身体、小耳
+    bears = ["grizzly", "bear", "titan"]
+    # 狼类：长嘴、尖耳
+    wolves = ["wolf", "ghost_wolf", "combo_wolf", "fox", "hunter"]
+    # 猫类：尖耳、尾巴
+    cats = ["cat", "burst_cat", "mirror_cat", "lion"]
+    # 小动物：小圆身体
+    small = ["squirrel", "rat", "skunk", "rabbit", "bee", "queen_bee"]
+    # 两栖/爬行
+    amphibians = ["bullfrog", "frog_king", "turtle", "mantis", "scorpion"]
+    # 大型动物
+    large = ["moose", "ox", "boar", "shark", "kraken", "dragon"]
+    # 节肢动物
+    bugs = ["spider", "assassin_bug", "snail", "gem_crab"]
+    # 概念卡
     concepts = ["deathcard", "insight"]
 
     if card_id in birds:
@@ -209,47 +228,114 @@ def get_creature_type(card_id):
         return "snake"
     elif card_id in bears:
         return "bear"
+    elif card_id in wolves:
+        return "wolf"
+    elif card_id in cats:
+        return "cat"
     elif card_id in small:
         return "small"
+    elif card_id in amphibians:
+        return "amphibian"
+    elif card_id in large:
+        return "large"
+    elif card_id in bugs:
+        return "bug"
     elif card_id in concepts:
         return "concept"
     return "medium"
 
-def draw_bird(draw, cx, cy, color, scale):
-    """绘制鸟类"""
+def draw_bird(draw, cx, cy, color, scale, card_id="raven"):
+    """绘制鸟类（增强版）"""
     s = scale
-    # 身体（椭圆）
-    draw.ellipse([cx-20*s, cy-15*s, cx+20*s, cy+25*s], fill=color + (255,))
-    # 翅膀（三角形）
     darker = tuple(max(0, c-30) for c in color)
-    draw.polygon([(cx-35*s, cy), (cx-15*s, cy-20*s), (cx-15*s, cy+10*s)],
-                 fill=darker + (255,))
-    draw.polygon([(cx+35*s, cy), (cx+15*s, cy-20*s), (cx+15*s, cy+10*s)],
-                 fill=darker + (255,))
-    # 眼睛
-    draw.ellipse([cx-8*s, cy-5*s, cx-3*s, cy+2*s], fill=(255, 255, 255, 200))
-    draw.ellipse([cx+3*s, cy-5*s, cx+8*s, cy+2*s], fill=(255, 255, 255, 200))
 
-def draw_snake(draw, cx, cy, color, scale):
-    """绘制蛇"""
-    s = scale
-    # S形身体
-    points = []
-    for i in range(20):
-        t = i / 19
-        x = cx + math.sin(t * 3 * math.pi) * 25 * s
-        y = cy - 30*s + t * 50*s
-        points.append((x, y))
+    # 身体（椭圆）
+    draw.ellipse([cx-18*s, cy-12*s, cx+18*s, cy+22*s], fill=color + (255,))
 
-    # 绘制曲线
-    for i in range(len(points)-1):
-        draw.line([points[i], points[i+1]], fill=color + (255,), width=8*s)
+    # 翅膀形状根据鸟类调整
+    if card_id in ["eagle", "phoenix"]:
+        # 大翅膀展开
+        draw.polygon([(cx-40*s, cy-5*s), (cx-15*s, cy-25*s), (cx-15*s, cy+15*s)],
+                     fill=darker + (255,))
+        draw.polygon([(cx+40*s, cy-5*s), (cx+15*s, cy-25*s), (cx+15*s, cy+15*s)],
+                     fill=darker + (255,))
+    elif card_id == "owl":
+        # 猫头鹰：圆翅膀
+        draw.ellipse([cx-35*s, cy-10*s, cx-15*s, cy+20*s], fill=darker + (255,))
+        draw.ellipse([cx+15*s, cy-10*s, cx+35*s, cy+20*s], fill=darker + (255,))
+    else:
+        # 普通鸟类翅膀
+        draw.polygon([(cx-35*s, cy), (cx-15*s, cy-20*s), (cx-15*s, cy+10*s)],
+                     fill=darker + (255,))
+        draw.polygon([(cx+35*s, cy), (cx+15*s, cy-20*s), (cx+15*s, cy+10*s)],
+                     fill=darker + (255,))
 
     # 头部
-    draw.ellipse([cx-10*s, cy-35*s, cx+10*s, cy-20*s], fill=color + (255,))
+    draw.ellipse([cx-12*s, cy-28*s, cx+12*s, cy-8*s], fill=color + (255,))
+
+    # 喙
+    beak_color = (200, 150, 50) if card_id == "eagle" else (80, 60, 40)
+    draw.polygon([(cx, cy-20*s), (cx-5*s, cy-15*s), (cx+5*s, cy-15*s)],
+                 fill=beak_color + (255,))
+
     # 眼睛
-    draw.ellipse([cx-6*s, cy-30*s, cx-2*s, cy-26*s], fill=(255, 0, 0, 200))
-    draw.ellipse([cx+2*s, cy-30*s, cx+6*s, cy-26*s], fill=(255, 0, 0, 200))
+    if card_id == "owl":
+        # 猫头鹰大眼睛
+        draw.ellipse([cx-10*s, cy-25*s, cx-3*s, cy-18*s], fill=(255, 200, 0, 255))
+        draw.ellipse([cx+3*s, cy-25*s, cx+10*s, cy-18*s], fill=(255, 200, 0, 255))
+        draw.ellipse([cx-8*s, cy-23*s, cx-5*s, cy-20*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+5*s, cy-23*s, cx+8*s, cy-20*s], fill=(0, 0, 0, 255))
+    else:
+        draw.ellipse([cx-8*s, cy-22*s, cx-3*s, cy-17*s], fill=(255, 255, 255, 200))
+        draw.ellipse([cx+3*s, cy-22*s, cx+8*s, cy-17*s], fill=(255, 255, 255, 200))
+        draw.ellipse([cx-6*s, cy-20*s, cx-4*s, cy-18*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+4*s, cy-20*s, cx+6*s, cy-18*s], fill=(0, 0, 0, 255))
+
+def draw_snake(draw, cx, cy, color, scale, card_id="snake"):
+    """绘制蛇（增强版）"""
+    s = scale
+
+    # 根据类型调整蛇的形态
+    if card_id == "hydra":
+        # 九头蛇：多条蛇身
+        for offset in [-20, 0, 20]:
+            for i in range(15):
+                t = i / 14
+                x = cx + offset*s + math.sin(t * 2.5 * math.pi) * 15 * s
+                y = cy - 25*s + t * 45*s
+                if i < 14:
+                    draw.ellipse([x-4*s, y-4*s, x+4*s, y+4*s], fill=color + (255,))
+            # 头
+            draw.ellipse([cx+offset*s-6*s, cy-30*s, cx+offset*s+6*s, cy-18*s], fill=color + (255,))
+    else:
+        # 普通蛇：S形身体
+        points = []
+        for i in range(20):
+            t = i / 19
+            x = cx + math.sin(t * 3 * math.pi) * 25 * s
+            y = cy - 30*s + t * 50*s
+            points.append((x, y))
+
+        # 绘制曲线（用椭圆代替线条，更粗）
+        for i in range(len(points)-1):
+            mid_x = (points[i][0] + points[i+1][0]) / 2
+            mid_y = (points[i][1] + points[i+1][1]) / 2
+            draw.ellipse([mid_x-5*s, mid_y-5*s, mid_x+5*s, mid_y+5*s], fill=color + (255,))
+
+        # 头部（三角形）
+        draw.polygon([
+            (cx, cy-40*s),
+            (cx-12*s, cy-25*s),
+            (cx+12*s, cy-25*s)
+        ], fill=color + (255,))
+
+        # 眼睛
+        eye_color = (255, 0, 0) if card_id in ["adder", "blood_worm"] else (255, 200, 0)
+        draw.ellipse([cx-8*s, cy-35*s, cx-3*s, cy-30*s], fill=eye_color + (255,))
+        draw.ellipse([cx+3*s, cy-35*s, cx+8*s, cy-30*s], fill=eye_color + (255,))
+
+        # 舌头
+        draw.line([(cx, cy-40*s), (cx, cy-48*s)], fill=(255, 100, 100, 255), width=2*s)
 
 def draw_bear(draw, cx, cy, color, scale):
     """绘制熊"""
@@ -266,19 +352,85 @@ def draw_bear(draw, cx, cy, color, scale):
     draw.ellipse([cx-12*s, cy-35*s, cx-5*s, cy-28*s], fill=(20, 20, 20, 200))
     draw.ellipse([cx+5*s, cy-35*s, cx+12*s, cy-28*s], fill=(20, 20, 20, 200))
 
-def draw_small_creature(draw, cx, cy, color, scale):
-    """绘制小动物"""
+def draw_small_creature(draw, cx, cy, color, scale, card_id="squirrel"):
+    """绘制小动物（增强版）"""
     s = scale
-    # 小身体
-    draw.ellipse([cx-15*s, cy-15*s, cx+15*s, cy+20*s], fill=color + (255,))
-    # 头
-    draw.ellipse([cx-12*s, cy-25*s, cx+12*s, cy-5*s], fill=color + (255,))
-    # 眼睛
-    draw.ellipse([cx-7*s, cy-18*s, cx-3*s, cy-14*s], fill=(0, 0, 0, 200))
-    draw.ellipse([cx+3*s, cy-18*s, cx+7*s, cy-14*s], fill=(0, 0, 0, 200))
-    # 小尾巴（如果是squirrel）
-    draw.polygon([(cx+15*s, cy+10*s), (cx+30*s, cy+20*s), (cx+20*s, cy+15*s)],
-                 fill=color + (200,))
+    darker = tuple(max(0, c-20) for c in color)
+
+    if card_id == "squirrel":
+        # 松鼠：大尾巴
+        # 身体
+        draw.ellipse([cx-12*s, cy-10*s, cx+12*s, cy+18*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-10*s, cy-22*s, cx+10*s, cy-5*s], fill=color + (255,))
+        # 大尾巴（蓬松）
+        draw.ellipse([cx+8*s, cy-5*s, cx+35*s, cy+25*s], fill=color + (255,))
+        draw.ellipse([cx+12*s, cy+5*s, cx+30*s, cy+30*s], fill=darker + (200,))
+        # 耳朵
+        draw.ellipse([cx-8*s, cy-28*s, cx-2*s, cy-20*s], fill=color + (255,))
+        draw.ellipse([cx+2*s, cy-28*s, cx+8*s, cy-20*s], fill=color + (255,))
+        # 眼睛
+        draw.ellipse([cx-6*s, cy-16*s, cx-2*s, cy-12*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-16*s, cx+6*s, cy-12*s], fill=(0, 0, 0, 255))
+
+    elif card_id == "rat":
+        # 老鼠：长尾巴、尖嘴
+        draw.ellipse([cx-10*s, cy-8*s, cx+10*s, cy+15*s], fill=color + (255,))
+        # 头（尖）
+        draw.polygon([(cx, cy-25*s), (cx-10*s, cy-8*s), (cx+10*s, cy-8*s)], fill=color + (255,))
+        # 耳朵（大圆）
+        draw.ellipse([cx-12*s, cy-20*s, cx-4*s, cy-12*s], fill=color + (255,))
+        draw.ellipse([cx+4*s, cy-20*s, cx+12*s, cy-12*s], fill=color + (255,))
+        # 长尾巴
+        draw.line([(cx, cy+15*s), (cx+25*s, cy+30*s)], fill=color + (255,), width=3*s)
+        # 眼睛
+        draw.ellipse([cx-5*s, cy-14*s, cx-2*s, cy-11*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-14*s, cx+5*s, cy-11*s], fill=(0, 0, 0, 255))
+
+    elif card_id == "rabbit":
+        # 兔子：长耳朵
+        draw.ellipse([cx-15*s, cy-5*s, cx+15*s, cy+20*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-12*s, cy-20*s, cx+12*s, cy-2*s], fill=color + (255,))
+        # 长耳朵
+        draw.ellipse([cx-10*s, cy-45*s, cx-3*s, cy-20*s], fill=color + (255,))
+        draw.ellipse([cx+3*s, cy-45*s, cx+10*s, cy-20*s], fill=color + (255,))
+        # 耳朵内部
+        draw.ellipse([cx-8*s, cy-40*s, cx-5*s, cy-22*s], fill=(255, 180, 180, 200))
+        draw.ellipse([cx+5*s, cy-40*s, cx+8*s, cy-22*s], fill=(255, 180, 180, 200))
+        # 眼睛
+        draw.ellipse([cx-6*s, cy-12*s, cx-2*s, cy-8*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-12*s, cx+6*s, cy-8*s], fill=(0, 0, 0, 255))
+        # 鼻子
+        draw.ellipse([cx-2*s, cy-3*s, cx+2*s, cy], fill=(255, 150, 150, 255))
+
+    elif card_id in ["bee", "queen_bee"]:
+        # 蜜蜂：条纹身体
+        draw.ellipse([cx-12*s, cy-15*s, cx+12*s, cy+15*s], fill=(200, 180, 50) + (255,))  # 黄
+        # 黑条纹
+        draw.rectangle([cx-12*s, cy-8*s, cx+12*s, cy-4*s], fill=(30, 30, 30, 255))
+        draw.rectangle([cx-12*s, cy+2*s, cx+12*s, cy+6*s], fill=(30, 30, 30, 255))
+        # 翅膀
+        draw.ellipse([cx-25*s, cy-18*s, cx-8*s, cy-5*s], fill=(200, 220, 255, 150))
+        draw.ellipse([cx+8*s, cy-18*s, cx+25*s, cy-5*s], fill=(200, 220, 255, 150))
+        # 头
+        draw.ellipse([cx-8*s, cy-25*s, cx+8*s, cy-15*s], fill=(30, 30, 30, 255))
+        # 眼睛
+        draw.ellipse([cx-5*s, cy-22*s, cx-2*s, cy-18*s], fill=(255, 255, 255, 200))
+        draw.ellipse([cx+2*s, cy-22*s, cx+5*s, cy-18*s], fill=(255, 255, 255, 200))
+        if card_id == "queen_bee":
+            # 蜂后皇冠
+            draw.polygon([(cx-5*s, cy-30*s), (cx, cy-38*s), (cx+5*s, cy-30*s)], fill=(255, 200, 0, 255))
+
+    else:  # skunk 等
+        # 默认小动物
+        draw.ellipse([cx-12*s, cy-10*s, cx+12*s, cy+18*s], fill=color + (255,))
+        draw.ellipse([cx-10*s, cy-22*s, cx+10*s, cy-5*s], fill=color + (255,))
+        # 白色条纹（臭鼬）
+        if card_id == "skunk":
+            draw.line([(cx-3*s, cy-15*s), (cx-3*s, cy+15*s)], fill=(255, 255, 255, 255), width=6*s)
+        draw.ellipse([cx-6*s, cy-16*s, cx-2*s, cy-12*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-16*s, cx+6*s, cy-12*s], fill=(0, 0, 0, 255))
 
 def draw_medium_creature(draw, cx, cy, color, scale):
     """绘制中等生物（狼、鼬等）"""
@@ -308,6 +460,336 @@ def draw_concept(draw, cx, cy, color, scale):
         alpha = 150 - i * 40
         draw.ellipse([cx-20*s-offset, cy-20*s-offset, cx+20*s+offset, cy+20*s+offset],
                      outline=color + (alpha,), width=2*s)
+
+def draw_wolf(draw, cx, cy, color, scale, card_id="wolf"):
+    """绘制狼（增强版）"""
+    s = scale
+    darker = tuple(max(0, c-25) for c in color)
+
+    # 身体
+    draw.ellipse([cx-22*s, cy-15*s, cx+22*s, cy+25*s], fill=color + (255,))
+
+    # 头部（长嘴）
+    draw.ellipse([cx-15*s, cy-35*s, cx+15*s, cy-10*s], fill=color + (255,))
+    # 长嘴
+    draw.polygon([(cx, cy-22*s), (cx-10*s, cy-5*s), (cx+10*s, cy-5*s)], fill=color + (255,))
+
+    # 尖耳朵
+    draw.polygon([(cx-18*s, cy-28*s), (cx-10*s, cy-50*s), (cx-2*s, cy-30*s)], fill=darker + (255,))
+    draw.polygon([(cx+18*s, cy-28*s), (cx+10*s, cy-50*s), (cx+2*s, cy-30*s)], fill=darker + (255,))
+
+    # 眼睛（黄色）
+    draw.ellipse([cx-10*s, cy-28*s, cx-4*s, cy-22*s], fill=(200, 180, 50, 255))
+    draw.ellipse([cx+4*s, cy-28*s, cx+10*s, cy-22*s], fill=(200, 180, 50, 255))
+    # 瞳孔
+    draw.ellipse([cx-8*s, cy-26*s, cx-6*s, cy-24*s], fill=(0, 0, 0, 255))
+    draw.ellipse([cx+6*s, cy-26*s, cx+8*s, cy-24*s], fill=(0, 0, 0, 255))
+
+    # 尾巴
+    draw.ellipse([cx+15*s, cy+10*s, cx+35*s, cy+25*s], fill=color + (255,))
+
+    # 特殊效果
+    if card_id == "ghost_wolf":
+        # 幽灵狼：半透明
+        for y in range(int(cy-50*s), int(cy+35*s)):
+            for x in range(int(cx-35*s), int(cx+35*s)):
+                if (x - cx)**2 + (y - cy)**2 < (30*s)**2:
+                    draw.point((x, y), fill=color + (100,))
+
+def draw_cat(draw, cx, cy, color, scale, card_id="cat"):
+    """绘制猫（增强版）"""
+    s = scale
+    darker = tuple(max(0, c-20) for c in color)
+
+    # 身体
+    draw.ellipse([cx-18*s, cy-10*s, cx+18*s, cy+25*s], fill=color + (255,))
+
+    # 头部
+    draw.ellipse([cx-15*s, cy-30*s, cx+15*s, cy-8*s], fill=color + (255,))
+
+    # 尖耳朵（三角形）
+    draw.polygon([(cx-15*s, cy-22*s), (cx-10*s, cy-42*s), (cx-5*s, cy-22*s)], fill=color + (255,))
+    draw.polygon([(cx+15*s, cy-22*s), (cx+10*s, cy-42*s), (cx+5*s, cy-22*s)], fill=color + (255,))
+    # 内耳
+    draw.polygon([(cx-13*s, cy-24*s), (cx-10*s, cy-38*s), (cx-7*s, cy-24*s)], fill=(255, 180, 180, 200))
+    draw.polygon([(cx+13*s, cy-24*s), (cx+10*s, cy-38*s), (cx+7*s, cy-24*s)], fill=(255, 180, 180, 200))
+
+    # 眼睛（猫眼）
+    eye_color = (100, 200, 100) if card_id != "burst_cat" else (255, 100, 100)
+    draw.ellipse([cx-10*s, cy-22*s, cx-3*s, cy-15*s], fill=eye_color + (255,))
+    draw.ellipse([cx+3*s, cy-22*s, cx+10*s, cy-15*s], fill=eye_color + (255,))
+    # 瞳孔（竖线）
+    draw.ellipse([cx-7*s, cy-20*s, cx-6*s, cy-17*s], fill=(0, 0, 0, 255))
+    draw.ellipse([cx+6*s, cy-20*s, cx+7*s, cy-17*s], fill=(0, 0, 0, 255))
+
+    # 鼻子
+    draw.polygon([(cx, cy-8*s), (cx-3*s, cy-5*s), (cx+3*s, cy-5*s)], fill=(255, 150, 150, 255))
+
+    # 尾巴
+    draw.line([(cx+15*s, cy+20*s), (cx+30*s, cy+10*s)], fill=color + (255,), width=5*s)
+
+    # 特殊效果
+    if card_id == "lion":
+        # 狮子鬃毛
+        for angle in range(0, 360, 20):
+            rad = math.radians(angle)
+            x1 = cx + math.cos(rad) * 18*s
+            y1 = cy - 20*s + math.sin(rad) * 18*s
+            x2 = cx + math.cos(rad) * 28*s
+            y2 = cy - 20*s + math.sin(rad) * 28*s
+            draw.line([(x1, y1), (x2, y2)], fill=(180, 140, 60, 255), width=3*s)
+
+def draw_amphibian(draw, cx, cy, color, scale, card_id="bullfrog"):
+    """绘制两栖/爬行动物"""
+    s = scale
+    darker = tuple(max(0, c-20) for c in color)
+
+    if card_id in ["bullfrog", "frog_king"]:
+        # 青蛙：蹲姿
+        # 身体（宽扁）
+        draw.ellipse([cx-25*s, cy-5*s, cx+25*s, cy+20*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-18*s, cy-20*s, cx+18*s, cy], fill=color + (255,))
+        # 大眼睛（突出）
+        draw.ellipse([cx-15*s, cy-30*s, cx-5*s, cy-18*s], fill=(255, 255, 255, 255))
+        draw.ellipse([cx+5*s, cy-30*s, cx+15*s, cy-18*s], fill=(255, 255, 255, 255))
+        draw.ellipse([cx-12*s, cy-27*s, cx-8*s, cy-22*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+8*s, cy-27*s, cx+12*s, cy-22*s], fill=(0, 0, 0, 255))
+        # 后腿（蹲）
+        draw.ellipse([cx-35*s, cy+5*s, cx-20*s, cy+25*s], fill=color + (255,))
+        draw.ellipse([cx+20*s, cy+5*s, cx+35*s, cy+25*s], fill=color + (255,))
+
+        if card_id == "frog_king":
+            # 皇冠
+            draw.polygon([(cx-10*s, cy-35*s), (cx-5*s, cy-45*s), (cx, cy-35*s),
+                         (cx+5*s, cy-45*s), (cx+10*s, cy-35*s)], fill=(255, 200, 0, 255))
+
+    elif card_id == "turtle":
+        # 乌龟：壳
+        # 壳（圆形）
+        draw.ellipse([cx-25*s, cy-15*s, cx+25*s, cy+25*s], fill=color + (255,))
+        # 壳纹理
+        draw.ellipse([cx-18*s, cy-8*s, cx+18*s, cy+18*s], fill=darker + (200,))
+        # 头
+        draw.ellipse([cx-8*s, cy-25*s, cx+8*s, cy-10*s], fill=color + (255,))
+        # 腿
+        draw.ellipse([cx-28*s, cy+5*s, cx-18*s, cy+15*s], fill=color + (255,))
+        draw.ellipse([cx+18*s, cy+5*s, cx+28*s, cy+15*s], fill=color + (255,))
+        # 眼睛
+        draw.ellipse([cx-5*s, cy-22*s, cx-2*s, cy-18*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-22*s, cx+5*s, cy-18*s], fill=(0, 0, 0, 255))
+
+    elif card_id == "mantis":
+        # 螳螂
+        # 身体（细长）
+        draw.ellipse([cx-8*s, cy-20*s, cx+8*s, cy+30*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-10*s, cy-30*s, cx+10*s, cy-18*s], fill=color + (255,))
+        # 大眼睛
+        draw.ellipse([cx-12*s, cy-28*s, cx-5*s, cy-22*s], fill=(100, 200, 100, 255))
+        draw.ellipse([cx+5*s, cy-28*s, cx+12*s, cy-22*s], fill=(100, 200, 100, 255))
+        # 镰刀臂
+        draw.line([(cx-8*s, cy-5*s), (cx-25*s, cy-25*s)], fill=color + (255,), width=4*s)
+        draw.line([(cx+8*s, cy-5*s), (cx+25*s, cy-25*s)], fill=color + (255,), width=4*s)
+
+    elif card_id == "scorpion":
+        # 蝎子
+        # 身体
+        draw.ellipse([cx-15*s, cy-10*s, cx+15*s, cy+20*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-12*s, cy-22*s, cx+12*s, cy-8*s], fill=color + (255,))
+        # 钳子
+        draw.ellipse([cx-30*s, cy-15*s, cx-15*s, cy-5*s], fill=color + (255,))
+        draw.ellipse([cx+15*s, cy-15*s, cx+30*s, cy-5*s], fill=color + (255,))
+        # 尾巴（上卷）
+        points = [(cx, cy+20*s), (cx+10*s, cy+35*s), (cx+5*s, cy+45*s)]
+        draw.line(points, fill=color + (255,), width=5*s)
+        # 毒刺
+        draw.polygon([(cx+5*s, cy+45*s), (cx+2*s, cy+52*s), (cx+8*s, cy+48*s)], fill=(200, 50, 50, 255))
+
+    else:
+        # 默认两栖
+        draw.ellipse([cx-20*s, cy-10*s, cx+20*s, cy+20*s], fill=color + (255,))
+        draw.ellipse([cx-15*s, cy-25*s, cx+15*s, cy-5*s], fill=color + (255,))
+        draw.ellipse([cx-8*s, cy-20*s, cx-2*s, cy-14*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-20*s, cx+8*s, cy-14*s], fill=(0, 0, 0, 255))
+
+def draw_large_creature(draw, cx, cy, color, scale, card_id="moose"):
+    """绘制大型动物"""
+    s = scale
+    darker = tuple(max(0, c-25) for c in color)
+
+    if card_id == "moose":
+        # 驼鹿：大角
+        # 身体
+        draw.ellipse([cx-30*s, cy-15*s, cx+30*s, cy+30*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-18*s, cy-35*s, cx+18*s, cy-10*s], fill=color + (255,))
+        # 长鼻
+        draw.ellipse([cx-10*s, cy-20*s, cx+10*s, cy], fill=color + (255,))
+        # 大角（铲形）
+        draw.polygon([(cx-35*s, cy-45*s), (cx-20*s, cy-70*s), (cx-5*s, cy-45*s)],
+                     fill=darker + (255,))
+        draw.polygon([(cx+35*s, cy-45*s), (cx+20*s, cy-70*s), (cx+5*s, cy-45*s)],
+                     fill=darker + (255,))
+        # 眼睛
+        draw.ellipse([cx-12*s, cy-28*s, cx-6*s, cy-22*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+6*s, cy-28*s, cx+12*s, cy-22*s], fill=(0, 0, 0, 255))
+
+    elif card_id == "ox":
+        # 牛
+        draw.ellipse([cx-28*s, cy-12*s, cx+28*s, cy+28*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-22*s, cy-35*s, cx+22*s, cy-8*s], fill=color + (255,))
+        # 牛角
+        draw.polygon([(cx-25*s, cy-30*s), (cx-35*s, cy-55*s), (cx-15*s, cy-35*s)],
+                     fill=(200, 180, 150, 255))
+        draw.polygon([(cx+25*s, cy-30*s), (cx+35*s, cy-55*s), (cx+15*s, cy-35*s)],
+                     fill=(200, 180, 150, 255))
+        # 鼻环
+        draw.ellipse([cx-5*s, cy-10*s, cx+5*s, cy-2*s], outline=(200, 180, 0, 255), width=2*s)
+        # 眼睛
+        draw.ellipse([cx-15*s, cy-25*s, cx-8*s, cy-18*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+8*s, cy-25*s, cx+15*s, cy-18*s], fill=(0, 0, 0, 255))
+
+    elif card_id == "boar":
+        # 野猪
+        draw.ellipse([cx-25*s, cy-10*s, cx+25*s, cy+25*s], fill=color + (255,))
+        # 头（尖）
+        draw.polygon([(cx-20*s, cy-30*s), (cx+20*s, cy-30*s), (cx+15*s, cy-5*s), (cx-15*s, cy-5*s)],
+                     fill=color + (255,))
+        # 獠牙
+        draw.polygon([(cx-8*s, cy-12*s), (cx-15*s, cy-2*s), (cx-5*s, cy-8*s)], fill=(255, 255, 230, 255))
+        draw.polygon([(cx+8*s, cy-12*s), (cx+15*s, cy-2*s), (cx+5*s, cy-8*s)], fill=(255, 255, 230, 255))
+        # 眼睛
+        draw.ellipse([cx-12*s, cy-22*s, cx-6*s, cy-16*s], fill=(200, 50, 50, 255))
+        draw.ellipse([cx+6*s, cy-22*s, cx+12*s, cy-16*s], fill=(200, 50, 50, 255))
+
+    elif card_id == "shark":
+        # 鲨鱼
+        # 身体（流线型）
+        draw.polygon([(cx-30*s, cy), (cx+30*s, cy-10*s), (cx+25*s, cy+15*s)], fill=color + (255,))
+        # 背鳍
+        draw.polygon([(cx-5*s, cy-10*s), (cx+5*s, cy-35*s), (cx+15*s, cy-10*s)], fill=color + (255,))
+        # 尾鳍
+        draw.polygon([(cx+25*s, cy), (cx+40*s, cy-15*s), (cx+40*s, cy+10*s)], fill=color + (255,))
+        # 眼睛
+        draw.ellipse([cx-20*s, cy-5*s, cx-15*s, cy], fill=(0, 0, 0, 255))
+        # 牙齿
+        for i in range(5):
+            draw.polygon([(cx-10*s+i*4*s, cy+8*s), (cx-8*s+i*4*s, cy+12*s), (cx-6*s+i*4*s, cy+8*s)],
+                         fill=(255, 255, 255, 255))
+
+    elif card_id == "kraken":
+        # 海妖
+        # 主体
+        draw.ellipse([cx-25*s, cy-25*s, cx+25*s, cy+20*s], fill=color + (255,))
+        # 触手
+        for i in range(8):
+            angle = i * 45
+            rad = math.radians(angle)
+            x1 = cx + math.cos(rad) * 25*s
+            y1 = cy + 10*s + math.sin(rad) * 15*s
+            x2 = cx + math.cos(rad) * 40*s
+            y2 = cy + 25*s + math.sin(rad) * 25*s
+            draw.line([(x1, y1), (x2, y2)], fill=color + (255,), width=6*s)
+        # 眼睛（大）
+        draw.ellipse([cx-12*s, cy-15*s, cx+12*s, cy+5*s], fill=(255, 200, 0, 255))
+        draw.ellipse([cx-5*s, cy-10*s, cx+5*s, cy], fill=(0, 0, 0, 255))
+
+    elif card_id == "dragon":
+        # 龙
+        # 身体
+        draw.ellipse([cx-30*s, cy-10*s, cx+30*s, cy+25*s], fill=color + (255,))
+        # 头
+        draw.ellipse([cx-20*s, cy-40*s, cx+20*s, cy-10*s], fill=color + (255,))
+        # 翅膀
+        draw.polygon([(cx-20*s, cy-5*s), (cx-45*s, cy-30*s), (cx-15*s, cy+10*s)], fill=color + (200,))
+        draw.polygon([(cx+20*s, cy-5*s), (cx+45*s, cy-30*s), (cx+15*s, cy+10*s)], fill=color + (200,))
+        # 角
+        draw.polygon([(cx-15*s, cy-35*s), (cx-20*s, cy-55*s), (cx-8*s, cy-38*s)], fill=(150, 50, 50, 255))
+        draw.polygon([(cx+15*s, cy-35*s), (cx+20*s, cy-55*s), (cx+8*s, cy-38*s)], fill=(150, 50, 50, 255))
+        # 眼睛
+        draw.ellipse([cx-12*s, cy-30*s, cx-5*s, cy-22*s], fill=(255, 200, 0, 255))
+        draw.ellipse([cx+5*s, cy-30*s, cx+12*s, cy-22*s], fill=(255, 200, 0, 255))
+        # 喷火
+        draw.polygon([(cx, cy-15*s), (cx-10*s, cy+5*s), (cx+10*s, cy+5*s)], fill=(255, 150, 50, 200))
+
+    else:
+        # 默认大型
+        draw.ellipse([cx-28*s, cy-15*s, cx+28*s, cy+28*s], fill=color + (255,))
+        draw.ellipse([cx-20*s, cy-35*s, cx+20*s, cy-8*s], fill=color + (255,))
+        draw.ellipse([cx-12*s, cy-25*s, cx-5*s, cy-18*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+5*s, cy-25*s, cx+12*s, cy-18*s], fill=(0, 0, 0, 255))
+
+def draw_bug(draw, cx, cy, color, scale, card_id="spider"):
+    """绘制节肢动物"""
+    s = scale
+
+    if card_id == "spider":
+        # 蜘蛛
+        # 身体（两部分）
+        draw.ellipse([cx-12*s, cy-25*s, cx+12*s, cy-5*s], fill=color + (255,))  # 头
+        draw.ellipse([cx-15*s, cy-5*s, cx+15*s, cy+20*s], fill=color + (255,))  # 腹
+        # 腿（8条）
+        for i in range(4):
+            offset = i * 8 * s
+            # 左腿
+            draw.line([(cx-12*s, cy+offset-15*s), (cx-30*s, cy+offset-20*s)], fill=color + (255,), width=2*s)
+            # 右腿
+            draw.line([(cx+12*s, cy+offset-15*s), (cx+30*s, cy+offset-20*s)], fill=color + (255,), width=2*s)
+        # 眼睛（多眼）
+        for ox in [-6, -2, 2, 6]:
+            draw.ellipse([cx+ox*s-2*s, cy-20*s, cx+ox*s+2*s, cy-15*s], fill=(255, 0, 0, 255))
+
+    elif card_id == "assassin_bug":
+        # 刺客虫
+        draw.ellipse([cx-10*s, cy-20*s, cx+10*s, cy+15*s], fill=color + (255,))
+        draw.ellipse([cx-8*s, cy-30*s, cx+8*s, cy-18*s], fill=color + (255,))
+        # 镰刀前肢
+        draw.line([(cx-10*s, cy-10*s), (cx-25*s, cy-25*s)], fill=color + (255,), width=3*s)
+        draw.line([(cx+10*s, cy-10*s), (cx+25*s, cy-25*s)], fill=color + (255,), width=3*s)
+        # 眼睛
+        draw.ellipse([cx-6*s, cy-26*s, cx-2*s, cy-22*s], fill=(255, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-26*s, cx+6*s, cy-22*s], fill=(255, 0, 0, 255))
+
+    elif card_id == "snail":
+        # 蜗牛
+        darker = tuple(max(0, c-20) for c in color)
+        # 壳（螺旋）
+        draw.ellipse([cx-20*s, cy-15*s, cx+10*s, cy+20*s], fill=color + (255,))
+        # 壳纹
+        draw.arc([cx-18*s, cy-12*s, cx+8*s, cy+17*s], 0, 300, fill=darker + (200,), width=2*s)
+        # 身体
+        draw.ellipse([cx-5*s, cy+10*s, cx+25*s, cy+25*s], fill=(180, 160, 140, 255))
+        # 触角
+        draw.line([(cx+15*s, cy+10*s), (cx+10*s, cy-10*s)], fill=(180, 160, 140, 255), width=2*s)
+        draw.line([(cx+20*s, cy+10*s), (cx+25*s, cy-10*s)], fill=(180, 160, 140, 255), width=2*s)
+        # 触角眼
+        draw.ellipse([cx+8*s, cy-12*s, cx+12*s, cy-8*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+23*s, cy-12*s, cx+27*s, cy-8*s], fill=(0, 0, 0, 255))
+
+    elif card_id == "gem_crab":
+        # 宝石蟹
+        draw.ellipse([cx-22*s, cy-10*s, cx+22*s, cy+20*s], fill=color + (255,))
+        # 钳子
+        draw.ellipse([cx-35*s, cy-5*s, cx-20*s, cy+15*s], fill=color + (255,))
+        draw.ellipse([cx+20*s, cy-5*s, cx+35*s, cy+15*s], fill=color + (255,))
+        # 宝石（中心）
+        draw.polygon([(cx, cy-5*s), (cx-8*s, cy+5*s), (cx, cy+15*s), (cx+8*s, cy+5*s)],
+                     fill=(100, 200, 255, 255))
+        # 眼睛（柄眼）
+        draw.line([(cx-8*s, cy-10*s), (cx-12*s, cy-25*s)], fill=color + (255,), width=2*s)
+        draw.line([(cx+8*s, cy-10*s), (cx+12*s, cy-25*s)], fill=color + (255,), width=2*s)
+        draw.ellipse([cx-15*s, cy-28*s, cx-9*s, cy-22*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+9*s, cy-28*s, cx+15*s, cy-22*s], fill=(0, 0, 0, 255))
+
+    else:
+        # 默认虫子
+        draw.ellipse([cx-15*s, cy-15*s, cx+15*s, cy+15*s], fill=color + (255,))
+        draw.ellipse([cx-10*s, cy-25*s, cx+10*s, cy-12*s], fill=color + (255,))
+        draw.ellipse([cx-6*s, cy-20*s, cx-2*s, cy-16*s], fill=(0, 0, 0, 255))
+        draw.ellipse([cx+2*s, cy-20*s, cx+6*s, cy-16*s], fill=(0, 0, 0, 255))
 
 def create_frame_image(rarity, size="1x"):
     """创建卡框"""
