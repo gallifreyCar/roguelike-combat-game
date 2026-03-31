@@ -1173,10 +1173,26 @@ function Combat.execute_battle()
         -- 播放胜利音效
         Sound.play("victory")
 
+        -- 【Boss解锁】检测是否击败了章节Boss
+        if battle.enemy.is_boss then
+            local chapter_idx, chapter = Map.get_current_chapter()
+            if chapter then
+                local unlocked = MetaProgression.defeat_boss(chapter.id)
+                if #unlocked > 0 then
+                    add_log("BOSS DEFEATED! Unlocked " .. #unlocked .. " new cards!")
+                end
+            end
+        end
+
         -- 【改进】使用关卡定义的金币奖励
         local level_info = LevelData.get_level(battle.level)
         local base_reward = (level_info and level_info.gold_reward) or 5
         local level_bonus = battle.level * 2  -- 额外关卡加成
+
+        -- Boss战额外奖励
+        if battle.enemy.is_boss then
+            level_bonus = level_bonus + 10
+        end
 
         -- 应用局外成长金币加成
         local gold_multiplier = MetaProgression.get_gold_multiplier()

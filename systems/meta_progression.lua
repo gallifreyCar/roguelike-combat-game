@@ -69,6 +69,28 @@ local CARD_UNLOCKS = {
     {card_id = "deathcard", runs = 5, desc = "Win 5 runs"},
 }
 
+-- Chapter Boss unlock rewards
+local CHAPTER_BOSS_UNLOCKS = {
+    forest = {
+        boss = "bear",
+        name = "Forest Guardian",
+        cards = {"grizzly", "moose", "boar"},  -- 解锁这些卡到卡池
+        desc = "Defeat Forest Boss",
+    },
+    ocean = {
+        boss = "dragon",
+        name = "Ocean Lord",
+        cards = {"shark", "kraken", "gem_crab"},
+        desc = "Defeat Ocean Boss",
+    },
+    sky = {
+        boss = "titan",
+        name = "Sky King",
+        cards = {"phoenix", "eagle", "ghost_wolf"},
+        desc = "Defeat Sky Boss",
+    },
+}
+
 -- Sigil unlock conditions (future expansion)
 local SIGIL_UNLOCKS = {
     {sigil_id = "vampire", runs = 3, desc = "Win 3 runs"},
@@ -120,6 +142,9 @@ function MetaProgression.get_default_progress()
         unlocked_cards = {},
         unlocked_sigils = {},
         unlocked_features = {},
+
+        -- Chapter Boss defeated
+        bosses_defeated = {},  -- {forest = true, ocean = true, sky = true}
     }
 end
 
@@ -510,6 +535,75 @@ function MetaProgression.is_unlock_card(card_id)
         end
     end
     return false
+end
+
+-- ==================== CHAPTER BOSS UNLOCKS ====================
+
+-- Check if a chapter boss has been defeated
+function MetaProgression.is_boss_defeated(chapter_id)
+    if not meta_data or not meta_data.bosses_defeated then
+        return false
+    end
+    return meta_data.bosses_defeated[chapter_id] == true
+end
+
+-- Register a boss defeat and unlock cards
+function MetaProgression.defeat_boss(chapter_id)
+    if not meta_data then return {} end
+
+    -- Initialize bosses_defeated if needed
+    if not meta_data.bosses_defeated then
+        meta_data.bosses_defeated = {}
+    end
+
+    -- Already defeated?
+    if meta_data.bosses_defeated[chapter_id] then
+        return {}
+    end
+
+    -- Mark as defeated
+    meta_data.bosses_defeated[chapter_id] = true
+
+    -- Get unlock rewards
+    local boss_data = CHAPTER_BOSS_UNLOCKS[chapter_id]
+    if not boss_data then return {} end
+
+    -- Unlock cards
+    local newly_unlocked = {}
+    for _, card_id in ipairs(boss_data.cards) do
+        if not MetaProgression.is_card_unlocked(card_id) then
+            table.insert(meta_data.unlocked_cards, card_id)
+            table.insert(newly_unlocked, card_id)
+        end
+    end
+
+    -- Add bonus unlock points
+    meta_data.unlock_points = (meta_data.unlock_points or 0) + 2
+
+    -- Save
+    Save.save()
+
+    return newly_unlocked
+end
+
+-- Get all defeated bosses
+function MetaProgression.get_defeated_bosses()
+    return meta_data and meta_data.bosses_defeated or {}
+end
+
+-- Get chapter unlock info
+function MetaProgression.get_chapter_unlock_info()
+    local info = {}
+    for chapter_id, data in pairs(CHAPTER_BOSS_UNLOCKS) do
+        info[chapter_id] = {
+            boss = data.boss,
+            name = data.name,
+            cards = data.cards,
+            desc = data.desc,
+            defeated = MetaProgression.is_boss_defeated(chapter_id),
+        }
+    end
+    return info
 end
 
 -- ==================== SAVE/LOAD ====================
