@@ -19,6 +19,7 @@ local Components = require("ui.components")
 local Events = require("core.events")
 local Save = require("systems.save")
 local Sound = require("systems.sound")
+local Animation = require("systems.animation")
 
 -- 从 Settings 获取配置
 local BOARD_SLOTS = Settings.board_slots
@@ -729,8 +730,11 @@ function Combat.place_card(hand_index, slot)
 
     battle.player.board[slot] = board_card
 
-    -- 播放放置卡牌音效
+    -- 播放放置卡牌音效和动画
     Sound.play("play_card")
+    local slot_x = Layout.card_slot(slot, BOARD_SLOTS)
+    local player_board = Layout.player_board()
+    Animation.card_place(slot_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
 
     battle.message = I18n.tf("placed", I18n.card_name(placed_card.id))
 end
@@ -769,14 +773,20 @@ function Combat.execute_battle()
                         battle.enemy.hp = battle.enemy.hp - dmg
                         add_log(card.name .. " [AIR] → Boss (-" .. dmg .. " HP)")
                         Effects.damage(dmg, enemy_hp_bar.x + enemy_hp_bar.width * 0.5, enemy_hp_bar.y + 16)
+                        -- 攻击动画
+                        Animation.card_attack(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT, -1)
+                        Animation.damage_number(dmg, enemy_hp_bar.x + enemy_hp_bar.width * 0.5, enemy_hp_bar.y + 16)
                     else
                         -- 普通攻击：攻击敌人卡
                         local dmg = card.attack
                         enemy_card.hp = enemy_card.hp - dmg
                         add_log(card.name .. " → " .. enemy_card.name .. " (-" .. dmg .. " HP)")
 
+                        -- 攻击动画
+                        Animation.card_attack(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT, -1)
                         -- 伤害数字特效
                         Effects.damage(dmg, card_x + 50, enemy_area.y + 30)
+                        Animation.damage_number(dmg, card_x + 50, enemy_area.y + 30)
                         Effects.attack_flash(card_x, enemy_area.y, CARD_WIDTH, CARD_HEIGHT)
 
                         -- 处理毒印记
@@ -793,8 +803,10 @@ function Combat.execute_battle()
                     -- 播放攻击音效
                     Sound.play("hit")
 
-                    -- 敌方HP伤害数字（响应式）
+                    -- 攻击动画和伤害数字
+                    Animation.card_attack(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT, -1)
                     Effects.damage(dmg, enemy_hp_bar.x + enemy_hp_bar.width * 0.5, enemy_hp_bar.y + 16)
+                    Animation.damage_number(dmg, enemy_hp_bar.x + enemy_hp_bar.width * 0.5, enemy_hp_bar.y + 16)
                     Effects.attack_flash(enemy_hp_bar.x, enemy_hp_bar.y, enemy_hp_bar.width, enemy_hp_bar.height)
                 end
             end
@@ -819,11 +831,11 @@ function Combat.execute_battle()
                 player_card.hp = player_card.hp - dmg
                 add_log(card.name .. " → " .. player_card.name .. " (-" .. dmg .. " HP)")
 
-                -- 播放受击音效
+                -- 播放受击音效和动画
                 Sound.play("hit")
-
-                -- 伤害数字特效
+                Animation.card_shake(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
                 Effects.damage(dmg, card_x + 50, player_board.y + 30)
+                Animation.damage_number(dmg, card_x + 50, player_board.y + 30)
                 Effects.attack_flash(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
             else
                 local dmg = card.attack
@@ -832,6 +844,7 @@ function Combat.execute_battle()
 
                 -- 玩家HP伤害数字（响应式）
                 Effects.damage(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
+                Animation.damage_number(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
             end
         end
     end
@@ -889,6 +902,8 @@ function Combat.execute_battle()
         local total_reward = base_reward + level_bonus
         Save.add_coins(total_reward)
         add_log(I18n.t("gold") .. " +" .. total_reward .. "!")
+        -- 金币弹出动画
+        Animation.gold_popup(total_reward, status_bar.x + status_bar.width * 0.5, status_bar.y - 20)
         local max_levels = LevelData.get_max_levels()
         if battle.level >= max_levels then
             battle.message = I18n.t("victory") .. " " .. I18n.t("all_levels") .. " (+" .. total_reward .. " " .. I18n.t("gold") .. ")"

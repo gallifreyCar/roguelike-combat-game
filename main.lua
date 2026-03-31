@@ -10,6 +10,7 @@ local Debug = require("core.debug")
 local Events = require("core.events")
 local Hotload = require("core.hotload")
 local Sound = require("systems.sound")
+local Animation = require("systems.animation")
 
 -- 配置
 local DEBUG_MODE = false  -- 设置为 true 开启调试
@@ -31,6 +32,9 @@ function love.load()
 
     -- 初始化音效系统（动态波形生成）
     Sound.init()
+
+    -- 初始化动画系统
+    Animation.init()
 
     -- 加载设置并应用
     local settings = SettingsManager.load()
@@ -69,6 +73,9 @@ function love.update(dt)
     -- 热重载检查
     Hotload.update(dt)
 
+    -- 动画更新
+    Animation.update(dt)
+
     -- 状态更新
     State.update(dt)
     Input.update(dt)
@@ -77,6 +84,9 @@ end
 function love.draw()
     -- 绘制游戏场景
     State.draw()
+
+    -- 绘制动画（在所有内容之上）
+    Animation.draw()
 
     -- 绘制调试信息（在所有内容之上）
     Debug.draw()
