@@ -20,6 +20,7 @@ function State.init()
     State.register("shop", require("scenes.shop"))
     State.register("map", require("scenes.map"))
     State.register("settings", require("scenes.settings"))
+    State.register("story", require("scenes.story"))
 end
 
 function State.switch(name)
