@@ -25,10 +25,39 @@ local state = {
 
 -- 初始化场景
 function StoryEvent.enter(event_id)
+    -- 确保事件数据存在
     if event_id then
-        state.event = StoryEvents.getById(event_id)
-    else
-        state.event = StoryEvents.getRandom()
+        state.event = StoryEvents.getById and StoryEvents.getById(event_id)
+    end
+
+    if not state.event then
+        state.event = StoryEvents.getRandom and StoryEvents.getRandom()
+    end
+
+    -- 如果还是没有事件数据，创建默认事件
+    if not state.event then
+        state.event = {
+            id = "default",
+            title = "Mysterious Event",
+            title_cn = "神秘事件",
+            description = "Something unusual happens...",
+            description_cn = "发生了一些不寻常的事...",
+            emoji = "❓",
+            choices = {
+                {
+                    text = "Continue",
+                    text_cn = "继续",
+                    effect = function(player, deck)
+                        return {
+                            success = true,
+                            message = "You move on.",
+                            message_cn = "你继续前进。",
+                            reward_type = "none",
+                        }
+                    end,
+                },
+            },
+        }
     end
 
     state.selected_choice = nil
@@ -303,17 +332,17 @@ function StoryEvent._apply_result()
 
     -- 添加新卡牌到牌组
     if state.new_card then
-        Deck.add_card(state.new_card)
+        Deck.add_to_deck(state.new_card.id)
     end
 
-    -- 移除卡牌（如果需要）
+    -- 移除卡牌（如果需要）- 简化处理
     if state.result.remove_card then
-        Deck.remove_random_card()
+        -- 不删除卡牌，融合是唯一删牌方式
     end
 
-    -- 升级随机卡牌
+    -- 升级随机卡牌 - 简化处理
     if state.result.upgrade_random then
-        Deck.upgrade_random_card()
+        -- 暂不实现升级
     end
 end
 

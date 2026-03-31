@@ -448,8 +448,16 @@ end
 
 -- 获取随机事件
 function StoryEvents.getRandom()
-    local roll = love and love.math and love.math.random or math.random
-    local index = roll(1, #StoryEvents.events)
+    if #StoryEvents.events == 0 then
+        return nil
+    end
+
+    local index
+    if love and love.math then
+        index = love.math.random(1, #StoryEvents.events)
+    else
+        index = math.random(1, #StoryEvents.events)
+    end
     return StoryEvents.events[index]
 end
 

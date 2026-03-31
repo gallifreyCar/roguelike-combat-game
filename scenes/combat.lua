@@ -166,24 +166,59 @@ function Combat.draw_cards(n)
 end
 
 function Combat.spawn_level_enemies()
-    local level_info = LevelData.get_level(battle.level)
-    if not level_info then return end
+    -- 获取章节敌人池
+    local enemies, elite_enemies, boss = Map.get_chapter_enemies(battle.level)
+    local is_boss = Map.is_chapter_boss(battle.level)
 
-    -- 设置敌人HP
-    battle.enemy.hp = 10 + battle.level * 2
-    battle.enemy.max_hp = battle.enemy.hp
+    -- 设置敌人HP（Boss更强）
+    if is_boss then
+        battle.enemy.hp = 30 + battle.level * 3
+        battle.enemy.max_hp = battle.enemy.hp
+        battle.enemy.is_boss = true
+    else
+        battle.enemy.hp = 10 + battle.level * 2
+        battle.enemy.max_hp = battle.enemy.hp
+        battle.enemy.is_boss = false
+    end
 
-    -- 放置关卡定义的敌人
-    for _, enemy in ipairs(level_info.enemies) do
-        local template = CardData.cards[enemy.card]
-        if template and enemy.slot then
-            battle.enemy.board[enemy.slot] = {
+    -- 根据节点类型生成敌人
+    local current_node = Map.get_current()
+    local enemy_pool = enemies
+
+    if current_node and current_node.type == "elite" then
+        enemy_pool = elite_enemies
+    elseif is_boss then
+        enemy_pool = {boss}
+    end
+
+    -- 随机放置1-2个敌人
+    local enemy_count = is_boss and 1 or love.math.random(1, 2)
+    local used_slots = {}
+
+    for i = 1, enemy_count do
+        -- 随机选择敌人类型
+        local enemy_id = enemy_pool[love.math.random(#enemy_pool)]
+        local template = CardData.cards[enemy_id]
+
+        if template then
+            -- 随机选择槽位
+            local slot
+            repeat
+                slot = love.math.random(1, BOARD_SLOTS)
+            until not used_slots[slot]
+            used_slots[slot] = true
+
+            -- 敌人属性（随关卡提升）
+            local level_bonus = math.floor(battle.level / 3)
+
+            battle.enemy.board[slot] = {
                 id = template.id,
                 name = template.name,
-                attack = template.attack,
-                hp = template.hp,
-                max_hp = template.hp,
-                -- 敌人意图
+                attack = template.attack + level_bonus,
+                hp = template.hp + level_bonus * 2,
+                max_hp = template.hp + level_bonus * 2,
+                sigils = template.sigils or {},
+                family = template.family,
                 intent = Combat.roll_enemy_intent(),
             }
         end

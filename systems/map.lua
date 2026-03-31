@@ -1,14 +1,54 @@
 -- systems/map.lua - 关卡地图系统
--- 肉鸽风格的地图选择，分支路线，不同事件类型
--- 支持8层地图，每层随机生成节点
+-- 3章节设计：森林→海洋→天空
+-- 每章3层，最后一层是Boss
 
 local Map = {}
 
--- 地图配置常量
+-- 章节定义
+local CHAPTERS = {
+    {
+        id = "forest",
+        name = "Forest",
+        name_cn = "森林",
+        rows = {1, 2, 3},
+        boss_row = 3,
+        enemies = {"wolf", "rat", "skunk", "squirrel"},
+        elite_enemies = {"grizzly", "moose"},
+        boss = "bear",
+        color = {0.3, 0.5, 0.3},  -- 森林绿
+        bg_color = {0.15, 0.25, 0.15},
+    },
+    {
+        id = "ocean",
+        name = "Ocean",
+        name_cn = "海洋",
+        rows = {4, 5, 6},
+        boss_row = 6,
+        enemies = {"shark", "kraken", "gem_crab", "blood_worm"},
+        elite_enemies = {"hydra", "frog_king"},
+        boss = "dragon",
+        color = {0.2, 0.4, 0.7},  -- 海蓝
+        bg_color = {0.1, 0.2, 0.35},
+    },
+    {
+        id = "sky",
+        name = "Sky",
+        name_cn = "天空",
+        rows = {7, 8, 9},
+        boss_row = 9,
+        enemies = {"raven", "eagle", "owl", "bat"},
+        elite_enemies = {"phoenix", "ghost_wolf"},
+        boss = "titan",
+        color = {0.6, 0.7, 0.9},  -- 天蓝
+        bg_color = {0.25, 0.3, 0.45},
+    },
+}
+
+-- 地图配置
 local MAP_CONFIG = {
-    rows = 8,          -- 地图层数
-    min_nodes = 3,     -- 每层最少节点
-    max_nodes = 4,     -- 每层最多节点
+    rows = 9,          -- 总层数（3章×3层）
+    min_nodes = 3,
+    max_nodes = 4,
 }
 
 -- 节点类型
@@ -65,16 +105,33 @@ local NODE_TYPES = {
 
 -- 当前地图状态
 local map_state = {
-    nodes = {},        -- 所有节点
-    current_row = 1,   -- 当前层
-    current_col = 1,   -- 当前位置
-    visited = {},      -- 已访问节点
+    nodes = {},
+    current_row = 1,
+    current_col = 1,
+    visited = {},
+    current_chapter = 1,
 }
 
+-- 获取当前章节
+local function get_chapter_by_row(row)
+    for i, chapter in ipairs(CHAPTERS) do
+        if row >= chapter.rows[1] and row <= chapter.rows[3] then
+            return i, chapter
+        end
+    end
+    return 1, CHAPTERS[1]
+end
+
 -- 生成随机节点类型
-local function random_node_type()
+local function random_node_type(row)
     local roll = love.math.random()
     local cumulative = 0
+
+    -- 章节Boss层
+    local _, chapter = get_chapter_by_row(row)
+    if row == chapter.boss_row then
+        return "boss"
+    end
 
     for type_name, type_data in pairs(NODE_TYPES) do
         cumulative = cumulative + type_data.weight
@@ -90,12 +147,14 @@ end
 function Map.generate()
     map_state.nodes = {}
     map_state.visited = {}
+    map_state.current_chapter = 1
 
     for row = 1, MAP_CONFIG.rows do
         local node_count = love.math.random(MAP_CONFIG.min_nodes, MAP_CONFIG.max_nodes)
+        local chapter_idx, chapter = get_chapter_by_row(row)
 
-        -- 最后一层是Boss
-        if row == MAP_CONFIG.rows then
+        -- Boss层只有1个节点
+        if row == chapter.boss_row then
             node_count = 1
         end
 
@@ -105,28 +164,62 @@ function Map.generate()
             local node_type
             if row == 1 then
                 node_type = "start"
-            elseif row == MAP_CONFIG.rows then
+            elseif row == chapter.boss_row then
                 node_type = "boss"
             else
-                node_type = random_node_type()
+                node_type = random_node_type(row)
             end
 
             map_state.nodes[row][col] = {
                 row = row,
                 col = col,
                 type = node_type,
-                accessible = (row == 1),  -- 只有第一层可访问
+                accessible = (row == 1),
                 completed = false,
+                chapter = chapter_idx,
             }
         end
     end
 
-    -- 设置起始位置
     map_state.current_row = 1
     map_state.current_col = 1
     map_state.nodes[1][1].completed = true
 
     return map_state
+end
+
+-- 获取当前章节信息
+function Map.get_current_chapter()
+    return get_chapter_by_row(map_state.current_row)
+end
+
+-- 获取章节敌人池
+function Map.get_chapter_enemies(row)
+    local _, chapter = get_chapter_by_row(row)
+    return chapter.enemies, chapter.elite_enemies, chapter.boss
+end
+
+-- 获取章节背景色
+function Map.get_chapter_bg_color(row)
+    local _, chapter = get_chapter_by_row(row or map_state.current_row)
+    return chapter.bg_color
+end
+
+-- 获取所有章节定义
+function Map.get_chapters()
+    return CHAPTERS
+end
+
+-- 检查是否是章节Boss
+function Map.is_chapter_boss(row)
+    local _, chapter = get_chapter_by_row(row)
+    return row == chapter.boss_row
+end
+
+-- 获取章节Boss
+function Map.get_chapter_boss(row)
+    local _, chapter = get_chapter_by_row(row)
+    return chapter.boss
 end
 
 -- 获取当前节点
@@ -140,7 +233,6 @@ function Map.get_next_nodes()
     local next_row = map_state.current_row + 1
     if next_row > MAP_CONFIG.rows then return {} end
 
-    -- [BUG FIX] 确保 nodes 数组存在，防止返回 nil
     local nodes = map_state.nodes[next_row]
     if not nodes then
         return {}
@@ -156,12 +248,17 @@ function Map.select_node(col)
     local node = map_state.nodes[next_row][col]
     if not node then return false end
 
-    -- 更新位置
+    -- 检查是否进入新章节
+    local old_chapter = get_chapter_by_row(map_state.current_row)
+    local new_chapter = get_chapter_by_row(next_row)
+    if new_chapter ~= old_chapter then
+        map_state.current_chapter = select(1, get_chapter_by_row(next_row))
+    end
+
     map_state.current_row = next_row
     map_state.current_col = col
     node.completed = true
 
-    -- 标记下一层的节点可访问
     if map_state.nodes[next_row + 1] then
         for _, n in ipairs(map_state.nodes[next_row + 1]) do
             n.accessible = true
@@ -198,6 +295,7 @@ function Map.reset()
         current_row = 1,
         current_col = 1,
         visited = {},
+        current_chapter = 1,
     }
 end
 
