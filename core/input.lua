@@ -23,7 +23,11 @@ function Input.on_key_press(key)
         Input.callbacks[key]()
     end
 
-    -- ESC 不再全局处理，由各场景自行处理
+    -- 全局快捷键
+    if key == "escape" then
+        -- ESC: 返回/退出
+        love.event.quit()
+    end
 end
 
 function Input.on_key_release(key)

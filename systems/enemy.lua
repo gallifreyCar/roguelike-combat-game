@@ -1,47 +1,37 @@
 -- systems/enemy.lua - 敌人系统
 -- 管理：敌人生成、AI 行动、意图显示、渲染
--- 支持多种敌人类型和难度缩放
 
 local Enemy = {}
 
--- 敌人类型定义（平衡性调整：降低初始强度，提高成长性）
+-- 敌人定义
 local enemy_types = {
     slime_small = {
         name = "Slime",
-        hp = 15,  -- 降低从18到15
+        hp = 18,
         patterns = {
-            {intent = "attack", damage = 5, weight = 0.6},  -- 降低从6到5
-            {intent = "defend", block = 3, weight = 0.4},  -- 降低从4到3
+            {intent = "attack", damage = 6, weight = 0.6},
+            {intent = "defend", block = 4, weight = 0.4},
         },
     },
     cultist = {
         name = "Cultist",
-        hp = 25,  -- 降低从30到25
+        hp = 30,
         patterns = {
-            {intent = "attack", damage = 5, weight = 0.5},  -- 降低从6到5
+            {intent = "attack", damage = 6, weight = 0.5},
             {intent = "buff", effect = "strength", weight = 0.3},
-            {intent = "defend", block = 5, weight = 0.2},  -- 降低从6到5
+            {intent = "defend", block = 6, weight = 0.2},
         },
     },
     jaw_worm = {
         name = "Jaw Worm",
-        hp = 35,  -- 降低从40到35
+        hp = 40,
         patterns = {
-            {intent = "attack", damage = 9, weight = 0.4},  -- 降低从11到9
-            {intent = "defend", block = 5, weight = 0.3},  -- 降低从6到5
-            {intent = "attack", damage = 6, weight = 0.3},  -- 降低从7到6
+            {intent = "attack", damage = 11, weight = 0.4},
+            {intent = "defend", block = 6, weight = 0.3},
+            {intent = "attack", damage = 7, weight = 0.3},
         },
     },
 }
-
--- 难度缩放函数：根据关卡调整敌人属性
-local function scale_for_level(base_hp, base_damage, level)
-    -- 缩放公式：每级增加约10%属性
-    local hp_scale = 1 + (level - 1) * 0.1
-    local damage_scale = 1 + (level - 1) * 0.08
-
-    return math.floor(base_hp * hp_scale), math.floor(base_damage * damage_scale)
-end
 
 function Enemy.spawn(type_id, enemies_list)
     local template = enemy_types[type_id]
@@ -80,10 +70,6 @@ function Enemy.roll_intent(enemy)
 end
 
 function Enemy.get_action(enemy)
-    -- [BUG FIX] 确保 next_intent 有默认值
-    if not enemy.next_intent then
-        Enemy.roll_intent(enemy)
-    end
     local action = enemy.next_intent
     Enemy.roll_intent(enemy)  -- 预判下一步
     return action
@@ -126,14 +112,12 @@ function Enemy.draw(enemies)
         love.graphics.setColor(0.3, 0.1, 0.1)
         love.graphics.rectangle("fill", enemy.x + 10, enemy.y + 90, 80, 12)
         love.graphics.setColor(0.8, 0.2, 0.2)
-        -- [BUG FIX] 防止 max_hp 为 nil 导致除零错误
-        local max_hp = math.max(1, enemy.max_hp or enemy.hp or 1)
-        local hp_width = (enemy.hp / max_hp) * 80
+        local hp_width = (enemy.hp / enemy.max_hp) * 80
         love.graphics.rectangle("fill", enemy.x + 10, enemy.y + 90, hp_width, 12)
 
         -- HP text
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print(enemy.hp .. "/" .. max_hp, enemy.x + 15, enemy.y + 91)
+        love.graphics.print(enemy.hp .. "/" .. enemy.max_hp, enemy.x + 15, enemy.y + 91)
 
         -- Block
         if enemy.block > 0 then

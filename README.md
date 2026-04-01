@@ -1,144 +1,99 @@
-# Blood Cards 🃏
+# Roguelike Combat Game
 
-A deck-building roguelike auto-battler game built with **LÖVE (Love2D)** and **Lua**.
+A turn-based deck-building roguelike game built with **LÖVE (Love2D)** and **Lua**.
 
-**[中文](./docs/README_CN.md)** | **[日本語](./docs/README_JA.md)** | **[한국어](./docs/README_KO.md)**
-
----
+Inspired by *Slay the Spire* and built with the same technology stack as *Balatro*.
 
 ## Features
 
-- 🎴 **Card Placement**: Drag cards to a 4-slot board
-- ⚔️ **Auto-Battle**: Cards attack automatically each turn
-- 💀 **Sacrifice Mechanic**: Right-click cards to gain Blood resource
-- 🎯 **Sigil System**: 13 unique card abilities
-- 🔮 **Fusion System**: Combine cards with dice-roll risk
-- 🗺️ **Roguelike Map**: Branching paths with different node types
-- 🏆 **Achievement System**: 9 achievements to unlock
-- 💾 **Save System**: Progress auto-save
-- 🌐 **Multi-language**: EN/CN/JP/KR
+- 🎴 **Deck Building**: Build your deck with Strike, Defend, and special cards
+- ⚔️ **Turn-based Combat**: Strategic card play with energy system
+- 👾 **Enemy AI**: Enemies with intent system (attack/defend/buff)
+- 🌍 **Multi-language Support**: English, Chinese, Japanese (WIP)
 
 ## Quick Start
 
-```bash
-# Install LÖVE 11.5+
-# macOS
-brew install love
+### Prerequisites
 
-# Run the game
+- [LÖVE 11.5+](https://love2d.org/)
+
+### Run
+
+```bash
+# macOS
+/Applications/love.app/Contents/MacOS/love .
+
+# Linux
 love .
+
+# Windows
+love.exe .
 ```
 
-## How to Play
-
-1. **Blood Economy**: Start with 1 Blood, +1 per turn (max: 6)
-2. **Card Placement**: Drag cards from hand to board slots
-3. **Sacrifice**: Right-click cards for +1 Blood
-4. **Battle**: Click BATTLE button to auto-fight
-5. **Win**: Reduce enemy HP to 0
-
-## Cards (18 Total)
-
-| Card | Cost | ATK | HP | Ability |
-|------|------|-----|-----|---------|
-| Squirrel | 0 | 0 | 1 | Free sacrifice material |
-| Stoat | 1 | 1 | 2 | Basic attacker |
-| Wolf | 2 | 2 | 2 | Balanced fighter |
-| Bullfrog | 1 | 1 | 4 | Tank with Tough sigil |
-| Adder | 2 | 1 | 2 | Poison attacker |
-| Raven | 2 | 2 | 3 | Flying (Air Strike) |
-| Grizzly | 3 | 4 | 6 | Heavy hitter |
-| Mantis | 3 | 3 | 2 | Double Strike |
-| Cat | 2 | 1 | 1 | Undead (revives once) |
-| Hydra | 5 | 3 | 4 | Splits on death |
-
-## Map Nodes
-
-| Node | Description |
-|------|-------------|
-| [!] Battle | Fight enemies |
-| [E] Elite | Tougher battle, better rewards |
-| [+] Reward | Choose a new card |
-| [F] Fusion | Combine cards |
-| [$] Shop | View deck |
-| [?] Event | Random encounter |
-| [BOSS] | Final battle |
-
-## Fusion System
-
-### Same-Card Fusion
-- Fuse 2 identical cards for guaranteed upgrade
-- +1 ATK, +2 HP, chance for new sigil
-
-### Dice Fusion
-- Fuse 2 different cards with risk/reward
-- Success rate varies (30%-90%)
-- Creates powerful combo cards:
-  - **Poison Wolf**: Adder + Wolf
-  - **Sky Hunter**: Raven + Wolf
-  - **Legendary Beast**: Grizzly + Eagle
-
-## Controls
+### Controls
 
 | Key | Action |
 |-----|--------|
-| Left-click + drag | Place card |
-| Right-click | Sacrifice card |
-| Space | Start battle |
-| ESC | Back / Menu |
-| Tab | Switch mode |
+| `1-5` | Play card |
+| `E` | End turn |
+| `L` | Switch language |
+| `Space` | Start game / Confirm |
+| `ESC` | Quit |
 
 ## Project Structure
 
 ```
 roguelike-game/
 ├── main.lua          # Entry point
-├── scenes/           # Game scenes
+├── conf.lua          # LÖVE configuration
+├── core/
+│   ├── state.lua     # State machine
+│   ├── input.lua     # Input handling
+│   └── i18n.lua      # Internationalization
+├── scenes/
 │   ├── menu.lua      # Main menu
-│   ├── map.lua       # Map selection
 │   ├── combat.lua    # Battle scene
-│   ├── reward.lua    # Card reward
-│   ├── fusion.lua    # Card fusion
-│   ├── shop.lua      # Deck viewer
-│   └── settings.lua  # Settings
-├── systems/          # Game systems
-│   ├── deck.lua      # Deck management
-│   ├── fusion.lua    # Fusion logic
-│   ├── map.lua       # Map generation
-│   └── sigils.lua    # Sigil effects
-├── data/             # Card/Level definitions
-├── ui/               # UI components
-├── config/           # Settings
-└── utils/            # Utilities
+│   ├── victory.lua   # Victory screen
+│   └── death.lua     # Death screen
+├── systems/
+│   ├── deck.lua      # Card/deck management
+│   └── enemy.lua     # Enemy AI
+└── assets/           # Sprites, fonts, sounds
 ```
+
+## Gameplay
+
+1. **Start**: Press `Space` on the menu
+2. **Combat**: Play cards using number keys `1-5`
+3. **Energy**: Each card costs energy (shown in top-left corner)
+4. **Block**: Block absorbs damage, resets each turn
+5. **End Turn**: Press `E` to end your turn
+6. **Enemy Intent**: Enemy shows their next action (ATK/DEF/BUF)
+7. **Victory**: Defeat the enemy to win!
+
+## Cards
+
+| Card | Cost | Effect |
+|------|------|--------|
+| Strike | 1 | Deal 6 damage |
+| Defend | 1 | Gain 5 block |
+| Bash | 2 | Deal 8 damage |
 
 ## Roadmap
 
-- [x] Auto-battle system
-- [x] Card placement on board
-- [x] Sacrifice/Blood mechanic
-- [x] Drag and drop UI
-- [x] 18 cards with 13 sigils
-- [x] Roguelike map progression
-- [x] Boss battles
-- [x] Achievement system
-- [x] Save/Load system
-- [x] Multi-language support
-- [x] Dice fusion system
+- [x] Basic combat system
+- [x] Card system
+- [x] Enemy AI with intent display
+- [ ] More cards and enemies
+- [ ] Roguelike loop (floors, rewards)
+- [ ] Relics system
+- [ ] Save system
 - [ ] Art and animations
-- [ ] Sound effects
-- [ ] Shop functionality
 
-## Tech Stack
+## Development
 
-- **Engine**: LÖVE 11.5 (Love2D)
-- **Language**: Lua (LuaJIT)
-- **Architecture**: Entity-Component-System inspired
+Built with ❤️ using LÖVE framework.
 
 ## License
 
 MIT
-
----
-
-*This is a hobby project for learning game development with LÖVE framework.*

@@ -32,9 +32,6 @@ local state = {
 }
 
 function DeckBuilderScene.enter()
-    -- 先初始化MetaProgression（确保is_card_unlocked可用）
-    MetaProgression.init()
-
     DeckBuilder.init()
     state.available_cards = DeckBuilder.get_available_cards()
     state.filter_rarity = "all"

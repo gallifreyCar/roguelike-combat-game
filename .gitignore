@@ -18,7 +18,3 @@ Thumbs.db
 # Temporary
 /tmp/
 *.tmp
-# 字体文件太大，不提交
-assets/fonts/*.ttc
-assets/fonts/*.otf
-MEMORY.md

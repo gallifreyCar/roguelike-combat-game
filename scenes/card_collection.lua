@@ -23,9 +23,6 @@ local state = {
 }
 
 function CardCollection.enter()
-    -- 先初始化MetaProgression（确保is_card_unlocked可用）
-    MetaProgression.init()
-
     state.filter_rarity = "all"
     state.filter_family = "all"
     state.filter_status = "all"

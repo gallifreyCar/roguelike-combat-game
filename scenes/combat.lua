@@ -280,13 +280,6 @@ function Combat.draw()
     Theme.setColor("bg_primary")
     love.graphics.clear()
 
-    -- 应用屏幕震动偏移
-    local shake_x, shake_y = Animation.get_screen_shake()
-    if shake_x ~= 0 or shake_y ~= 0 then
-        love.graphics.push()
-        love.graphics.translate(shake_x, shake_y)
-    end
-
     local win_w, win_h = Layout.get_size()
 
     -- 绘制标题栏（响应式）
@@ -344,11 +337,6 @@ function Combat.draw()
 
     -- 【新】悬停显示卡牌详情
     Combat.draw_hover_tooltip()
-
-    -- 恢复屏幕震动变换
-    if shake_x ~= 0 or shake_y ~= 0 then
-        love.graphics.pop()
-    end
 end
 
 function Combat.draw_enemy_area()
@@ -1104,10 +1092,6 @@ function Combat.execute_battle()
                 Effects.damage(dmg, card_x + 50, player_board.y + 30)
                 Animation.damage_number(dmg, card_x + 50, player_board.y + 30)
                 Effects.attack_flash(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
-                -- 大伤害时屏幕震动
-                if dmg >= 5 then
-                    Animation.screen_shake(dmg, 0.15)
-                end
             else
                 local dmg = card.attack
                 battle.player.hp = battle.player.hp - dmg
@@ -1116,8 +1100,6 @@ function Combat.execute_battle()
                 -- 玩家HP伤害数字（响应式）
                 Effects.damage(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
                 Animation.damage_number(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
-                -- 直接伤害玩家时屏幕震动
-                Animation.screen_shake(dmg + 3, 0.2)
             end
         end
     end
@@ -1191,26 +1173,10 @@ function Combat.execute_battle()
         -- 播放胜利音效
         Sound.play("victory")
 
-        -- 【Boss解锁】检测是否击败了章节Boss
-        if battle.enemy.is_boss then
-            local chapter_idx, chapter = Map.get_current_chapter()
-            if chapter then
-                local unlocked = MetaProgression.defeat_boss(chapter.id)
-                if #unlocked > 0 then
-                    add_log("BOSS DEFEATED! Unlocked " .. #unlocked .. " new cards!")
-                end
-            end
-        end
-
         -- 【改进】使用关卡定义的金币奖励
         local level_info = LevelData.get_level(battle.level)
         local base_reward = (level_info and level_info.gold_reward) or 5
         local level_bonus = battle.level * 2  -- 额外关卡加成
-
-        -- Boss战额外奖励
-        if battle.enemy.is_boss then
-            level_bonus = level_bonus + 10
-        end
 
         -- 应用局外成长金币加成
         local gold_multiplier = MetaProgression.get_gold_multiplier()
@@ -1227,9 +1193,6 @@ function Combat.execute_battle()
 
         -- 胜利粒子特效
         Animation.spawn_victory_particles(status_bar.x + status_bar.width * 0.5, status_bar.y - 10)
-
-        -- 胜利屏幕震动
-        Animation.screen_shake(3, 0.3)
 
         local max_levels = LevelData.get_max_levels()
         if battle.level >= max_levels then

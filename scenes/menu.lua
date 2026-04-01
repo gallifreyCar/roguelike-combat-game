@@ -35,27 +35,28 @@ function Menu.enter()
     local Achievements = require("systems.achievements")
     Achievements.init()
 
-    -- 手动计算按钮位置
+    -- 手动计算按钮位置，避免高度修改导致错位
     local win_w, win_h = Layout.get_size()
     local btn_w = 200
-    local btn_h1 = 55  -- 主按钮高度
-    local btn_h2 = 42  -- 小按钮高度
+    local btn_h1 = 55  -- 主按钮高度（增加）
+    local btn_h2 = 42  -- 小按钮高度（增加）
     local gap = 12
 
+    -- 计算总高度
     local start_x = (win_w - btn_w) / 2
-    local start_y = win_h * 0.48  -- 按钮区域起始位置
+    local start_y = win_h * 0.52  -- 按钮区域起始位置
 
     buttons = {}
     -- 第一个按钮（开始游戏，大按钮）
     buttons[1] = {x = start_x, y = start_y, width = btn_w, height = btn_h1, id = "start"}
-    -- 第二个按钮（牌组构建）
-    buttons[2] = {x = start_x, y = start_y + btn_h1 + gap, width = btn_w, height = btn_h2, id = "deck_builder"}
-    -- 第三个按钮（卡牌图鉴）
-    buttons[3] = {x = start_x, y = start_y + btn_h1 + btn_h2 + 2*gap, width = btn_w, height = btn_h2, id = "card_collection"}
-    -- 第四个按钮（局外成长）
-    buttons[4] = {x = start_x, y = start_y + btn_h1 + 2*btn_h2 + 3*gap, width = btn_w, height = btn_h2, id = "progression"}
-    -- 第五个按钮（成就）
-    buttons[5] = {x = start_x, y = start_y + btn_h1 + 3*btn_h2 + 4*gap, width = btn_w, height = btn_h2, id = "achievements"}
+    -- 第二个按钮（设置）
+    buttons[2] = {x = start_x, y = start_y + btn_h1 + gap, width = btn_w, height = btn_h2, id = "settings"}
+    -- 第三个按钮（局外成长）
+    buttons[3] = {x = start_x, y = start_y + btn_h1 + btn_h2 + 2*gap, width = btn_w, height = btn_h2, id = "progression"}
+    -- 第四个按钮（成就）
+    buttons[4] = {x = start_x, y = start_y + btn_h1 + 2*btn_h2 + 3*gap, width = btn_w, height = btn_h2, id = "achievements"}
+    -- 第五个按钮（教程）
+    buttons[5] = {x = start_x, y = start_y + btn_h1 + 3*btn_h2 + 4*gap, width = btn_w, height = btn_h2, id = "tutorial"}
 
     pressed_btn = nil
 end
@@ -181,11 +182,11 @@ function Menu.draw()
         local style = (i == 1) and "primary" or "default"
 
         local btn_labels = {
-            "start_game",       -- 按钮1: 开始游戏（先进入牌组构建选牌）
-            "deck_builder",     -- 按钮2: 牌组构建（查看/编辑牌组）
-            "card_collection",  -- 按钮3: 卡牌图鉴（查看已解锁卡牌）
-            "progression",      -- 按钮4: 局外成长
-            "achievements_btn", -- 按钮5: 成就
+            "start_game",      -- 按钮1: 开始游戏
+            "settings",        -- 按钮2: 设置
+            "progression",     -- 按钮3: 局外成长
+            "achievements_btn",-- 按钮4: 成就
+            "tutorial",        -- 按钮5: 教程
         }
 
         Components.button(I18n.t(btn_labels[i]), btn.x, btn.y, btn.width, btn.height, {
@@ -260,16 +261,16 @@ function Menu.mousereleased(x, y, button)
     -- 处理按钮点击
     if pressed_btn then
         if pressed_btn == "start" and Layout.mouse_in_button(buttons[1]) then
-            -- 先进入牌组构建，选好牌再开始
-            State.push("deck_builder")
-        elseif pressed_btn == "deck_builder" and Layout.mouse_in_button(buttons[2]) then
-            State.push("deck_builder")
-        elseif pressed_btn == "card_collection" and Layout.mouse_in_button(buttons[3]) then
-            State.push("card_collection")
-        elseif pressed_btn == "progression" and Layout.mouse_in_button(buttons[4]) then
+            start_new_game()
+        elseif pressed_btn == "settings" and Layout.mouse_in_button(buttons[2]) then
+            State.push("settings")
+        elseif pressed_btn == "progression" and Layout.mouse_in_button(buttons[3]) then
             State.switch("progression")
-        elseif pressed_btn == "achievements" and Layout.mouse_in_button(buttons[5]) then
+        elseif pressed_btn == "achievements" and Layout.mouse_in_button(buttons[4]) then
             State.switch("achievements")
+        elseif pressed_btn == "tutorial" and Layout.mouse_in_button(buttons[5]) then
+            -- 切换到教程场景
+            State.push("tutorial")
         end
         pressed_btn = nil
     end
