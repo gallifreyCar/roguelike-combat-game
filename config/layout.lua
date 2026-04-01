@@ -230,4 +230,10 @@ function Layout.mouse_in_button(button)
     return Layout.in_rect(mx, my, button)
 end
 
+-- 鼠标是否在矩形内（直接参数版本）
+function Layout.mouse_in_rect(x, y, width, height)
+    local mx, my = love.mouse.getPosition()
+    return mx >= x and mx <= x + width and my >= y and my <= y + height
+end
+
 return Layout

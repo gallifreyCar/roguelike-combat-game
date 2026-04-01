@@ -93,8 +93,7 @@ local function start_new_game()
 end
 
 function Menu.update(dt)
-    -- 更新动画系统
-    Animation.update(dt)
+    -- Animation.update已在main.lua中调用，无需重复
 end
 
 function Menu.draw()

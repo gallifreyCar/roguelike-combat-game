@@ -138,6 +138,13 @@ function love.mousereleased(x, y, button)
     State.mousereleased(x, y, button)
 end
 
+function love.wheelmoved(x, y)
+    -- 转发滚轮事件到当前场景
+    if State.current and State.current.wheelmoved then
+        State.current.wheelmoved(x, y)
+    end
+end
+
 -- 错误处理
 function love.errorhandler(msg)
     Debug.log("Fatal error: " .. tostring(msg), "ERROR")

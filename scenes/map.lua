@@ -120,8 +120,7 @@ function MapScene.update(dt)
         end
     end
 
-    -- 更新动画系统
-    Animation.update(dt)
+    -- Animation.update已在main.lua中调用，无需重复
 end
 
 function MapScene.draw()
