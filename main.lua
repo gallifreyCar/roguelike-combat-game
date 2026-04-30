@@ -15,6 +15,7 @@ local Hotload = require("core.hotload")
 local Sound = require("systems.sound")
 local Animation = require("systems.animation")
 local Achievements = require("systems.achievements")
+local Save = require("systems.save")
 
 -- 发布模式配置（Round 10）
 local DEBUG_MODE = true  -- 开启调试以验证资源加载
@@ -45,6 +46,13 @@ function love.load()
 
     -- 初始化成就系统
     Achievements.init()
+
+    -- 初始化存档系统
+    if Save.exists(1) then
+        Save.load(1)
+    else
+        Save.init_new_slot(1)
+    end
 
     -- 加载设置并应用
     local settings = SettingsManager.load()
@@ -147,6 +155,23 @@ end
 
 -- 错误处理
 function love.errorhandler(msg)
-    Debug.log("Fatal error: " .. tostring(msg), "ERROR")
-    return love.errorhandler(msg)
+    msg = tostring(msg)
+    local trace = debug.traceback("Fatal error: " .. msg, 2)
+
+    if Debug and Debug.log then
+        pcall(Debug.log, trace, "ERROR")
+    end
+    print(trace)
+
+    return function()
+        if love.graphics and love.graphics.isActive() then
+            love.graphics.reset()
+            love.graphics.clear(0.08, 0.06, 0.06)
+            love.graphics.setColor(1, 0.45, 0.45)
+            love.graphics.printf("Game Error", 40, 40, love.graphics.getWidth() - 80)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.printf(trace, 40, 80, love.graphics.getWidth() - 80)
+            love.graphics.present()
+        end
+    end
 end

@@ -77,7 +77,6 @@ end
 -- 绘制场景
 function StoryEvent.draw()
     local win_w, win_h = love.graphics.getWidth(), love.graphics.getHeight()
-    local layout = Layout.new(win_w, win_h)
 
     -- 背景遮罩
     love.graphics.setColor(0, 0, 0, 0.7)
@@ -106,13 +105,13 @@ function StoryEvent.draw()
     local y = panel_y + padding
 
     -- 事件标题
-    local title = I18n.lang() == "cn" and state.event.title_cn or state.event.title
+    local title = (I18n.current_lang == "zh" and state.event.title_cn) or state.event.title or "Event"
     love.graphics.setColor(1, 0.9, 0.6, 1)
-    Fonts.print_large(state.event.emoji .. " " .. title, panel_x + padding, y)
+    Fonts.print_large((state.event.emoji or "?") .. " " .. title, panel_x + padding, y)
     y = y + 40
 
     -- 事件描述
-    local desc = I18n.lang() == "cn" and state.event.description_cn or state.event.description
+    local desc = (I18n.current_lang == "zh" and state.event.description_cn) or state.event.description or ""
     love.graphics.setColor(0.85, 0.8, 0.75, 1)
     Fonts.print_wrapped(desc, panel_x + padding, y, panel_w - padding * 2)
     y = y + 60
@@ -156,7 +155,7 @@ function StoryEvent._draw_choices(panel_x, panel_y, panel_w, panel_h, padding, y
         love.graphics.rectangle("line", panel_x + padding, button_y, panel_w - padding * 2, button_h, 6, 6)
 
         -- 按钮文字
-        local text = I18n.lang() == "cn" and choice.text_cn or choice.text
+        local text = (I18n.current_lang == "zh" and choice.text_cn) or choice.text or "Option"
         if is_disabled then
             love.graphics.setColor(0.4, 0.4, 0.4, 1)
             text = text .. " (Unavailable)"
@@ -176,7 +175,7 @@ function StoryEvent._draw_result(panel_x, panel_y, panel_w, panel_h, padding, y)
     if not state.result then return end
 
     -- 结果文字
-    local msg = I18n.lang() == "cn" and state.result.message_cn or state.result.message
+    local msg = (I18n.current_lang == "zh" and state.result.message_cn) or state.result.message or "Done."
     love.graphics.setColor(1, 0.95, 0.8, 1)
     Fonts.print_wrapped(msg, panel_x + padding, y, panel_w - padding * 2)
     y = y + 60

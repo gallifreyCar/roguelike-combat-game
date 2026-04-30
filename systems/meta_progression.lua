@@ -514,6 +514,46 @@ end
 
 -- ==================== SAVE/LOAD ====================
 
+-- Get next unlockable card (for boss rewards)
+function MetaProgression.get_next_unlock_card()
+    -- Get all cards that are not yet unlocked and not common
+    local unlockable = {}
+    for card_id, card in pairs(CardData.cards) do
+        if card.rarity and card.rarity ~= "common" and not MetaProgression.is_card_unlocked(card_id) then
+            table.insert(unlockable, card_id)
+        end
+    end
+
+    -- Return random one if available
+    if #unlockable > 0 then
+        return unlockable[love.math.random(#unlockable)]
+    end
+    return nil
+end
+
+-- Unlock a specific card
+function MetaProgression.unlock_card(card_id)
+    if not meta_data then
+        MetaProgression.init()
+    end
+
+    if not meta_data.unlocked_cards then
+        meta_data.unlocked_cards = {}
+    end
+
+    -- Check if already unlocked
+    for _, id in ipairs(meta_data.unlocked_cards) do
+        if id == card_id then
+            return false, "Already unlocked"
+        end
+    end
+
+    -- Add to unlocked list
+    table.insert(meta_data.unlocked_cards, card_id)
+    Save.save()
+    return true
+end
+
 -- Get full progress data (for save)
 function MetaProgression.get_data()
     return meta_data

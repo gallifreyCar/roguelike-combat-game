@@ -24,10 +24,7 @@ function Input.on_key_press(key)
     end
 
     -- 全局快捷键
-    if key == "escape" then
-        -- ESC: 返回/退出
-        love.event.quit()
-    end
+    -- ESC由各场景自己处理，不在这里全局退出
 end
 
 function Input.on_key_release(key)

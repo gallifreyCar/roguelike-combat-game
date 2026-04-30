@@ -113,6 +113,15 @@ local translations = {
         -- 死亡界面
         defeated = "DEFEATED",
         fallen = "Your cards have fallen...",
+        you_died = "YOU DIED",
+        run_statistics = "Run Statistics",
+        floor_reached = "Floor Reached",
+        battles_won = "Battles Won",
+        enemies_defeated = "Enemies Defeated",
+        cards_sacrificed = "Cards Sacrificed",
+        deck_size = "Deck Size",
+        try_again = "Try Again",
+        main_menu = "Main Menu",
         retry = ">> RETRY <<",
         menu_btn = "[ESC] Menu",
         death_hint = "SPACE: Retry  |  ESC: Return to Menu",
@@ -146,6 +155,7 @@ local translations = {
         node_event = "Event",
 
         -- 奖励
+        choose_reward = "Choose Your Reward",
         select_reward = "SELECT REWARD",
         gold = "Gold",
 
@@ -180,6 +190,18 @@ local translations = {
 
         -- 融合
         fusion_title = "CARD FUSION",
+        fusion_hint = "Select 2 cards to fuse (only way to reduce deck size)",
+        fusion_count = "Fusions",
+        fusion_limit_reached = "Fusion limit reached!",
+        fusion_need_cards = "Need at least 2 cards to fuse!",
+        fusion_preview = "FUSION PREVIEW",
+        fusion_result = "RESULT",
+        fuse = "FUSE",
+        fusion_limit = "LIMIT REACHED",
+        fusion_success = "Fusion successful! Created new card.",
+        fusion_failed = "Fusion failed",
+        mutation = "Mutation",
+        attack = "ATK",
         fusion_same_card = "Same Card",
         fusion_dice = "Dice Fusion",
         fusion_dice_hint = "Select 2 different cards for risky fusion!",
@@ -255,6 +277,11 @@ local translations = {
         card_hunter = "Hunter",
         card_burst_cat = "Burst Cat",
         card_deathcard = "Death Card",
+        -- 融合卡牌
+        card_poison_wolf = "Poison Wolf",
+        card_sky_hunter = "Sky Hunter",
+        card_toxic_beast = "Toxic Beast",
+        card_legendary_beast = "Legendary Beast",
 
         -- 印记名称和描述
         sigil_air_strike_name = "Air Strike",
@@ -397,6 +424,15 @@ local translations = {
         -- 死亡界面
         defeated = "战败",
         fallen = "你的卡牌已倒下...",
+        you_died = "你死了",
+        run_statistics = "本局统计",
+        floor_reached = "到达层数",
+        battles_won = "战斗胜利",
+        enemies_defeated = "击败敌人",
+        cards_sacrificed = "献祭卡牌",
+        deck_size = "牌库数量",
+        try_again = "重新开始",
+        main_menu = "返回主页",
         retry = ">> 重试 <<",
         menu_btn = "[ESC] 菜单",
         death_hint = "空格：重试  |  ESC：返回菜单",
@@ -430,6 +466,7 @@ local translations = {
         node_event = "事件",
 
         -- 奖励
+        choose_reward = "选择奖励",
         select_reward = "选择奖励",
         gold = "金币",
 
@@ -464,6 +501,18 @@ local translations = {
 
         -- 融合
         fusion_title = "卡牌融合",
+        fusion_hint = "选择2张卡牌融合（唯一减少牌库数量的方式）",
+        fusion_count = "融合次数",
+        fusion_limit_reached = "融合次数已达上限！",
+        fusion_need_cards = "至少需要2张卡牌才能融合！",
+        fusion_preview = "融合预览",
+        fusion_result = "结果",
+        fuse = "融合",
+        fusion_limit = "已达上限",
+        fusion_success = "融合成功！创建了新卡牌",
+        fusion_failed = "融合失败",
+        mutation = "变异",
+        attack = "攻击",
         fusion_same_card = "同卡融合",
         fusion_dice = "骰子融合",
         fusion_dice_hint = "选择2张不同卡牌进行风险融合！",
@@ -539,6 +588,11 @@ local translations = {
         card_hunter = "猎手",
         card_burst_cat = "爆发猫",
         card_deathcard = "死亡卡牌",
+        -- 融合卡牌
+        card_poison_wolf = "毒狼",
+        card_sky_hunter = "天空猎手",
+        card_toxic_beast = "剧毒兽",
+        card_legendary_beast = "传说神兽",
 
         -- 印记名称和描述
         sigil_air_strike_name = "飞行",
@@ -714,6 +768,7 @@ local translations = {
         node_event = "イベント",
 
         -- 报酬
+        choose_reward = "報酬を選択",
         select_reward = "報酬を選択",
         gold = "ゴールド",
 
@@ -998,6 +1053,7 @@ local translations = {
         node_event = "이벤트",
 
         -- 보상
+        choose_reward = "보상 선택",
         select_reward = "보상 선택",
         gold = "골드",
 

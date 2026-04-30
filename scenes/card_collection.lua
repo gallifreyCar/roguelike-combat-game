@@ -1,5 +1,6 @@
 -- scenes/card_collection.lua - 卡牌图鉴场景
 -- 显示所有卡牌（已解锁/未解锁），激励玩家解锁更多
+-- 统一使用 CardUI 组件渲染卡牌
 
 local CardCollection = {}
 local State = require("core.state")
@@ -11,6 +12,8 @@ local Family = require("systems.family")
 local MetaProgression = require("systems.meta_progression")
 local Sound = require("systems.sound")
 local I18n = require("core.i18n")
+local CardUI = require("ui.card")
+local Fonts = require("core.fonts")
 
 local state = {
     filter_rarity = "all",
@@ -146,15 +149,16 @@ function CardCollection.draw_card_grid(win_w, win_h)
     Theme.setColor("bg_panel", 0.9)
     love.graphics.rectangle("fill", grid_x, grid_y, grid_w, grid_h, 8, 8)
 
-    -- 卡牌网格
-    local card_w = 90
-    local card_h = 70
+    -- 使用CardUI小型卡牌
+    local card_w = CardUI.WIDTH
+    local card_h = CardUI.SMALL_HEIGHT
     local gap = 10
     local cols = math.floor((grid_w - 20) / (card_w + gap))
     local start_x = grid_x + 10
     local start_y = grid_y + 10
 
     state.hover_card = nil
+    local mx, my = love.mouse.getPosition()
 
     for i, card in ipairs(filtered) do
         local col = (i - 1) % cols
@@ -164,84 +168,53 @@ function CardCollection.draw_card_grid(win_w, win_h)
 
         if y + card_h > grid_y and y < grid_y + grid_h then
             local template = card.template
-            local family_info = template.family and Family.FAMILIES[template.family]
 
             -- 检查悬停
-            local mx, my = love.mouse.getPosition()
             local is_hover = mx >= x and mx <= x + card_w and my >= y and my <= y + card_h
             if is_hover then
                 state.hover_card = card
             end
 
-            -- 卡牌背景（已解锁 vs 未解锁）
-            if card.unlocked then
-                if is_hover then
-                    Theme.setColor("bg_slot_hover", 0.9)
-                else
-                    Theme.setColor("bg_slot")
-                end
-            else
-                Theme.setColor("bg_slot", 0.4)
-            end
-            love.graphics.rectangle("fill", x, y, card_w, card_h, 5, 5)
-
-            -- 边框（体系颜色或默认）
-            if card.unlocked and family_info then
-                love.graphics.setColor(family_info.color[1], family_info.color[2], family_info.color[3], 0.8)
-            elseif card.unlocked then
-                Theme.setColor("border_gold", 0.5)
-            else
-                Theme.setColor("border_normal", 0.2)
-            end
-            love.graphics.rectangle("line", x, y, card_w, card_h, 5, 5)
-
-            -- 卡牌名称
-            Components.text(I18n.card_name(card.id), x + 5, y + 5, {
-                color = card.unlocked and "text_primary" or "text_hint",
-                size = 11,
-            })
-
-            -- 属性
-            if card.unlocked then
-                Components.text("$" .. template.cost .. " A:" .. template.attack .. " H:" .. template.hp,
-                    x + 5, y + 22, {
-                    color = "text_secondary",
-                    size = 10,
-                })
-            else
-                -- 未解锁显示锁图标
-                Components.text("🔒", x + card_w / 2 - 10, y + card_h / 2 - 5, {
-                    size = 20,
-                })
-            end
-
-            -- 稀有度标记
-            local rarity_colors = {
-                common = "text_secondary",
-                uncommon = "accent_green",
-                rare = "accent_blue",
-                legendary = "accent_gold",
+            -- 复制卡牌数据供CardUI使用
+            local display_card = {
+                id = card.id,
+                name = I18n.card_name(card.id),
+                cost = template.cost,
+                attack = template.attack,
+                hp = template.hp,
+                max_hp = template.max_hp or template.hp,
+                sigils = template.sigils or {},
             }
-            local rarity_mark = {
-                common = "",
-                uncommon = "★",
-                rare = "★★",
-                legendary = "★★★",
-            }
-            if card.unlocked and rarity_mark[template.rarity] then
-                Components.text(rarity_mark[template.rarity], x + card_w - 30, y + 5, {
-                    color = rarity_colors[template.rarity],
-                    size = 10,
-                })
-            end
 
-            -- 体系图标
-            if card.unlocked and family_info then
-                Components.text(family_info.icon, x + card_w - 20, y + card_h - 20, {
-                    size = 14,
-                })
+            if card.unlocked then
+                -- 使用CardUI小型卡牌渲染
+                CardUI.draw_small(display_card, x, y, is_hover)
+            else
+                -- 未解锁显示暗淡
+                love.graphics.setColor(0.2, 0.2, 0.2, 0.9)
+                love.graphics.rectangle("fill", x, y, card_w, card_h, 5, 5)
+                Theme.setColor("border_normal", 0.3)
+                love.graphics.rectangle("line", x, y, card_w, card_h, 5, 5)
+                -- 锁图标
+                Theme.setColor("text_hint")
+                Fonts.print("🔒", x + card_w / 2 - 10, y + card_h / 2 - 10, 24)
             end
         end
+    end
+
+    -- 悬停tooltip
+    if state.hover_card and state.hover_card.unlocked then
+        local template = state.hover_card.template
+        local display_card = {
+            id = state.hover_card.id,
+            name = I18n.card_name(state.hover_card.id),
+            cost = template.cost,
+            attack = template.attack,
+            hp = template.hp,
+            max_hp = template.max_hp or template.hp,
+            sigils = template.sigils or {},
+        }
+        CardUI.draw_tooltip(display_card, mx, my)
     end
 end
 

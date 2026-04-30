@@ -621,4 +621,5 @@ return {
     cards = Cards,
     sigils = Sigils,
     rarities = Rarities,
+    getRandomCardByRarity = Cards.getRandomCardByRarity,
 }

@@ -247,6 +247,43 @@ function Deck.get_info()
     }
 end
 
+-- 别名：get_cards = get_deck（兼容性）
+function Deck.get_cards()
+    return Deck.get_deck()
+end
+
+-- 获取松鼠卡数量
+function Deck.get_squirrel_count()
+    local count = 0
+    for _, card in ipairs(deck_state.deck) do
+        if card.id == "squirrel" then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+-- 设置自定义牌组（用于deck_builder）
+function Deck.set_custom_deck(cards)
+    if not cards or #cards == 0 then return false end
+
+    deck_state.deck = {}
+    deck_state.draw_pile = {}
+
+    for _, card in ipairs(cards) do
+        if card and card.id then
+            local template = CardData.cards[card.id]
+            if template then
+                deck_state.deck[#deck_state.deck + 1] = TableUtils.deep_copy(template)
+            end
+        end
+    end
+
+    -- 同步到抽牌堆
+    Deck.reset_for_battle()
+    return true
+end
+
 -- 重置牌组（新游戏）
 function Deck.reset()
     Deck.init()

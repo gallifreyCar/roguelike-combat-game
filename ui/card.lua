@@ -7,6 +7,7 @@ local Colors = require("config.colors")
 local Assets = require("core.assets")
 local Animation = require("systems.animation")
 local Settings = require("config.settings")
+local I18n = require("core.i18n")
 
 local CardUI = {}
 
@@ -288,8 +289,6 @@ end
 
 -- 获取印记说明文本（支持i18n）
 function CardUI.get_sigil_description(sigil_id)
-    local I18n = require("core.i18n")
-
     -- 尝试从i18n获取翻译
     local name_key = "sigil_" .. sigil_id .. "_name"
     local desc_key = "sigil_" .. sigil_id .. "_desc"
@@ -318,7 +317,6 @@ function CardUI.draw_tooltip(card, x, y, options)
     if not card then return end
     options = options or {}
 
-    local I18n = require("core.i18n")
     local tooltip_width = 180
     local tooltip_height = 80  -- 增加高度以容纳快捷键提示
     local padding = 8
@@ -384,7 +382,7 @@ function CardUI.draw_tooltip(card, x, y, options)
     end
 end
 
--- 绘制小型卡牌（手牌列表用）- 增强动画效果
+-- 绘制小型卡牌（手牌列表用）- 增强动画效果 + 统一视觉风格
 function CardUI.draw_small(card, x, y, hover)
     -- 获取动画状态
     local state, state_id = get_card_state(card.id or "unknown", x, y)
@@ -411,6 +409,7 @@ function CardUI.draw_small(card, x, y, hover)
         love.graphics.rectangle("fill", -3, -3, CardUI.WIDTH + 6, CardUI.SMALL_HEIGHT + 6, 6, 6)
     end
 
+    -- 卡牌背景
     if hover then
         love.graphics.setColor(Colors.card_hover_bg)
     else
@@ -418,24 +417,80 @@ function CardUI.draw_small(card, x, y, hover)
     end
     love.graphics.rectangle("fill", 0, 0, CardUI.WIDTH, CardUI.SMALL_HEIGHT, 4, 4)
 
+    -- 边框
     love.graphics.setColor(Colors.card_border)
     love.graphics.rectangle("line", 0, 0, CardUI.WIDTH, CardUI.SMALL_HEIGHT, 4, 4)
 
+    -- 1. 费用红圈白字（左上角，与draw_full一致）
+    if card.cost then
+        love.graphics.setColor(0.7, 0.15, 0.15)
+        love.graphics.circle("fill", 18, 12, 14)
+        love.graphics.setColor(0.9, 0.3, 0.3)
+        love.graphics.circle("line", 18, 12, 14)
+        love.graphics.setColor(1, 1, 1, 1)
+        Fonts.print(tostring(card.cost), 12, 5, 16)
+    end
+
+    -- 2. 卡牌名称（中间）
     love.graphics.setColor(Colors.text_primary)
-    Fonts.print(card.name, 5, 5)
+    local name = card.name or I18n and I18n.card_name(card.id) or card.id or "Unknown"
+    Fonts.print(name, 40, 5, 12)
 
-    -- Cost用红色突出
-    love.graphics.setColor(Colors.cost_text)
-    Fonts.print("$" .. card.cost, 5, 25)
+    -- 3. 攻击力（左下角，橙色背景）
+    love.graphics.setColor(0.5, 0.3, 0.1, 0.9)
+    love.graphics.rectangle("fill", 6, CardUI.SMALL_HEIGHT - 26, 40, 20, 4, 4)
+    love.graphics.setColor(1, 0.75, 0.3, 1)
+    Fonts.print("ATK", 8, CardUI.SMALL_HEIGHT - 24, 9)
+    love.graphics.setColor(1, 1, 1, 1)
+    Fonts.print(tostring(card.attack or 0), 32, CardUI.SMALL_HEIGHT - 24, 12)
 
-    love.graphics.setColor(Colors.attack_text)
-    Fonts.print("A:" .. card.attack, 5, 45)
-    love.graphics.setColor(Colors.hp_text)
-    Fonts.print("H:" .. card.hp, 45, 45)
+    -- 4. 生命值（右下角，绿色背景）
+    love.graphics.setColor(0.15, 0.35, 0.15, 0.9)
+    love.graphics.rectangle("fill", CardUI.WIDTH - 46, CardUI.SMALL_HEIGHT - 26, 40, 20, 4, 4)
+    love.graphics.setColor(0.4, 0.9, 0.4, 1)
+    Fonts.print("HP", CardUI.WIDTH - 44, CardUI.SMALL_HEIGHT - 24, 9)
+    love.graphics.setColor(1, 1, 1, 1)
+    Fonts.print(tostring(card.hp or 0), CardUI.WIDTH - 20, CardUI.SMALL_HEIGHT - 24, 12)
 
+    -- 5. 血量条（底部边缘）
+    local max_hp = math.max(1, card.max_hp or card.hp or 1)
+    local hp_ratio = (card.hp or 0) / max_hp
+    -- 血条背景
+    love.graphics.setColor(0.15, 0.15, 0.15, 0.85)
+    love.graphics.rectangle("fill", 6, CardUI.SMALL_HEIGHT - 4, CardUI.WIDTH - 12, 3, 2, 2)
+    -- 血条填充
+    local hp_color = hp_ratio > 0.5 and {0.3, 0.7, 0.3} or (hp_ratio > 0.25 and {0.7, 0.7, 0.2} or {0.7, 0.3, 0.3})
+    love.graphics.setColor(hp_color[1], hp_color[2], hp_color[3], 0.9)
+    love.graphics.rectangle("fill", 6, CardUI.SMALL_HEIGHT - 4, (CardUI.WIDTH - 12) * hp_ratio, 3, 2, 2)
+
+    -- 6. 印记图标（右上角区域）
+    if card.sigils and #card.sigils > 0 then
+        local iconSize = 16
+        local startX = CardUI.WIDTH - 6
+        local startY = 6
+
+        for i, sigilId in ipairs(card.sigils) do
+            local sigilImage = Assets.getSigil(sigilId)
+            if sigilImage then
+                -- 印记背景
+                love.graphics.setColor(0.15, 0.15, 0.2, 0.85)
+                love.graphics.circle("fill", startX - (i - 1) * (iconSize + 4) - iconSize/2, startY + iconSize/2, iconSize/2 + 2)
+                -- 印记图标
+                love.graphics.setColor(1, 1, 1, 1)
+                local s = iconSize / sigilImage:getWidth()
+                love.graphics.draw(sigilImage, startX - (i - 1) * (iconSize + 4) - iconSize, startY, 0, s, s)
+            else
+                -- 没有图片时显示★
+                love.graphics.setColor(0.9, 0.7, 0.5, 1)
+                Fonts.print("★", startX - (i - 1) * (iconSize + 4) - iconSize, startY, 12)
+            end
+        end
+    end
+
+    -- 7. 悬停提示
     if hover then
         love.graphics.setColor(Colors.drag_hint)
-        Fonts.print("[drag]", 55, 60)
+        Fonts.print(I18n and I18n.t("tooltip_drag_hint") or "[drag]", CardUI.WIDTH / 2 - 20, CardUI.SMALL_HEIGHT + 2, 9)
     end
 
     love.graphics.pop()

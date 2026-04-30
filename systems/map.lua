@@ -4,14 +4,21 @@
 
 local Map = {}
 
+-- 地图配置
+local MAP_CONFIG = {
+    rows = 10,         -- 总层数（增加一层给森林成长空间）
+    min_nodes = 3,
+    max_nodes = 4,
+}
+
 -- 章节定义
 local CHAPTERS = {
     {
         id = "forest",
         name = "Forest",
         name_cn = "森林",
-        rows = {1, 2, 3},
-        boss_row = 3,
+        rows = {1, 2, 3, 4},  -- 森林扩展到4层
+        boss_row = 4,         -- Boss移到第4层
         enemies = {"wolf", "rat", "skunk", "squirrel"},
         elite_enemies = {"grizzly", "moose"},
         boss = "bear",
@@ -22,8 +29,8 @@ local CHAPTERS = {
         id = "ocean",
         name = "Ocean",
         name_cn = "海洋",
-        rows = {4, 5, 6},
-        boss_row = 6,
+        rows = {5, 6, 7},      -- 海洋3层
+        boss_row = 7,
         enemies = {"shark", "kraken", "gem_crab", "blood_worm"},
         elite_enemies = {"hydra", "frog_king"},
         boss = "dragon",
@@ -34,21 +41,14 @@ local CHAPTERS = {
         id = "sky",
         name = "Sky",
         name_cn = "天空",
-        rows = {7, 8, 9},
-        boss_row = 9,
+        rows = {8, 9, 10},     -- 天空3层
+        boss_row = 10,
         enemies = {"raven", "eagle", "owl", "bat"},
         elite_enemies = {"phoenix", "ghost_wolf"},
         boss = "titan",
         color = {0.6, 0.7, 0.9},  -- 天蓝
         bg_color = {0.25, 0.3, 0.45},
     },
-}
-
--- 地图配置
-local MAP_CONFIG = {
-    rows = 9,          -- 总层数（3章×3层）
-    min_nodes = 3,
-    max_nodes = 4,
 }
 
 -- 节点类型
@@ -115,7 +115,9 @@ local map_state = {
 -- 获取当前章节
 local function get_chapter_by_row(row)
     for i, chapter in ipairs(CHAPTERS) do
-        if row >= chapter.rows[1] and row <= chapter.rows[3] then
+        local first_row = chapter.rows[1]
+        local last_row = chapter.rows[#chapter.rows]
+        if row >= first_row and row <= last_row then
             return i, chapter
         end
     end

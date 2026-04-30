@@ -85,4 +85,61 @@ function Fonts.printCenter(text, x, y, size, color)
     love.graphics.print(text, x - width / 2, y)
 end
 
+-- 大字体打印 (20px)
+function Fonts.print_large(text, x, y, color)
+    if not text then return end
+    Fonts.print(text, x, y, 20, color)
+end
+
+-- 小字体打印 (12px)
+function Fonts.print_small(text, x, y, color)
+    if not text then return end
+    Fonts.print(text, x, y, 12, color)
+end
+
+-- 自动换行打印
+function Fonts.print_wrapped(text, x, y, max_width, size, color)
+    if not text then return 0 end
+
+    size = size or DEFAULT_SIZE
+    color = color or {1, 1, 1}
+    max_width = max_width or 300
+
+    local font = Fonts.get(size)
+    love.graphics.setColor(color)
+    love.graphics.setFont(font)
+
+    -- 按单词分割文本
+    local words = {}
+    for word in text:gmatch("%S+") do
+        table.insert(words, word)
+    end
+
+    local lines = {}
+    local current_line = ""
+
+    for _, word in ipairs(words) do
+        local test_line = current_line .. (current_line == "" and "" or " ") .. word
+        if font:getWidth(test_line) <= max_width then
+            current_line = test_line
+        else
+            if current_line ~= "" then
+                table.insert(lines, current_line)
+            end
+            current_line = word
+        end
+    end
+    if current_line ~= "" then
+        table.insert(lines, current_line)
+    end
+
+    -- 绘制每一行
+    local line_height = size + 4
+    for i, line in ipairs(lines) do
+        love.graphics.print(line, x, y + (i - 1) * line_height)
+    end
+
+    return #lines * line_height  -- 返回总高度
+end
+
 return Fonts

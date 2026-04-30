@@ -389,10 +389,12 @@ function MapScene.mousereleased(x, y, button)
     if pressed_node and hovered_node == pressed_node then
         local success, node = Map.select_node(hovered_node.col)
         if success then
+            -- 战斗和Boss需要过渡动画
             if node.type == "battle" or node.type == "elite" or node.type == "boss" then
-                Animation.fade_out(0.2, function()
+                Animation.fade_out(0.15, function()
                     State.switch("combat")
                 end)
+            -- 其他节点直接进入，不需要黑屏过渡
             elseif node.type == "reward" then
                 State.push("reward")
             elseif node.type == "fusion" then
@@ -400,12 +402,9 @@ function MapScene.mousereleased(x, y, button)
             elseif node.type == "shop" then
                 State.push("shop")
             elseif node.type == "event" then
-                -- 剧情事件：NPC对话、选择分支、风险收益
                 State.push("story_event")
             else
-                Animation.fade_out(0.2, function()
-                    State.switch("combat")
-                end)
+                State.switch("combat")
             end
         end
     end

@@ -1,5 +1,6 @@
 -- scenes/deck_builder.lua - 牌组构建场景
 -- 选择15张牌组成初始牌组，同ID最多2张
+-- 统一使用 CardUI 组件渲染卡牌
 
 local DeckBuilderScene = {}
 local DeckBuilder = require("systems.deck_builder")
@@ -18,6 +19,8 @@ local FusionSystem = require("systems.fusion")
 local I18n = require("core.i18n")
 local MetaProgression = require("systems.meta_progression")
 local Save = require("systems.save")
+local CardUI = require("ui.card")
+local Settings = require("config.settings")
 
 -- UI状态
 local state = {
@@ -122,9 +125,10 @@ function DeckBuilderScene.draw_current_deck(win_w, win_h)
     Components.text(I18n.t("avg_cost") .. ": " .. stats.avg_cost .. "  ATK: " .. stats.avg_attack .. "  HP: " .. stats.avg_hp,
         panel_x + 10, stats_y, {color = "text_hint", size = 11})
 
-    -- 显示牌组中的卡牌
-    local card_w = panel_w - 20
-    local card_h = 45
+    -- 使用小型卡牌显示
+    local card_w = CardUI.WIDTH
+    local card_h = CardUI.SMALL_HEIGHT
+    local gap = 5
     local y = panel_y + 55
 
     if #deck == 0 then
@@ -134,38 +138,36 @@ function DeckBuilderScene.draw_current_deck(win_w, win_h)
             size = 12,
         })
     else
+        local mx, my = love.mouse.getPosition()
         for i, card in ipairs(deck) do
             if y + card_h < panel_y + panel_h - 10 then
-                local family_info = card.family and Family.FAMILIES[card.family]
+                local x = panel_x + 10
 
-                -- 卡牌背景
-                Theme.setColor("bg_slot")
-                love.graphics.rectangle("fill", panel_x + 10, y, card_w, card_h, 4, 4)
+                -- 复制卡牌数据供CardUI使用
+                local display_card = {
+                    id = card.id,
+                    name = I18n.card_name(card.id),
+                    cost = card.cost,
+                    attack = card.attack,
+                    hp = card.hp,
+                    max_hp = card.max_hp or card.hp,
+                    sigils = card.sigils or {},
+                }
 
-                -- 体系颜色边框
-                if family_info then
-                    love.graphics.setColor(family_info.color[1], family_info.color[2], family_info.color[3], 0.8)
-                else
-                    Theme.setColor("border_gold", 0.5)
+                local is_hover = mx >= x and mx <= x + card_w and my >= y and my <= y + card_h
+
+                -- 使用CardUI小型卡牌渲染
+                CardUI.draw_small(display_card, x, y, is_hover)
+
+                -- 删除按钮
+                if is_hover then
+                    Theme.setColor("accent_red", 0.8)
+                    love.graphics.rectangle("fill", x + card_w - 25, y + 5, 20, 18, 3, 3)
+                    Theme.setColor("text_value")
+                    Fonts.print("X", x + card_w - 20, y + 7, 12)
                 end
-                love.graphics.rectangle("line", panel_x + 10, y, card_w, card_h, 4, 4)
 
-                -- 卡牌信息
-                Components.text(I18n.card_name(card.id), panel_x + 15, y + 5, {color = "text_primary", size = 12})
-                Components.text("$" .. card.cost .. " ATK:" .. card.attack .. " HP:" .. card.hp, panel_x + 15, y + 22,
-                    {color = "text_secondary", size = 10})
-
-                -- 体系图标
-                if family_info then
-                    Components.text(family_info.icon, panel_x + card_w - 20, y + 8, {size = 16})
-                end
-
-                -- 删除按钮（点击移除）
-                Theme.setColor("accent_red", 0.3)
-                love.graphics.rectangle("fill", panel_x + card_w - 40, y + 25, 25, 15, 3, 3)
-                Components.text("X", panel_x + card_w - 32, y + 27, {color = "text_value", size = 10})
-
-                y = y + card_h + 5
+                y = y + card_h + gap
             end
         end
     end
@@ -205,15 +207,16 @@ function DeckBuilderScene.draw_available_cards(win_w, win_h)
     -- 获取筛选后的卡牌
     local filtered = DeckBuilderScene.get_filtered_cards()
 
-    -- 显示卡牌网格
-    local card_w = 100
-    local card_h = 80
+    -- 使用CardUI小型卡牌
+    local card_w = CardUI.WIDTH
+    local card_h = CardUI.SMALL_HEIGHT
     local gap = 10
     local cols = math.floor((panel_w - 20) / (card_w + gap))
     local start_x = panel_x + 10
     local start_y = panel_y + 40
 
     state.hover_card = nil
+    local mx, my = love.mouse.getPosition()
 
     for i, card_id in ipairs(filtered) do
         local col = (i - 1) % cols
@@ -226,58 +229,56 @@ function DeckBuilderScene.draw_available_cards(win_w, win_h)
             if template then
                 local count = DeckBuilder.get_card_count(card_id)
                 local can_add = DeckBuilder.can_add_card(card_id)
-                local family_info = template.family and Family.FAMILIES[template.family]
 
                 -- 检查悬停
-                local mx, my = love.mouse.getPosition()
                 local is_hover = mx >= x and mx <= x + card_w and my >= y and my <= y + card_h
                 if is_hover then
                     state.hover_card = card_id
                 end
 
-                -- 卡牌背景
+                -- 复制卡牌数据供CardUI使用
+                local display_card = {
+                    id = card_id,
+                    name = I18n.card_name(card_id),
+                    cost = template.cost,
+                    attack = template.attack,
+                    hp = template.hp,
+                    max_hp = template.max_hp or template.hp,
+                    sigils = template.sigils or {},
+                }
+
+                -- 如果不能添加，变暗处理
                 if not can_add then
-                    Theme.setColor("bg_slot", 0.4)
-                elseif is_hover then
-                    Theme.setColor("bg_slot_hover", 0.9)
+                    love.graphics.setColor(0.3, 0.3, 0.3, 0.8)
+                    love.graphics.rectangle("fill", x, y, card_w, card_h, 5, 5)
                 else
-                    Theme.setColor("bg_slot")
+                    -- 使用CardUI小型卡牌渲染
+                    CardUI.draw_small(display_card, x, y, is_hover)
                 end
-                love.graphics.rectangle("fill", x, y, card_w, card_h, 5, 5)
-
-                -- 体系颜色边框
-                if family_info then
-                    love.graphics.setColor(family_info.color[1], family_info.color[2], family_info.color[3],
-                        can_add and 0.8 or 0.3)
-                else
-                    Theme.setColor("border_gold", can_add and 0.5 or 0.2)
-                end
-                love.graphics.rectangle("line", x, y, card_w, card_h, 5, 5)
-
-                -- 卡牌信息
-                Components.text(I18n.card_name(card_id), x + 5, y + 5, {
-                    color = can_add and "text_primary" or "text_hint",
-                    size = 11,
-                })
-
-                Components.text("$" .. template.cost .. " A:" .. template.attack .. " H:" .. template.hp, x + 5, y + 22, {
-                    color = can_add and "text_secondary" or "text_hint",
-                    size = 10,
-                })
 
                 -- 已选数量
                 if count > 0 then
-                    Components.text("x" .. count, x + card_w - 25, y + 5, {
-                        color = "accent_gold",
-                        size = 12,
-                    })
-                end
-
-                -- 体系图标
-                if family_info then
-                    Components.text(family_info.icon, x + card_w - 25, y + card_h - 25, {size = 18})
+                    Theme.setColor("accent_gold")
+                    Fonts.print("x" .. count, x + card_w - 25, y + card_h - 20, 14)
                 end
             end
+        end
+    end
+
+    -- 悬停tooltip
+    if state.hover_card then
+        local template = CardData.cards[state.hover_card]
+        if template then
+            local display_card = {
+                id = state.hover_card,
+                name = I18n.card_name(state.hover_card),
+                cost = template.cost,
+                attack = template.attack,
+                hp = template.hp,
+                max_hp = template.max_hp or template.hp,
+                sigils = template.sigils or {},
+            }
+            CardUI.draw_tooltip(display_card, mx, my)
         end
     end
 end
@@ -439,20 +440,24 @@ function DeckBuilderScene.mousepressed(x, y, button)
     -- 点击牌组中的卡牌移除
     local panel_x = 20
     local panel_y = 70
-    local panel_w = win_w * 0.35
-    local card_w = panel_w - 20
-    local card_h = 45
+    local card_w = CardUI.WIDTH
+    local card_h = CardUI.SMALL_HEIGHT
+    local gap = 5
     local deck = DeckBuilder.get_current_deck()
 
     for i, card in ipairs(deck) do
-        local card_y = panel_y + 55 + (i - 1) * (card_h + 5)
+        local card_y = panel_y + 55 + (i - 1) * (card_h + gap)
         if card_y + card_h < panel_y + win_h - 170 then
-            -- 点击删除按钮
-            if x >= panel_x + card_w - 30 and x <= panel_x + card_w - 5 and
-               y >= card_y + 25 and y <= card_y + 40 then
-                DeckBuilder.remove_card(i)
-                Sound.play("click")
-                return
+            -- 点击卡牌区域
+            if x >= panel_x + 10 and x <= panel_x + 10 + card_w and
+               y >= card_y and y <= card_y + card_h then
+                -- 点击删除按钮区域（右上角）
+                if x >= panel_x + 10 + card_w - 25 and x <= panel_x + 10 + card_w - 5 and
+                   y >= card_y + 5 and y <= card_y + 23 then
+                    DeckBuilder.remove_card(i)
+                    Sound.play("click")
+                    return
+                end
             end
         end
     end

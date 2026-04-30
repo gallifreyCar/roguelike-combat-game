@@ -571,6 +571,16 @@ function Save.get_stats()
     return save_data.stats or default_save_data.stats
 end
 
+-- 重置统计数据（新游戏时）
+function Save.reset_stats()
+    save_data.stats = {
+        battles_won = 0,
+        enemies_defeated = 0,
+        sacrifices = 0,
+        cards_played = 0,
+    }
+end
+
 -- 获取局外成长数据
 function Save.get_progress()
     return save_data.progress or default_save_data.progress

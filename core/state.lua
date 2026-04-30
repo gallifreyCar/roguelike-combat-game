@@ -2,7 +2,9 @@
 
 local State = {
     stack = {},
+    stack_names = {},
     current = nil,
+    current_name = nil,
     states = {},
 }
 
@@ -26,6 +28,8 @@ function State.init()
     State.register("tutorial", require("scenes.tutorial"))
     State.register("save_select", require("scenes.save_select"))
     State.register("story_event", require("scenes.story_event"))
+    State.register("deck_builder", require("scenes.deck_builder"))
+    State.register("card_collection", require("scenes.card_collection"))
 end
 
 function State.switch(name)
@@ -33,7 +37,9 @@ function State.switch(name)
         State.current.exit()
     end
     State.stack = {}
+    State.stack_names = {}
     State.current = State.states[name]
+    State.current_name = name
     if State.current and State.current.enter then
         State.current.enter()
     end
@@ -42,9 +48,11 @@ end
 function State.push(name)
     if State.current then
         State.stack[#State.stack + 1] = State.current
+        State.stack_names[#State.stack_names + 1] = State.current_name
         if State.current.pause then State.current.pause() end
     end
     State.current = State.states[name]
+    State.current_name = name
     if State.current and State.current.enter then
         State.current.enter()
     end
@@ -57,6 +65,8 @@ function State.pop()
     if #State.stack > 0 then
         State.current = State.stack[#State.stack]
         State.stack[#State.stack] = nil
+        State.current_name = State.stack_names[#State.stack_names]
+        State.stack_names[#State.stack_names] = nil
         if State.current and State.current.resume then
             State.current.resume()
         end
@@ -65,6 +75,7 @@ function State.pop()
         local menu_state = State.states["menu"]
         if menu_state then
             State.current = menu_state
+            State.current_name = "menu"
             if menu_state.enter then
                 menu_state.enter()
             end
@@ -72,11 +83,20 @@ function State.pop()
             -- 如果 menu 未注册，尝试初始化后再次获取
             State.init()
             State.current = State.states["menu"]
+            State.current_name = "menu"
             if State.current and State.current.enter then
                 State.current.enter()
             end
         end
     end
+end
+
+function State.name()
+    return State.current_name
+end
+
+function State.previous_name()
+    return State.stack_names[#State.stack_names]
 end
 
 function State.update(dt)

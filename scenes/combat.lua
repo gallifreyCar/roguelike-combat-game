@@ -98,7 +98,7 @@ end
 
 function Combat.enter()
     -- 场景过渡动画
-    Animation.fade_in(0.3)
+    Animation.fade_in(0.15)
 
     -- 从地图系统获取当前层数（同步状态）
     local current_row = Map.get_current_row()
@@ -166,26 +166,61 @@ function Combat.draw_cards(n)
 end
 
 function Combat.spawn_level_enemies()
-    -- 获取章节敌人池
+    local level_info = LevelData.get_level(battle.level)
     local enemies, elite_enemies, boss = Map.get_chapter_enemies(battle.level)
     local is_boss = Map.is_chapter_boss(battle.level)
+    local current_node = Map.get_current()
+    local is_elite = current_node and current_node.type == "elite"
 
-    -- 设置敌人HP（Boss更强）
-    if is_boss then
-        battle.enemy.hp = 30 + battle.level * 3
+    -- 设置敌方主生命值。前几层更温和，Boss/精英更有压迫感。
+    if is_boss or (level_info and level_info.boss) then
+        battle.enemy.hp = 20 + battle.level * 3
         battle.enemy.max_hp = battle.enemy.hp
         battle.enemy.is_boss = true
+    elseif is_elite then
+        battle.enemy.hp = 14 + battle.level * 2
+        battle.enemy.max_hp = battle.enemy.hp
+        battle.enemy.is_boss = false
     else
-        battle.enemy.hp = 10 + battle.level * 2
+        battle.enemy.hp = 8 + battle.level * 2
         battle.enemy.max_hp = battle.enemy.hp
         battle.enemy.is_boss = false
     end
 
-    -- 根据节点类型生成敌人
-    local current_node = Map.get_current()
-    local enemy_pool = enemies
+    local function create_enemy_card(card_id)
+        local template = CardData.cards[card_id]
+        if not template then return nil end
 
-    if current_node and current_node.type == "elite" then
+        local level_bonus = math.max(0, math.floor((battle.level - 1) / 3))
+        local hp_bonus = level_bonus * 2
+        local attack_bonus = level_bonus
+
+        local card = {
+            id = template.id,
+            name = template.name,
+            attack = (template.attack or 0) + attack_bonus,
+            hp = (template.hp or 1) + hp_bonus,
+            max_hp = (template.max_hp or template.hp or 1) + hp_bonus,
+            sigils = template.sigils or {},
+            family = template.family,
+            intent = Combat.roll_enemy_intent((template.attack or 0) + attack_bonus),
+        }
+        Sigils.apply_spawn_effects(card)
+        return card
+    end
+
+    -- 优先使用关卡表的手工配置，保证教学和难度曲线稳定。
+    if level_info and level_info.enemies and not is_elite and not is_boss then
+        for _, enemy_config in ipairs(level_info.enemies) do
+            if enemy_config.slot and enemy_config.card and enemy_config.slot >= 1 and enemy_config.slot <= BOARD_SLOTS then
+                battle.enemy.board[enemy_config.slot] = create_enemy_card(enemy_config.card)
+            end
+        end
+        return
+    end
+
+    local enemy_pool = enemies
+    if is_elite then
         enemy_pool = elite_enemies
     elseif is_boss then
         enemy_pool = {boss}
@@ -196,40 +231,25 @@ function Combat.spawn_level_enemies()
     local used_slots = {}
 
     for i = 1, enemy_count do
-        -- 随机选择敌人类型
         local enemy_id = enemy_pool[love.math.random(#enemy_pool)]
-        local template = CardData.cards[enemy_id]
-
-        if template then
-            -- 随机选择槽位
+        local enemy_card = create_enemy_card(enemy_id)
+        if enemy_card then
             local slot
             repeat
                 slot = love.math.random(1, BOARD_SLOTS)
             until not used_slots[slot]
             used_slots[slot] = true
-
-            -- 敌人属性（随关卡提升）
-            local level_bonus = math.floor(battle.level / 3)
-
-            battle.enemy.board[slot] = {
-                id = template.id,
-                name = template.name,
-                attack = template.attack + level_bonus,
-                hp = template.hp + level_bonus * 2,
-                max_hp = template.hp + level_bonus * 2,
-                sigils = template.sigils or {},
-                family = template.family,
-                intent = Combat.roll_enemy_intent(),
-            }
+            battle.enemy.board[slot] = enemy_card
         end
     end
 end
 
 -- 随机敌人意图
-function Combat.roll_enemy_intent()
+function Combat.roll_enemy_intent(base_attack)
+    base_attack = math.max(1, base_attack or 1)
     local roll = love.math.random()
     if roll < 0.6 then
-        return {type = "attack", value = love.math.random(2, 4)}
+        return {type = "attack", value = base_attack}
     elseif roll < 0.85 then
         return {type = "defend", value = love.math.random(2, 3)}
     else
@@ -812,16 +832,14 @@ function Combat.mousepressed(x, y, button)
             if x >= slot_x and x <= slot_x + CARD_WIDTH and y >= slot_y and y <= slot_y + CARD_HEIGHT then
                 local card = battle.player.board[i]
                 if card then
-                    -- 献祭：获得blood（有上限）
-                    if battle.player.blood < MAX_BLOOD then
-                        battle.player.blood = battle.player.blood + 1
-                        -- 播放献祭音效
-                        Sound.play("sacrifice")
-                        battle.message = I18n.tf("sacrifice_msg", I18n.card_name(card.id))
-                        battle.player.board[i] = nil
-                    else
-                        battle.message = I18n.tf("blood_max", MAX_BLOOD)
-                    end
+                    -- 献祭：移除卡牌并加血
+                    -- 献祭的血可以超出上限（只是回合开始给的血有上限）
+                    battle.player.blood = battle.player.blood + 1
+                    Sound.play("sacrifice")
+                    battle.message = I18n.tf("sacrifice_msg", I18n.card_name(card.id))
+                    battle.player.board[i] = nil
+                    Save.update_stat("sacrifices", 1)
+                    Save.update_achievement_stat("sacrifices", 1)
                     return
                 end
             end
@@ -867,13 +885,13 @@ function Combat.mousepressed(x, y, button)
             Sound.play("click")
             local max_levels = LevelData.get_max_levels()
             if battle.enemy.hp <= 0 and battle.level < max_levels then
-                -- 胜利：进入奖励场景
-                State.switch("reward")
+                -- 胜利：进入奖励场景（使用push以便返回）
+                State.push("reward")
             elseif battle.enemy.hp <= 0 then
-                -- 全部通关：返回菜单
+                -- 全部通关：进入胜利结算
                 Map.reset()
                 Deck.reset()
-                State.switch("menu")
+                State.switch("victory")
             else
                 -- 失败：进入死亡场景
                 State.switch("death")
@@ -979,6 +997,7 @@ function Combat.place_card(hand_index, slot)
     Animation.card_place(slot_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
 
     battle.message = I18n.tf("placed", I18n.card_name(placed_card.id))
+    Save.update_stat("cards_played", 1)
 end
 
 function Combat.start_battle()
@@ -1072,34 +1091,48 @@ function Combat.execute_battle()
     for i = 1, BOARD_SLOTS do
         local card = battle.enemy.board[i]
         if card and card.hp > 0 then
-            local player_card = battle.player.board[i]
+            local intent = card.intent or {type = "attack", value = card.attack or 0}
 
-            -- 计算卡牌位置（响应式）
-            local card_x = Layout.card_slot(i, BOARD_SLOTS)
-
-            if player_card and player_card.hp > 0 then
-                local dmg = card.attack
-                -- 恶臭减攻击
-                if player_card.stinky_debuff then
-                    dmg = math.max(0, dmg - player_card.stinky_debuff)
-                end
-                player_card.hp = player_card.hp - dmg
-                add_log(card.name .. " → " .. player_card.name .. " (-" .. dmg .. " HP)")
-
-                -- 播放受击音效和动画
-                Sound.play("hit")
-                Animation.card_shake(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
-                Effects.damage(dmg, card_x + 50, player_board.y + 30)
-                Animation.damage_number(dmg, card_x + 50, player_board.y + 30)
-                Effects.attack_flash(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
+            if intent.type == "defend" then
+                local before = card.hp
+                card.hp = math.min(card.max_hp or card.hp, card.hp + (intent.value or 0))
+                add_log(card.name .. " guards (+" .. (card.hp - before) .. " HP)")
+                card.intent = Combat.roll_enemy_intent(card.attack)
+            elseif intent.type == "buff" then
+                card.attack = (card.attack or 0) + (intent.value or 1)
+                add_log(card.name .. " enrages (+" .. (intent.value or 1) .. " ATK)")
+                card.intent = Combat.roll_enemy_intent(card.attack)
             else
-                local dmg = card.attack
-                battle.player.hp = battle.player.hp - dmg
-                add_log(card.name .. " → YOU (-" .. dmg .. " HP)")
+                local player_card = battle.player.board[i]
 
-                -- 玩家HP伤害数字（响应式）
-                Effects.damage(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
-                Animation.damage_number(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
+                -- 计算卡牌位置（响应式）
+                local card_x = Layout.card_slot(i, BOARD_SLOTS)
+
+                if player_card and player_card.hp > 0 then
+                    local dmg = intent.value or card.attack or 0
+                    -- 恶臭减攻击
+                    if player_card.stinky_debuff then
+                        dmg = math.max(0, dmg - player_card.stinky_debuff)
+                    end
+                    player_card.hp = player_card.hp - dmg
+                    add_log(card.name .. " → " .. player_card.name .. " (-" .. dmg .. " HP)")
+
+                    -- 播放受击音效和动画
+                    Sound.play("hit")
+                    Animation.card_shake(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
+                    Effects.damage(dmg, card_x + 50, player_board.y + 30)
+                    Animation.damage_number(dmg, card_x + 50, player_board.y + 30)
+                    Effects.attack_flash(card_x, player_board.y, CARD_WIDTH, CARD_HEIGHT)
+                else
+                    local dmg = intent.value or card.attack or 0
+                    battle.player.hp = battle.player.hp - dmg
+                    add_log(card.name .. " → YOU (-" .. dmg .. " HP)")
+
+                    -- 玩家HP伤害数字（响应式）
+                    Effects.damage(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
+                    Animation.damage_number(dmg, status_bar.x + status_bar.width * 0.1, status_bar.y)
+                end
+                card.intent = Combat.roll_enemy_intent(card.attack)
             end
         end
     end
@@ -1183,6 +1216,10 @@ function Combat.execute_battle()
         local total_reward = math.floor((base_reward + level_bonus) * gold_multiplier)
 
         Save.add_coins(total_reward)
+        Save.update_stat("battles_won", 1)
+        Save.update_stat("floors_completed", 1)
+        Save.update_achievement_stat("battles_won", 1)
+        Save.update_achievement_stat("floors_completed", 1)
         add_log(I18n.t("gold") .. " +" .. total_reward .. "!")
 
         -- 播放奖励音效
@@ -1265,7 +1302,7 @@ function Combat.enemy_play_card()
                 hp = template.hp,
                 max_hp = template.hp,
                 sigils = template.sigils or {},  -- 复制印记
-                intent = Combat.roll_enemy_intent(),
+                intent = Combat.roll_enemy_intent(template.attack),
             }
 
             -- 触发印记生成效果

@@ -22,7 +22,7 @@ local pressed_btn = nil      -- 按下状态追踪
 
 function Menu.enter()
     -- 场景过渡动画
-    Animation.fade_in(0.3)
+    Animation.fade_in(0.2)
 
     -- 【性能优化】清理所有动画和UI缓存（防止内存泄漏）
     Animation.clear()
@@ -237,7 +237,8 @@ function Menu.keypressed(key)
         Sound.play("click")
         State.push("settings")
     elseif key == "escape" then
-        love.event.quit()
+        -- ESC在主菜单不做任何事（不要退出整个游戏）
+        -- 用户可以用窗口关闭按钮退出
     end
 end
 
