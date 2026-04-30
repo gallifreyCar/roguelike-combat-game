@@ -117,6 +117,12 @@ function love.draw()
 end
 
 function love.keypressed(key)
+    if key == "q" and (love.keyboard.isDown("lgui") or love.keyboard.isDown("rgui") or
+        love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) then
+        love.event.quit()
+        return
+    end
+
     -- 调试快捷键
     Debug.keypressed(key)
     Hotload.keypressed(key)
@@ -164,13 +170,23 @@ function love.errorhandler(msg)
     print(trace)
 
     return function()
+        if love.event then
+            love.event.pump()
+            for event, a in love.event.poll() do
+                if event == "quit" or (event == "keypressed" and (a == "escape" or a == "q")) then
+                    return 1
+                end
+            end
+        end
+
         if love.graphics and love.graphics.isActive() then
             love.graphics.reset()
             love.graphics.clear(0.08, 0.06, 0.06)
             love.graphics.setColor(1, 0.45, 0.45)
             love.graphics.printf("Game Error", 40, 40, love.graphics.getWidth() - 80)
+            love.graphics.printf("Press ESC or Q to quit", 40, 58, love.graphics.getWidth() - 80)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(trace, 40, 80, love.graphics.getWidth() - 80)
+            love.graphics.printf(trace, 40, 96, love.graphics.getWidth() - 80)
             love.graphics.present()
         end
     end

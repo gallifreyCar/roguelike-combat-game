@@ -217,6 +217,11 @@ function Menu.draw()
         align = "center",
         size = 10,
     })
+    Components.text("Q / ESC: Quit", win_w / 2, win_h * 0.91, {
+        color = "text_hint",
+        align = "center",
+        size = 10,
+    })
 
     -- 当前语言（使用 text_hint）
     Components.text("Language: " .. I18n.get_lang_name(), win_w / 2, win_h * 0.93, {
@@ -236,9 +241,9 @@ function Menu.keypressed(key)
     elseif key == "s" then
         Sound.play("click")
         State.push("settings")
-    elseif key == "escape" then
-        -- ESC在主菜单不做任何事（不要退出整个游戏）
-        -- 用户可以用窗口关闭按钮退出
+    elseif key == "escape" or key == "q" then
+        Sound.play("click")
+        love.event.quit()
     end
 end
 

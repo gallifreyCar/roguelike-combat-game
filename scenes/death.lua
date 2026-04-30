@@ -14,6 +14,7 @@ local Save = require("systems.save")
 local Map = require("systems.map")
 local Deck = require("systems.deck")
 local FusionSystem = require("systems.fusion")
+local MetaProgression = require("systems.meta_progression")
 
 -- 死亡统计
 local death_stats = {}
@@ -146,13 +147,26 @@ local function reset_game()
     if Save.reset_stats then Save.reset_stats() end
 end
 
+local function start_new_run()
+    reset_game()
+
+    MetaProgression.init()
+    local bonuses = MetaProgression.get_starting_bonuses()
+    local base_gold = 50
+    Save.set_coins(base_gold + bonuses.gold_bonus)
+    Deck.set_meta_bonuses(bonuses)
+    Map.generate()
+    Deck.reset()
+
+    Animation.fade_out(0.2, function()
+        State.switch("map")
+    end)
+end
+
 function Death.keypressed(key)
     if key == "space" then
         Sound.play("click")
-        reset_game()
-        Animation.fade_out(0.2, function()
-            State.switch("deck_builder")
-        end)
+        start_new_run()
     elseif key == "escape" then
         Sound.play("click")
         reset_game()
@@ -175,10 +189,7 @@ function Death.mousepressed(x, y, button)
     local restart_x = win_w / 2 - btn_w - btn_gap / 2
     if x >= restart_x and x <= restart_x + btn_w and y >= btn_y and y <= btn_y + btn_h then
         Sound.play("click")
-        reset_game()
-        Animation.fade_out(0.2, function()
-            State.switch("deck_builder")
-        end)
+        start_new_run()
         return
     end
 
