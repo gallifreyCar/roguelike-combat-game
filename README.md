@@ -30,6 +30,21 @@ love .
 love.exe .
 ```
 
+### Browser Prototype
+
+This repo also includes a browser-playable prototype that is easier to test and debug.
+
+```bash
+cd /Users/gallifreycar/Documents/roguelike-game
+python3 -m http.server 8765
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765/web/
+```
+
 ### Controls
 
 | Key | Action |
