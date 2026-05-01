@@ -1,45 +1,13 @@
+import { GAME_DATA } from "./game-data.js";
+
 const CARD_IMAGES = "../assets/cards/";
-const SAVE_KEY = "blood-cards-web-save";
+const SAVE_KEY = "blood-cards-web-save-v2";
 
-const CARD_DATA = {
-  squirrel: { id: "squirrel", name: "松鼠", cost: 0, attack: 0, hp: 1, sigils: [], family: "material" },
-  stoat: { id: "stoat", name: "白鼬", cost: 1, attack: 1, hp: 2, sigils: [], family: "beast" },
-  rat: { id: "rat", name: "老鼠", cost: 1, attack: 2, hp: 1, sigils: [], family: "beast" },
-  bullfrog: { id: "bullfrog", name: "牛蛙", cost: 1, attack: 1, hp: 4, sigils: ["坚韧"], family: "reptile" },
-  turtle: { id: "turtle", name: "龟", cost: 1, attack: 0, hp: 6, sigils: ["守护"], family: "reptile" },
-  insight: { id: "insight", name: "洞察", cost: 1, attack: 0, hp: 1, sigils: ["抽牌"], family: "spell" },
-  wolf: { id: "wolf", name: "狼", cost: 2, attack: 2, hp: 2, sigils: [], family: "beast" },
-  raven: { id: "raven", name: "渡鸦", cost: 2, attack: 2, hp: 3, sigils: ["飞行"], family: "flying" },
-  adder: { id: "adder", name: "蝰蛇", cost: 2, attack: 1, hp: 2, sigils: ["毒"], family: "reptile" },
-  skunk: { id: "skunk", name: "臭鼬", cost: 2, attack: 1, hp: 3, sigils: ["恶臭"], family: "beast" },
-  cat: { id: "cat", name: "猫", cost: 2, attack: 1, hp: 1, sigils: ["不死"], family: "beast" },
-  grizzly: { id: "grizzly", name: "灰熊", cost: 3, attack: 4, hp: 6, sigils: [], family: "beast" },
-  moose: { id: "moose", name: "驼鹿", cost: 3, attack: 2, hp: 4, sigils: ["冲锋"], family: "beast" },
-  mantis: { id: "mantis", name: "螳螂", cost: 3, attack: 3, hp: 2, sigils: ["双击"], family: "insect" },
-  bear: { id: "bear", name: "熊王", cost: 4, attack: 4, hp: 8, sigils: ["践踏"], family: "beast" },
-  shark: { id: "shark", name: "鲨鱼", cost: 3, attack: 3, hp: 3, sigils: ["践踏"], family: "ocean" },
-  dragon: { id: "dragon", name: "巨龙", cost: 5, attack: 5, hp: 7, sigils: ["飞行"], family: "mythic" },
-  titan: { id: "titan", name: "泰坦", cost: 5, attack: 6, hp: 9, sigils: ["坚韧"], family: "mythic" },
-};
-
-const LEVELS = [
-  { name: "教学林地", type: "battle", hp: 6, enemies: [{ id: "squirrel", slot: 1 }] },
-  { name: "森林小径", type: "battle", hp: 12, enemies: [{ id: "stoat", slot: 1 }] },
-  { name: "幽暗树林", type: "elite", hp: 16, enemies: [{ id: "rat", slot: 0 }, { id: "stoat", slot: 2 }] },
-  { name: "熊王巢穴", type: "boss", hp: 24, enemies: [{ id: "bear", slot: 1 }] },
-  { name: "潮湿矿洞", type: "battle", hp: 19, enemies: [{ id: "adder", slot: 0 }, { id: "skunk", slot: 3 }] },
-  { name: "深海裂隙", type: "elite", hp: 24, enemies: [{ id: "shark", slot: 2 }] },
-  { name: "天空祭坛", type: "battle", hp: 25, enemies: [{ id: "raven", slot: 1 }, { id: "mantis", slot: 3 }] },
-  { name: "虚空之门", type: "boss", hp: 36, enemies: [{ id: "dragon", slot: 1 }, { id: "titan", slot: 2 }] },
-];
-
-const STARTER_DECK = [
-  "squirrel", "squirrel", "squirrel",
-  "stoat", "stoat", "rat", "rat", "bullfrog", "bullfrog",
-  "wolf", "wolf", "raven", "raven", "turtle", "insight",
-];
-
-const REWARD_POOL = ["wolf", "raven", "adder", "skunk", "cat", "grizzly", "moose", "mantis", "shark"];
+const CARD_DATA = GAME_DATA.cards;
+const LEVELS = GAME_DATA.levels;
+const STARTER_DECK = GAME_DATA.starterDeck;
+const REWARD_POOL = GAME_DATA.rewardPool;
+const SIGIL_LABELS = GAME_DATA.sigilLabels;
 
 const app = document.querySelector("#app");
 
@@ -135,6 +103,7 @@ function startCombat(floor) {
   run.drawPile = shuffle(run.deck.map(card => ({ ...card, hp: card.maxHp })));
   run.hand = [];
   drawCards(3);
+  const openingHelp = ensurePlayableOpeningHand();
 
   const bonus = Math.floor(floor / 3);
   level.enemies.forEach(enemy => {
@@ -143,6 +112,7 @@ function startCombat(floor) {
 
   state.selectedHand = null;
   state.log = [`进入 ${level.name}。`];
+  if (openingHelp) pushLog(openingHelp);
   state.screen = "combat";
 }
 
@@ -156,6 +126,23 @@ function drawCards(count) {
     }
     run.hand.push(run.drawPile.pop());
   }
+}
+
+function ensurePlayableOpeningHand() {
+  const run = state.run;
+  const hasPlayableAttacker = run.hand.some(card => card.attack > 0 && card.cost <= run.blood);
+  if (hasPlayableAttacker) return null;
+
+  const sourceIndex = run.drawPile.findIndex(card => card.attack > 0 && card.cost <= run.blood);
+  if (sourceIndex < 0) return null;
+
+  const replaceIndex = run.hand.findIndex(card => card.attack === 0 || card.cost > run.blood);
+  if (replaceIndex < 0) return null;
+
+  const [playable] = run.drawPile.splice(sourceIndex, 1);
+  run.drawPile.push(run.hand[replaceIndex]);
+  run.hand[replaceIndex] = playable;
+  return "开局手牌调整：保证至少有一张可出的攻击牌。";
 }
 
 function rollIntent(card) {
@@ -188,12 +175,12 @@ function placeCard(slot) {
   }
   run.blood -= card.cost;
   run.hand.splice(index, 1);
-  if (card.sigils.includes("坚韧")) {
+  if (card.sigils.includes("tough")) {
     card.hp += 2;
     card.maxHp += 2;
   }
   run.playerBoard[slot] = card;
-  if (card.sigils.includes("抽牌")) {
+  if (card.sigils.includes("draw")) {
     drawCards(2);
     pushLog(`${card.name} 触发抽牌。`);
   }
@@ -227,22 +214,57 @@ function startBattle() {
   render();
 }
 
+function getAttackLanes(attacker, lane) {
+  if (attacker.sigils.includes("charge")) {
+    return [lane - 1, lane, lane + 1].filter(targetLane => targetLane >= 0 && targetLane < 4);
+  }
+  if (attacker.sigils.includes("bifurcated")) {
+    return [lane - 1, lane + 1].filter(targetLane => targetLane >= 0 && targetLane < 4);
+  }
+  return [lane];
+}
+
+function directDamage(amount, fromPlayer) {
+  if (fromPlayer) {
+    state.run.enemyHp -= amount;
+  } else {
+    state.run.playerHp -= amount;
+  }
+}
+
 function attackTarget(attacker, target, lane, fromPlayer) {
   let damage = Math.max(0, attacker.attack);
-  if (target && target.sigils.includes("恶臭")) damage = Math.max(0, damage - 1);
+  if (target && target.sigils.includes("stinky")) damage = Math.max(0, damage - 1);
 
-  if (target && !attacker.sigils.includes("飞行")) {
+  if (target && !attacker.sigils.includes("air_strike")) {
+    const beforeHp = target.hp;
     target.hp -= damage;
     pushLog(`${attacker.name} 攻击 ${target.name}，造成 ${damage}。`);
+    if (target.sigils.includes("sharp_quills") && damage > 0) {
+      const thorns = Math.floor(damage / 2);
+      attacker.hp -= thorns;
+      if (thorns > 0) pushLog(`${target.name} 尖刺反伤 ${thorns}。`);
+    }
+    if (target.hp <= 0 && attacker.sigils.includes("trample")) {
+      const overflow = Math.max(0, damage - beforeHp);
+      if (overflow > 0) {
+        directDamage(overflow, fromPlayer);
+        pushLog(`${attacker.name} 践踏溢出 ${overflow}。`);
+      }
+    }
+    if (target.hp <= 0 && attacker.sigils.includes("kill_bonus")) {
+      attacker.attack += 1;
+      pushLog(`${attacker.name} 猎杀成功，攻击 +1。`);
+    }
   } else if (fromPlayer) {
-    state.run.enemyHp -= damage;
+    directDamage(damage, true);
     pushLog(`${attacker.name} 直击敌人，造成 ${damage}。`);
   } else {
-    state.run.playerHp -= damage;
+    directDamage(damage, false);
     pushLog(`${attacker.name} 直击你，造成 ${damage}。`);
   }
 
-  if (attacker.sigils.includes("毒") && target) {
+  if (attacker.sigils.includes("poison") && target) {
     target.poison = (target.poison ?? 0) + 1;
   }
 }
@@ -252,8 +274,12 @@ function executeCombatRound() {
   for (let lane = 0; lane < 4; lane += 1) {
     const card = run.playerBoard[lane];
     if (!card || card.hp <= 0) continue;
-    const hits = card.sigils.includes("双击") ? 2 : 1;
-    for (let i = 0; i < hits; i += 1) attackTarget(card, run.enemyBoard[lane], lane, true);
+    const hits = card.sigils.includes("double_strike") ? 2 : 1;
+    for (let i = 0; i < hits; i += 1) {
+      getAttackLanes(card, lane).forEach(targetLane => {
+        attackTarget(card, run.enemyBoard[targetLane], targetLane, true);
+      });
+    }
   }
   cleanupDead();
   if (checkCombatEnd()) return;
@@ -269,7 +295,9 @@ function executeCombatRound() {
       card.attack += intent.value;
       pushLog(`${card.name} 强化，攻击 +${intent.value}。`);
     } else {
-      attackTarget({ ...card, attack: intent.value }, run.playerBoard[lane], lane, false);
+      getAttackLanes(card, lane).forEach(targetLane => {
+        attackTarget({ ...card, attack: intent.value }, run.playerBoard[targetLane], targetLane, false);
+      });
     }
     card.intent = rollIntent(card);
   }
@@ -279,6 +307,12 @@ function executeCombatRound() {
 
   run.turn += 1;
   run.blood = Math.min(3, run.turn);
+  run.playerBoard.forEach(card => {
+    if (card?.sigils.includes("turn_blood")) {
+      run.blood = Math.min(3, run.blood + 1);
+      pushLog(`${card.name} 触发血源，鲜血 +1。`);
+    }
+  });
   drawCards(2);
   spawnEnemyReinforcement();
   run.phase = "play";
@@ -299,11 +333,15 @@ function cleanupDead() {
   for (let lane = 0; lane < 4; lane += 1) {
     const player = run.playerBoard[lane];
     if (player && player.hp <= 0) {
-      if (player.sigils.includes("不死") && !player.revived) {
+      if (player.sigils.includes("undead") && !player.revived) {
         player.revived = true;
         player.hp = 1;
         pushLog(`${player.name} 复活。`);
       } else {
+        if (player.sigils.includes("death_draw")) {
+          drawCards(2);
+          pushLog(`${player.name} 亡语抽牌。`);
+        }
         pushLog(`${player.name} 死亡。`);
         run.playerBoard[lane] = null;
       }
@@ -311,16 +349,43 @@ function cleanupDead() {
 
     const enemy = run.enemyBoard[lane];
     if (enemy && enemy.hp <= 0) {
-      pushLog(`敌方 ${enemy.name} 死亡。`);
-      run.enemyBoard[lane] = null;
+      if (enemy.sigils.includes("undead") && !enemy.revived) {
+        enemy.revived = true;
+        enemy.hp = 1;
+        pushLog(`敌方 ${enemy.name} 复活。`);
+      } else if (enemy.sigils.includes("hydra")) {
+        pushLog(`敌方 ${enemy.name} 分裂。`);
+        run.enemyBoard[lane] = makeMinion("hydra_head", "Hydra Head", 2, 2);
+        const emptyLane = run.enemyBoard.findIndex((card, i) => i !== lane && !card);
+        if (emptyLane >= 0) run.enemyBoard[emptyLane] = makeMinion("hydra_head", "Hydra Head", 2, 2);
+      } else {
+        pushLog(`敌方 ${enemy.name} 死亡。`);
+        run.enemyBoard[lane] = null;
+      }
     }
   }
+}
+
+function makeMinion(id, name, attack, hp) {
+  return {
+    id,
+    name,
+    cost: 0,
+    attack,
+    hp,
+    maxHp: hp,
+    sigils: [],
+    rarity: "token",
+    family: "token",
+    instance: `${id}-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`,
+    intent: rollIntent({ attack }),
+  };
 }
 
 function checkCombatEnd() {
   const run = state.run;
   if (run.enemyHp <= 0) {
-    run.gold += 12 + run.floor * 4;
+    run.gold += LEVELS[run.floor].goldReward;
     state.stats.battles += 1;
     if (run.floor >= LEVELS.length - 1) {
       run.phase = "victory";
@@ -379,8 +444,23 @@ function resetSave() {
   render();
 }
 
+function screenForRunPhase(phase) {
+  if (phase === "map") return "map";
+  if (phase === "reward") return "reward";
+  if (phase === "victory") return "victory";
+  if (phase === "death") return "death";
+  return "combat";
+}
+
 function cardImage(id) {
   return `${CARD_IMAGES}${id}.png`;
+}
+
+function sigilText(card) {
+  if (card.sigils.length) {
+    return card.sigils.map(sigil => SIGIL_LABELS[sigil] ?? sigil).join(" · ");
+  }
+  return card.family ?? "neutral";
 }
 
 function renderCard(card, options = {}) {
@@ -397,7 +477,7 @@ function renderCard(card, options = {}) {
       ${intent}
       <div class="card-name">${card.name}</div>
       <div class="stats"><span>ATK <b>${card.attack}</b></span><span>HP <b>${card.hp}/${card.maxHp}</b></span></div>
-      <div class="sigils">${card.sigils.length ? card.sigils.join(" · ") : card.family}</div>
+      <div class="sigils">${sigilText(card)}</div>
     </article>
   `;
 }
@@ -586,7 +666,7 @@ app.addEventListener("click", event => {
   if (!target) return;
   const action = target.dataset.action;
   if (action === "new-run") newRun();
-  if (action === "continue" && state.run) state.screen = state.run.phase === "map" ? "map" : "combat";
+  if (action === "continue" && state.run) state.screen = screenForRunPhase(state.run.phase);
   if (action === "reset-save") resetSave();
   if (action === "menu") state.screen = "menu";
   if (action === "node") startCombat(Number(target.dataset.floor));
