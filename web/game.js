@@ -215,6 +215,12 @@ function sacrifice(slot) {
 function startBattle() {
   const run = state.run;
   if (run.phase !== "play") return;
+  const hasAttacker = run.playerBoard.some(card => card && card.attack > 0);
+  if (!hasAttacker && run.hand.some(card => card.attack > 0 && card.cost <= run.blood)) {
+    pushLog("先放一张攻击牌再 Battle，会更有效。");
+    render();
+    return;
+  }
   run.phase = "battle";
   pushLog("战斗开始。");
   executeCombatRound();
@@ -317,15 +323,18 @@ function checkCombatEnd() {
     run.gold += 12 + run.floor * 4;
     state.stats.battles += 1;
     if (run.floor >= LEVELS.length - 1) {
+      run.phase = "victory";
       state.stats.wins += 1;
       state.screen = "victory";
     } else {
+      run.phase = "reward";
       makeRewardChoices();
       state.screen = "reward";
     }
     return true;
   }
   if (run.playerHp <= 0) {
+    run.phase = "death";
     state.stats.losses += 1;
     state.screen = "death";
     return true;
@@ -336,7 +345,7 @@ function checkCombatEnd() {
 function spawnEnemyReinforcement() {
   const run = state.run;
   const empty = run.enemyBoard.map((card, i) => (card ? null : i)).filter(i => i !== null);
-  if (!empty.length || Math.random() > 0.55) return;
+  if (!empty.length || run.turn <= 2 || Math.random() > 0.32) return;
   const pool = run.turn < 4 ? ["stoat", "rat", "bullfrog"] : ["wolf", "adder", "skunk", "mantis"];
   const lane = empty[Math.floor(Math.random() * empty.length)];
   run.enemyBoard[lane] = cloneBoardCard(pool[Math.floor(Math.random() * pool.length)], Math.floor(run.floor / 3));
@@ -359,6 +368,7 @@ function takeReward(index) {
     pushLog(`获得 ${reward.amount} 金币。`);
   }
   state.run.floor = Math.min(state.run.floor + 1, LEVELS.length - 1);
+  state.run.phase = "map";
   state.screen = "map";
   render();
 }
@@ -377,10 +387,11 @@ function renderCard(card, options = {}) {
   if (!card) return `<div class="lane-label">空位</div>`;
   const compact = options.compact ? " compact" : "";
   const selected = options.selected ? " is-selected" : "";
+  const unaffordable = options.affordable === false ? " is-unaffordable" : "";
   const dead = card.hp <= 0 ? " is-dead" : "";
   const intent = options.enemy && card.intent ? `<div class="intent">${intentLabel(card.intent)}</div>` : "";
   return `
-    <article class="card${compact}${selected}${dead}" ${options.testId ? `data-testid="${options.testId}"` : ""}>
+    <article class="card${compact}${selected}${unaffordable}${dead}" ${options.testId ? `data-testid="${options.testId}"` : ""}>
       <img class="portrait" src="${cardImage(card.id)}" alt="${card.name}" onerror="this.style.visibility='hidden'" />
       <div class="cost">${card.cost}</div>
       ${intent}
@@ -467,6 +478,7 @@ function renderMap() {
 function renderCombat() {
   const run = state.run;
   const level = LEVELS[run.floor];
+  const canAttack = run.playerBoard.some(card => card && card.attack > 0);
   app.innerHTML = `
     <main class="screen layout">
       <header class="topbar">
@@ -501,7 +513,7 @@ function renderCombat() {
           </div>
           <div class="actions">
             <button class="primary" data-action="battle" data-testid="battle-button" ${run.phase === "play" ? "" : "disabled"}>Battle</button>
-            <button data-action="draw-debug">抽 1 张</button>
+            <span class="battle-note">${canAttack ? "己方有可攻击单位" : "当前没有攻击力，考虑放置攻击牌或献祭换鲜血"}</span>
           </div>
           <div class="log" data-testid="combat-log">
             ${state.log.map(line => `<div>${line}</div>`).join("")}
@@ -509,12 +521,16 @@ function renderCombat() {
         </div>
         <aside class="hand-panel">
           <h3>手牌 (${run.hand.length})</h3>
+          <p class="hand-hint">亮色可直接支付，暗色需要更多鲜血。</p>
           <div class="hand-list">
-            ${run.hand.map((card, i) => `
-              <div data-action="select-hand" data-index="${i}">
-                ${renderCard(card, { compact: true, selected: state.selectedHand === i, testId: `hand-card-${i}` })}
+            ${run.hand.map((card, i) => {
+              const affordable = card.cost <= run.blood;
+              return `
+              <div class="hand-card ${affordable ? "can-play" : "needs-blood"}" data-action="select-hand" data-index="${i}"
+                title="${affordable ? "可支付" : `需要 ${card.cost} 鲜血`}">
+                ${renderCard(card, { compact: true, selected: state.selectedHand === i, affordable, testId: `hand-card-${i}` })}
               </div>
-            `).join("") || `<p class="kbd">没有手牌。</p>`}
+            `; }).join("") || `<p class="kbd">没有手牌。</p>`}
           </div>
         </aside>
       </section>
@@ -570,18 +586,21 @@ app.addEventListener("click", event => {
   if (!target) return;
   const action = target.dataset.action;
   if (action === "new-run") newRun();
-  if (action === "continue" && state.run) state.screen = state.run.phase === "map" ? "map" : state.screen;
+  if (action === "continue" && state.run) state.screen = state.run.phase === "map" ? "map" : "combat";
   if (action === "reset-save") resetSave();
   if (action === "menu") state.screen = "menu";
   if (action === "node") startCombat(Number(target.dataset.floor));
-  if (action === "select-hand") state.selectedHand = Number(target.dataset.index);
+  if (action === "select-hand") {
+    const index = Number(target.dataset.index);
+    const card = state.run?.hand[index];
+    if (card && card.cost > state.run.blood) {
+      pushLog(`${card.name} 需要 ${card.cost} 鲜血。先献祭或等下一回合。`);
+    }
+    state.selectedHand = index;
+  }
   if (action === "place") placeCard(Number(target.dataset.slot));
   if (action === "sacrifice") sacrifice(Number(target.dataset.slot));
   if (action === "battle") startBattle();
-  if (action === "draw-debug") {
-    drawCards(1);
-    pushLog("调试抽牌 +1。");
-  }
   if (action === "reward") takeReward(Number(target.dataset.index));
   render();
 });

@@ -263,6 +263,11 @@ button:disabled {
   outline: 2px solid var(--gold);
 }
 
+.card.is-unaffordable {
+  opacity: 0.48;
+  border-color: #4b3b29;
+}
+
 .card.is-dead {
   opacity: 0.45;
   filter: grayscale(0.6);
@@ -321,6 +326,27 @@ button:disabled {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hand-hint,
+.battle-note {
+  color: var(--faint);
+  font-size: 12px;
+  margin: 0;
+}
+
+.battle-note {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hand-card.can-play .card {
+  border-color: #806533;
+}
+
+.hand-card.needs-blood {
+  cursor: help;
 }
 
 .intent {
